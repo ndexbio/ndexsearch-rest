@@ -6,8 +6,8 @@
 
 [make]: https://www.gnu.org/software/make
 
-NDEx Enrichment REST Service
-============================
+NDEx Search REST Service
+========================
 
 TODO
 
@@ -26,24 +26,24 @@ Usage
 
 
 
-Building NDEx Enrichment REST Service  
+Building NDEx Search REST Service  
 =====================================
 
-NDEx Enrichment REST Service build requirements:
+NDEx Search REST Service build requirements:
 
 * [Java 8+][java] JDK
 * [Make][make] **(to build)**
 * [Maven][maven] 3.0 or higher **(to build)**
 
 
-Commands build Probability Map Viewer assuming machine has [Git][git] command line tools 
+Commands build NDEx Search REST Service assuming machine has [Git][git] command line tools 
 installed:
 
 ```Bash
 # In lieu of git one can just download repo and unzip it
-git clone https://github.com/coleslaw481/ndex-enrichment-rest.git
+git clone https://github.com/ndexbio/ndexsearch-rest.git
 
-cd ndex-enrichment-rest
+cd ndexsearch-rest
 mvn clean test install
 
 # to try out locally run
@@ -52,12 +52,12 @@ mvn jetty:run
 # or to directly run the war
 make runwar
 
-# then visit http://localhost:8080/enrichment/status on your browser
+# then visit http://localhost:8080/status on your browser
 ```
 
 The above command will create a jar file under **target/** named 
-**ndex-enrichment-rest.war** as well as a command line application 
-named **ndex-enrichment-rest-\<VERSION\>-jar-with-dependencies.jar**
+**ndexsearch-rest.war** as well as a command line application 
+named **ndexsearch-rest-\<VERSION\>-jar-with-dependencies.jar**
 
 
 
