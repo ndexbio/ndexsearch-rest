@@ -12,7 +12,7 @@ import java.util.Map;
  *
  * @author churas
  */
-public class InternalDatabaseResults extends DatabaseResults {
+public class InternalSourceResults extends SourceResults {
     
     private Map<String, String> _databaseAccountOwnerMap;
     private List<InternalGeneMap> _geneMapList;

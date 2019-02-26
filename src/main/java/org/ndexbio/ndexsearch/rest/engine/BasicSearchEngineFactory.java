@@ -7,8 +7,8 @@ package org.ndexbio.ndexsearch.rest.engine;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import org.ndexbio.ndexsearch.rest.model.DatabaseResult;
-import org.ndexbio.ndexsearch.rest.model.InternalDatabaseResults;
+import org.ndexbio.ndexsearch.rest.model.SourceResult;
+import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
 import org.ndexbio.ndexsearch.rest.model.InternalGeneMap;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
@@ -26,7 +26,7 @@ public class BasicSearchEngineFactory {
     private String _dbDir;
     private String _taskDir;
     private NdexRestClientModelAccessLayer _client;
-    private InternalDatabaseResults _databaseResults;
+    private InternalSourceResults _databaseResults;
     
     /**
      * Temp directory where query results will temporarily be stored.
@@ -45,7 +45,7 @@ public class BasicSearchEngineFactory {
         BasicSearchEngineImpl searcher = new BasicSearchEngineImpl(_dbDir,
                 _taskDir,_client);
         searcher.setDatabaseResults(_databaseResults);
-        for (DatabaseResult dr : _databaseResults.getResults()){
+        for (SourceResult dr : _databaseResults.getResults()){
             _logger.debug("Loading: " + dr.getName());
             _logger.debug("Done with loading");
         }

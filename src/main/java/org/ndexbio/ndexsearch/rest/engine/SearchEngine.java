@@ -6,8 +6,8 @@
 package org.ndexbio.ndexsearch.rest.engine;
 
 import java.io.InputStream;
-import org.ndexbio.ndexsearch.rest.exceptions.EnrichmentException;
-import org.ndexbio.ndexsearch.rest.model.DatabaseResults;
+import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
+import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.ndexsearch.rest.model.EnrichmentQuery;
 import org.ndexbio.ndexsearch.rest.model.EnrichmentQueryResults;
 import org.ndexbio.ndexsearch.rest.model.EnrichmentQueryStatus;
@@ -23,14 +23,14 @@ public interface SearchEngine extends Runnable {
      * @param query query to process
      * @return UUID as a string that is an identifier for query
      */
-    public String query(EnrichmentQuery query) throws EnrichmentException;
+    public String query(EnrichmentQuery query) throws SearchException;
     
     /**
      * Gets a summary of databases in engine
-     * @return DatabaseResults object
-     * @throws EnrichmentException if there is an error
+     * @return SourceResults object
+     * @throws SearchException if there is an error
      */
-    public DatabaseResults getDatabaseResults() throws EnrichmentException;
+    public SourceResults getDatabaseResults() throws SearchException;
     
     /**
      * Gets query results
@@ -38,25 +38,25 @@ public interface SearchEngine extends Runnable {
      * @param start
      * @param size
      * @return
-     * @throws EnrichmentException  if there is an error
+     * @throws SearchException  if there is an error
      */
-    public EnrichmentQueryResults getQueryResults(final String id, int start, int size) throws EnrichmentException;
+    public EnrichmentQueryResults getQueryResults(final String id, int start, int size) throws SearchException;
     
     
     /**
      * Gets query status
      * @param id
      * @return
-     * @throws EnrichmentException if there is an error
+     * @throws SearchException if there is an error
      */
-    public EnrichmentQueryStatus getQueryStatus(final String id) throws EnrichmentException;
+    public EnrichmentQueryStatus getQueryStatus(final String id) throws SearchException;
     
     /**
      * Deletes query
      * @param id
-     * @throws EnrichmentException if there is an error
+     * @throws SearchException if there is an error
      */
-    public void delete(final String id) throws EnrichmentException;
+    public void delete(final String id) throws SearchException;
     
     /**
      * Gets a network as CX
@@ -64,9 +64,9 @@ public interface SearchEngine extends Runnable {
      * @param databaseUUID
      * @param networkUUID
      * @return
-     * @throws EnrichmentException 
+     * @throws SearchException 
      */
-    public InputStream getNetworkOverlayAsCX(final String id, final String databaseUUID, final String networkUUID) throws EnrichmentException;
+    public InputStream getNetworkOverlayAsCX(final String id, final String databaseUUID, final String networkUUID) throws SearchException;
 
     
     /**

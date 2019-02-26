@@ -13,7 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.core.Response;
-import org.ndexbio.ndexsearch.rest.model.DatabaseResults;
+import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.ndexsearch.rest.model.ErrorResponse;
 
 /**
@@ -38,7 +38,7 @@ public class SearchDatabase {
                responses = {
                    @ApiResponse(responseCode = "200", description = "Success",
                                  content = @Content(mediaType = MediaType.APPLICATION_JSON,
-                                   schema = @Schema(implementation = DatabaseResults.class))),
+                                   schema = @Schema(implementation = SourceResults.class))),
                    @ApiResponse(responseCode = "500", description = "Server Error",
                                 content = @Content(mediaType = MediaType.APPLICATION_JSON,
                                   schema = @Schema(implementation = ErrorResponse.class)))

@@ -9,11 +9,15 @@ package org.ndexbio.ndexsearch.rest.model;
  *
  * @author churas
  */
-public class DatabaseResult {
+public class SourceResult {
     private String _uuid;
     private String _description;
     private String _name;
     private String _numberOfNetworks;
+    private String _status;
+    private String _endPoint;
+    private String _version;
+    
 
     public String getUuid() {
         return _uuid;
@@ -46,5 +50,31 @@ public class DatabaseResult {
     public void setNumberOfNetworks(String _numberOfNetworks) {
         this._numberOfNetworks = _numberOfNetworks;
     }
+
+    public String getStatus() {
+        return _status;
+    }
+
+    public void setStatus(String _status) {
+        this._status = _status;
+    }
+
+    public String getEndPoint() {
+        return _endPoint;
+    }
+
+    public void setEndPoint(String _endPoint) {
+        this._endPoint = _endPoint;
+    }
+
+    public String getVersion() {
+        return _version;
+    }
+
+    public void setVersion(String _version) {
+        this._version = _version;
+    }
+    
+    
     
 }

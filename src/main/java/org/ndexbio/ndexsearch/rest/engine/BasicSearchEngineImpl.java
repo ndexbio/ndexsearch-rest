@@ -11,8 +11,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
-import org.ndexbio.ndexsearch.rest.exceptions.EnrichmentException;
-import org.ndexbio.ndexsearch.rest.model.DatabaseResults;
+import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
+import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.ndexsearch.rest.model.EnrichmentQuery;
 import org.ndexbio.ndexsearch.rest.model.EnrichmentQueryResults;
 import org.ndexbio.ndexsearch.rest.model.EnrichmentQueryStatus;
@@ -52,7 +52,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
      */
     private ConcurrentHashMap<String, ConcurrentHashMap<String, HashSet<String>>> _databases;
     
-    private AtomicReference<DatabaseResults> _databaseResults;
+    private AtomicReference<SourceResults> _databaseResults;
     private NdexRestClientModelAccessLayer _client;
     
     private long _threadSleep = 10;
@@ -109,16 +109,16 @@ public class BasicSearchEngineImpl implements SearchEngine {
     }
     
     
-    public void setDatabaseResults(DatabaseResults dr){
+    public void setDatabaseResults(SourceResults dr){
         _databaseResults.set(dr);
     }
 
     
     @Override
-    public String query(EnrichmentQuery thequery) throws EnrichmentException {
+    public String query(EnrichmentQuery thequery) throws SearchException {
         
         if (thequery.getDatabaseList() == null || thequery.getDatabaseList().isEmpty()){
-            throw new EnrichmentException("No databases selected");
+            throw new SearchException("No databases selected");
         }
         // @TODO get Jing's uuid generator code that can be a poormans cache
         String id = UUID.randomUUID().toString();
@@ -131,7 +131,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
     }
 
     @Override
-    public DatabaseResults getDatabaseResults() throws EnrichmentException {
+    public SourceResults getDatabaseResults() throws SearchException {
         return _databaseResults.get();
     }
     
@@ -143,25 +143,25 @@ public class BasicSearchEngineImpl implements SearchEngine {
      *             to get all set both {@code start} and {@code size} to 0.
      * @return {@link org.ndexbio.ndexsearch.rest.model.EnrichmentQueryResults} object
      *         or null if no result could be found. 
-     * @throws EnrichmentException If there was an error getting the results
+     * @throws SearchException If there was an error getting the results
      */
     @Override
-    public EnrichmentQueryResults getQueryResults(String id, int start, int size) throws EnrichmentException {
+    public EnrichmentQueryResults getQueryResults(String id, int start, int size) throws SearchException {
         return null;
     }
 
     @Override
-    public EnrichmentQueryStatus getQueryStatus(String id) throws EnrichmentException {
+    public EnrichmentQueryStatus getQueryStatus(String id) throws SearchException {
         return null;
     }
 
     @Override
-    public void delete(String id) throws EnrichmentException {
+    public void delete(String id) throws SearchException {
         _logger.debug("Deleting task " + id);
     }
 
     @Override
-    public InputStream getNetworkOverlayAsCX(String id, String databaseUUID, String networkUUID) throws EnrichmentException {
+    public InputStream getNetworkOverlayAsCX(String id, String databaseUUID, String networkUUID) throws SearchException {
         
         return null;
     }

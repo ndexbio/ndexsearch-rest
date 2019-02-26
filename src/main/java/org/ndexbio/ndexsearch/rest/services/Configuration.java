@@ -7,8 +7,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
 import javax.naming.InitialContext;
-import org.ndexbio.ndexsearch.rest.exceptions.EnrichmentException;
-import org.ndexbio.ndexsearch.rest.model.InternalDatabaseResults;
+import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
+import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
 import org.ndexbio.model.exceptions.NdexException;
 import org.ndexbio.rest.client.NdexRestClient;
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
@@ -27,8 +27,8 @@ public class Configuration {
     
     public static final String NDEX_SEARCH_CONFIG = "NDEX_SEARCH_CONFIG";
     
-    public static final String DATABASE_DIR = "enrichment.database.dir";
-    public static final String TASK_DIR = "enrichment.task.dir";
+    public static final String DATABASE_DIR = "search.database.dir";
+    public static final String TASK_DIR = "search.task.dir";
     
     public static final String NDEX_USER = "ndex.user";
     public static final String NDEX_PASS = "ndex.password";
@@ -36,7 +36,7 @@ public class Configuration {
     public static final String NDEX_USERAGENT = "ndex.useragent";
     
     
-    public static final String DATABASE_RESULTS_JSON_FILE = "databaseresults.json";
+    public static final String SOURCE_RESULTS_JSON_FILE = "sourceresults.json";
     
     private static Configuration INSTANCE;
     private static final Logger _logger = LoggerFactory.getLogger(Configuration.class);
@@ -111,7 +111,7 @@ public class Configuration {
     /**
      * Gets singleton instance of configuration
      * @return {@link org.ndexbio.ndexsearch.rest.services.Configuration} object with configuration loaded
-     * @throws EnrichmentException If there was an error reading configuration
+     * @throws SearchException If there was an error reading configuration
      */
     public static Configuration getInstance()
     {

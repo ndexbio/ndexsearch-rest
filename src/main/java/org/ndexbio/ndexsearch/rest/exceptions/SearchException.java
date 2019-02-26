@@ -9,9 +9,9 @@ package org.ndexbio.ndexsearch.rest.exceptions;
  *
  * @author churas
  */
-public class EnrichmentException extends Exception {
+public class SearchException extends Exception {
     
-    public EnrichmentException(String message)
+    public SearchException(String message)
     {
         super(message);
     }

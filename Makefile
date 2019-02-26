@@ -47,3 +47,7 @@ updateversion: ## updates version in pom.xml via maven command
 
 runwar: install ## Builds war file and runs webapp via Jetty
 	mvn jetty:run-war
+
+javadocs: ## Generates javadoc documentation and launches browser
+	mvn javadoc:javadoc
+	$(BROWSER) target/site/apidocs/index.html

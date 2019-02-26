@@ -12,42 +12,29 @@ import java.util.Properties;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import org.ndexbio.cxio.aspects.datamodels.NodeAttributesElement;
-import org.ndexbio.cxio.aspects.datamodels.NodesElement;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.ndexbio.ndexsearch.rest.exceptions.EnrichmentException;
-import org.ndexbio.ndexsearch.rest.model.DatabaseResult;
-import org.ndexbio.ndexsearch.rest.model.InternalDatabaseResults;
-import org.ndexbio.ndexsearch.rest.model.InternalGeneMap;
+import org.ndexbio.ndexsearch.rest.model.SourceResult;
+import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
-import org.ndexbio.model.cx.NiceCXNetwork;
-import org.ndexbio.model.object.NetworkSearchResult;
-import org.ndexbio.model.object.network.NetworkSummary;
-import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
-import org.ndexbio.rest.client.NdexRestClientUtilities;
+import org.ndexbio.ndexsearch.rest.services.SearchHttpServletDispatcher;
 
 /**
  *
@@ -57,14 +44,32 @@ public class App {
     
     static Logger _logger = LoggerFactory.getLogger(App.class);
 
+    
+    
+    /**
+     * Sets log directory for embedded Jetty
+     */
+    public static final String RUNSERVER_LOGDIR = "runserver.log.dir";
+    
+    /**
+     * Sets port for embedded Jetty
+     */
+    public static final String RUNSERVER_PORT = "runserver.port";
+        
+    /**
+     * Sets context path for embedded Jetty
+     */
+    public static final String RUNSERVER_CONTEXTPATH = "runserver.contextpath";
+    
+    
     public static final String MODE = "mode";
     public static final String CONF = "conf";    
     public static final String EXAMPLE_CONF_MODE = "exampleconf";
-    public static final String EXAMPLE_DBRES_MODE = "exampledbresults";
+    public static final String EXAMPLE_SOURCERES_MODE = "examplesourceresults";
     public static final String RUNSERVER_MODE = "runserver";
     
     public static final String SUPPORTED_MODES = ", " + EXAMPLE_CONF_MODE +
-                                                    ", " + EXAMPLE_DBRES_MODE +
+                                                    ", " + EXAMPLE_SOURCERES_MODE +
                                                     ", " + RUNSERVER_MODE;
     
     public static void main(String[] args){
@@ -107,8 +112,8 @@ public class App {
                 System.out.flush();
                 return;
             }
-            if (mode.equals(EXAMPLE_DBRES_MODE)){
-                System.out.println(generateExampleDatabaseResults());
+            if (mode.equals(EXAMPLE_SOURCERES_MODE)){
+                System.out.println(generateExampleSourceResults());
                 System.out.flush();
                 return;
             }
@@ -118,24 +123,41 @@ public class App {
                 Properties props = getPropertiesFromConf(optionSet.valueOf(CONF).toString());
                 ch.qos.logback.classic.Logger rootLog = 
         		(ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-		rootLog.setLevel(Level.INFO);
-                String logDir = props.getProperty("runserver.log.dir", "enrich_yyyy_mm_dd.log");
-                RolloverFileOutputStream os = new RolloverFileOutputStream(logDir + File.separator + "enrich_yyyy_mm_dd.log", true);
+		rootLog.setLevel(Level.DEBUG);
+                String logDir = props.getProperty(App.RUNSERVER_LOGDIR, ".");
+                RolloverFileOutputStream os = new RolloverFileOutputStream(logDir + File.separator + "ndexsearch_yyyy_mm_dd.log", true);
 		
-		//We are creating a print stream based on our RolloverFileOutputStream
+		
+                final int port = Integer.valueOf(props.getProperty(App.RUNSERVER_PORT, "8080"));
+                System.out.println("\nSpinning up server for status invoke: http://localhost:" + Integer.toString(port) + "/status\n\n");
+                System.out.flush();
+                
+                //We are creating a print stream based on our RolloverFileOutputStream
 		PrintStream logStream = new PrintStream(os);
 
-		//We are redirecting system out and system error to our print stream.
+                //We are redirecting system out and system error to our print stream.
 		System.setOut(logStream);
 		System.setErr(logStream);
-                final int port = Integer.valueOf(props.getProperty("runserver.port", "8080"));
+
                 final Server server = new Server(port);
 
-                WebAppContext context = new WebAppContext();
-                context.setContextPath("/");
-
-                context.setWar(props.getProperty("runserver.war"));
-                server.setHandler(context);
+                final ServletContextHandler webappContext = new ServletContextHandler(server, props.getProperty(App.RUNSERVER_CONTEXTPATH, "/"));
+                
+                HashMap<String, String> initMap = new HashMap<>();
+                initMap.put("resteasy.servlet.mapping.prefix", "/");
+                initMap.put("javax.ws.rs.Application", "org.ndexbio.ndexsearch.rest.SearchApplication");
+                final ServletHolder restEasyServlet = new ServletHolder(
+                     new SearchHttpServletDispatcher());
+                
+                restEasyServlet.setInitOrder(1);
+                restEasyServlet.setInitParameters(initMap);
+                webappContext.addServlet(restEasyServlet, "/*");
+                
+                ContextHandlerCollection contexts = new ContextHandlerCollection();
+                contexts.setHandlers(new Handler[] { webappContext });
+ 
+                server.setHandler(contexts);
+                
                 server.start();
                 Log.getRootLogger().info("Embedded Jetty logging started.", new Object[]{});
 	    
@@ -148,7 +170,6 @@ public class App {
         catch(Exception ex){
             ex.printStackTrace();
         }
-
     }
     
     public static Properties getPropertiesFromConf(final String path) throws IOException, FileNotFoundException {
@@ -158,127 +179,75 @@ public class App {
     }
     
     /**
-     * Generates an example databaseresults.json 
-     * @return String of example databaseresults.json
-     * @throws Exception 
+     * Generates an example {@link org.ndexbio.ndexsearch.rest.services.Configuration#SOURCE_RESULTS_JSON_FILE}
+     * file as String
+     * @return String 
+     * @throws Exception If there was a problem generating output
      */
-    public static String generateExampleDatabaseResults() throws Exception {
-        DatabaseResult dr = new DatabaseResult();
-        dr.setDescription("This is a description of a signor database");
-        dr.setName("signor");
-        dr.setNumberOfNetworks("50");
-        String druuid = "89a90a24-2fa8-4a57-ae4b-7c30a180e8e6";
-        dr.setUuid(druuid);
+    public static String generateExampleSourceResults() throws Exception {
+        SourceResult sr = new SourceResult();
+        sr.setDescription("This is a description of enrichment source");
+        sr.setName("enrichment");
+        sr.setNumberOfNetworks("350");
+        String sruuid = "eeb4af50-83c4-4e33-ac21-87142403589b";
+        sr.setUuid(sruuid);
+        sr.setEndPoint("http://localhost:8085/enrichment");
+        sr.setVersion("0.1.0");
+        sr.setStatus("ok");
         
-        DatabaseResult drtwo = new DatabaseResult();
-        drtwo.setDescription("This is a description of a ncipid database");
-        drtwo.setName("ncipid");
-        drtwo.setNumberOfNetworks("200");
-        String drtwouuid = "e508cf31-79af-463e-b8b6-ff34c87e1734";
-        drtwo.setUuid(drtwouuid);
+        SourceResult srtwo = new SourceResult();
+        srtwo.setDescription("This is a description of interactome service");
+        srtwo.setName("interactome");
+        srtwo.setNumberOfNetworks("2009");
+        String srtwouuid = "0857a397-3453-4ae4-8208-e33a283c85ec";
+        srtwo.setUuid(srtwouuid);
+        srtwo.setEndPoint("http://localhost:8086/interactome");
+        srtwo.setVersion("0.1.1a1");
+        srtwo.setStatus("ok");
         
-        InternalDatabaseResults idr = new InternalDatabaseResults();
-        HashMap<String, String> hmap = new HashMap<>();
-        hmap.put(druuid, "signorowner");
-        hmap.put(drtwouuid, "ncipidowner");
-        idr.setDatabaseAccountOwnerMap(hmap);
-        idr.setResults(Arrays.asList(dr, drtwo));
+        SourceResult srthree = new SourceResult();
+        srthree.setDescription("This is a description of keyword service");
+        srthree.setName("keyword");
+        srthree.setNumberOfNetworks("2009");
+        String srthreeuuid = "33b9c3ca-13e5-48b9-bcd2-09070203350a";
+        srthree.setUuid(srthreeuuid);
+        srthree.setEndPoint("http://localhost:8086/keyword");
+        srthree.setVersion("0.2.0");
+        srthree.setStatus("ok");
+        
+        
+        InternalSourceResults idr = new InternalSourceResults();
+        idr.setResults(Arrays.asList(sr, srtwo, srthree));
         ObjectMapper mappy = new ObjectMapper();
         
         return mappy.writerWithDefaultPrettyPrinter().writeValueAsString(idr);
     }
     /**
      * Generates example Configuration file writing to standard out
-     * @throws Exception 
+     * @return Example configuration as String
      */
-    public static String generateExampleConfiguration() throws Exception {
+    public static String generateExampleConfiguration() {
         StringBuilder sb = new StringBuilder();
-        sb.append("# Example configuration file for Enrichment service\n\n");
+        sb.append("# Example configuration file for Search service\n\n");
         
-        sb.append("# Sets Enrichment database directory\n");
-        sb.append(Configuration.DATABASE_DIR + " = /tmp\n\n");
+        sb.append("\n# Sets Search database directory\n");
+        sb.append(Configuration.DATABASE_DIR + " = /tmp\n");
         
-        sb.append("# Sets Enrichment task directory where results from queries are stored\n");
-        sb.append(Configuration.TASK_DIR + " = /tmp/tasks\n\n");
-
-        sb.append(Configuration.DATABASE_RESULTS_JSON_FILE+ " = databaseresults.json\n");
+        sb.append("\n# Sets Search task directory where results from queries are stored\n");
+        sb.append(Configuration.TASK_DIR + " = /tmp/tasks\n");
+        
+        sb.append("\n# Run Service under embedded Jetty command line parameters\n");
+        sb.append(App.RUNSERVER_CONTEXTPATH + " = /\n");
+        sb.append(App.RUNSERVER_LOGDIR + " = /tmp/log\n");
+        sb.append(App.RUNSERVER_PORT + " = 8080\n");
+        
+        sb.append("\n# Sets name of json file containing source results.\n# This file ");
+        sb.append("expected to reside in " + Configuration.DATABASE_DIR + " directory\n");
+        sb.append(Configuration.SOURCE_RESULTS_JSON_FILE+ " = " + Configuration.SOURCE_RESULTS_JSON_FILE + "\n");
         sb.append(Configuration.NDEX_USER+ " = bob\n");
         sb.append(Configuration.NDEX_PASS+ " = somepassword\n");
         sb.append(Configuration.NDEX_SERVER+ " = public.ndexbio.org\n");
-        sb.append(Configuration.NDEX_USERAGENT+ " = Enrichment/1.0\n");
+        sb.append(Configuration.NDEX_USERAGENT+ " = NDExSearch/1.0\n");
         return sb.toString();
-    }
-
-    
-    public static void updateGeneMap(final NiceCXNetwork network, final String externalId, InternalGeneMap geneMap,
-            final Set<String> uniqueGeneSet) throws Exception {
-        
-        Map<Long, Collection<NodeAttributesElement>> attribMap = network.getNodeAttributes();
-        Map<String, Set<String>> mappy = geneMap.getGeneMap();
-        if (mappy == null){
-            _logger.debug("Adding mappy");
-            mappy = new HashMap<>();
-            geneMap.setGeneMap((Map<String, Set<String>>)mappy);
-        }
-        for (NodesElement ne : network.getNodes().values()){
-            Collection<NodeAttributesElement> nodeAttribs = attribMap.get(ne.getId());
-
-            // If there are node attributes and one is named "type" then
-            // only include the node name if type is gene or protein
-            if (nodeAttribs != null){
-                boolean validgene = false;
-                for (NodeAttributesElement nae : nodeAttribs){
-                    if (nae.getName().toLowerCase().equals("type")){
-                        if (nae.getValue().toLowerCase().equals("gene") ||
-                              nae.getValue().toLowerCase().equals("protein")){
-                            validgene = true;
-                            break;
-                        }
-                    }
-                }
-                if (validgene == false){
-                    continue;
-                }
-            }
-            String name = ne.getNodeName();
-
-            if (mappy.containsKey(name) == false){
-                mappy.put(name, new HashSet<String>());
-            }
-            if (mappy.get(name).contains(externalId) == false){
-                mappy.get(name).add(externalId);
-            }
-            uniqueGeneSet.add(name);
-        }
-    }
-    
-    public static NiceCXNetwork saveNetwork(final UUID networkuuid, final File savedir) throws Exception{
-        Configuration config = Configuration.getInstance();
-        NdexRestClientModelAccessLayer client = config.getNDExClient();
-        File dest = new File(savedir.getAbsolutePath() + File.separator + networkuuid.toString() + ".cx");
-        
-        FileOutputStream fos = new FileOutputStream(dest);
-        InputStream instream = client.getNetworkAsCXStream(networkuuid);
-        byte[] buffer = new byte[8 * 1024];
-        int bytesRead;
-        while ((bytesRead = instream.read(buffer)) != -1) {
-            fos.write(buffer, 0, bytesRead);
-        }
-        try {
-            instream.close();
-        }
-        catch(IOException ex){
-            _logger.error("error closing input stream", ex);
-        }
-        try {
-            fos.close();
-        }
-        catch(IOException ex){
-            _logger.error("error closing output stream", ex);
-        }
-        
-        ObjectMapper mappy = new ObjectMapper();
-        FileInputStream fis = new FileInputStream(dest);
-        return NdexRestClientUtilities.getCXNetworkFromStream(fis);
-    }
+    }    
 }

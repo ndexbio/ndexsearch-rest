@@ -11,15 +11,15 @@ import java.util.List;
  * Represents results of databases
  * @author churas
  */
-public class DatabaseResults {
+public class SourceResults {
     
-    private List<DatabaseResult> _results;
+    private List<SourceResult> _results;
 
-    public List<DatabaseResult> getResults() {
+    public List<SourceResult> getResults() {
         return _results;
     }
 
-    public void setResults(List<DatabaseResult> _results) {
+    public void setResults(List<SourceResult> _results) {
         this._results = _results;
     }
     
