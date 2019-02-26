@@ -13,9 +13,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
 import org.ndexbio.ndexsearch.rest.model.SourceResults;
-import org.ndexbio.ndexsearch.rest.model.EnrichmentQuery;
-import org.ndexbio.ndexsearch.rest.model.EnrichmentQueryResults;
-import org.ndexbio.ndexsearch.rest.model.EnrichmentQueryStatus;
+import org.ndexbio.ndexsearch.rest.model.Query;
+import org.ndexbio.ndexsearch.rest.model.QueryResults;
+import org.ndexbio.ndexsearch.rest.model.QueryStatus;
 
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
 import org.slf4j.Logger;
@@ -36,16 +36,16 @@ public class BasicSearchEngineImpl implements SearchEngine {
     private boolean _shutdown;
     
     /**
-     * This should be a map of <query UUID> => EnrichmentQuery object
+     * This should be a map of <query UUID> => Query object
      */
-    private ConcurrentHashMap<String, EnrichmentQuery> _queryTasks;
+    private ConcurrentHashMap<String, Query> _queryTasks;
     
     private ConcurrentLinkedQueue<String> _queryTaskIds;
     
     /**
-     * This should be a map of <query UUID> => EnrichmentQueryResults object
+     * This should be a map of <query UUID> => QueryResults object
      */
-    private ConcurrentHashMap<String, EnrichmentQueryResults> _queryResults;
+    private ConcurrentHashMap<String, QueryResults> _queryResults;
         
     /**
      * This should be a map of <database UUID> => Map<Gene => Set of network UUIDs>
@@ -115,19 +115,19 @@ public class BasicSearchEngineImpl implements SearchEngine {
 
     
     @Override
-    public String query(EnrichmentQuery thequery) throws SearchException {
-        
-        if (thequery.getDatabaseList() == null || thequery.getDatabaseList().isEmpty()){
-            throw new SearchException("No databases selected");
-        }
+    public String query(Query thequery) throws SearchException {
+        return null;
+        //if (thequery.getDatabaseList() == null || thequery.getDatabaseList().isEmpty()){
+        //    throw new SearchException("No databases selected");
+        //}
         // @TODO get Jing's uuid generator code that can be a poormans cache
-        String id = UUID.randomUUID().toString();
-        _queryTasks.put(id, thequery);
-        _queryTaskIds.add(id);
-        EnrichmentQueryResults eqr = new EnrichmentQueryResults(System.currentTimeMillis());
-        eqr.setStatus(EnrichmentQueryResults.SUBMITTED_STATUS);
-        _queryResults.merge(id, eqr, (oldval, newval) -> newval.updateStartTime(oldval));        
-        return id;
+        //String id = UUID.randomUUID().toString();
+        //_queryTasks.put(id, thequery);
+        //_queryTaskIds.add(id);
+        //EnrichmentQueryResults eqr = new QueryResults(System.currentTimeMillis());
+        //eqr.setStatus(QueryResults.SUBMITTED_STATUS);
+        //_queryResults.merge(id, eqr, (oldval, newval) -> newval.updateStartTime(oldval));        
+        //return id;
     }
 
     @Override
@@ -141,17 +141,17 @@ public class BasicSearchEngineImpl implements SearchEngine {
      * @param start starting index to return from. Starting index is 0.
      * @param size Number of results to return. If 0 means all from starting index so
      *             to get all set both {@code start} and {@code size} to 0.
-     * @return {@link org.ndexbio.ndexsearch.rest.model.EnrichmentQueryResults} object
+     * @return {@link org.ndexbio.ndexsearch.rest.model.QueryResults} object
      *         or null if no result could be found. 
      * @throws SearchException If there was an error getting the results
      */
     @Override
-    public EnrichmentQueryResults getQueryResults(String id, int start, int size) throws SearchException {
+    public QueryResults getQueryResults(String id, int start, int size) throws SearchException {
         return null;
     }
 
     @Override
-    public EnrichmentQueryStatus getQueryStatus(String id) throws SearchException {
+    public QueryStatus getQueryStatus(String id) throws SearchException {
         return null;
     }
 

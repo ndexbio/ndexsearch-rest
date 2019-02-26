@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jboss.resteasy.plugins.interceptors.CorsFilter;
 import org.ndexbio.ndexsearch.rest.services.Search;
-import org.ndexbio.ndexsearch.rest.services.SearchDatabase;
+import org.ndexbio.ndexsearch.rest.services.SearchSource;
 import org.ndexbio.ndexsearch.rest.services.Status;
 
 public class SearchApplication extends Application {
@@ -31,7 +31,7 @@ public class SearchApplication extends Application {
     @Override
     public Set<Class<?>> getClasses() {
         return Stream.of(Search.class,
-                SearchDatabase.class,
+                SearchSource.class,
                 Status.class,
                 OpenApiResource.class,
                 AcceptHeaderOpenApiResource.class).collect(Collectors.toSet());

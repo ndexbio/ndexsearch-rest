@@ -17,22 +17,22 @@ import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.ndexsearch.rest.model.ErrorResponse;
 
 /**
- * Returns status of Server
+ * Returns Sources that can be queried
  * @author churas
  */
 @Path("/")
-public class SearchDatabase {
+public class SearchSource {
     
-    static Logger logger = LoggerFactory.getLogger(SearchDatabase.class);
+    static Logger logger = LoggerFactory.getLogger(SearchSource.class);
     
     /**
      * Returns status of server 
      * @return {@link org.ndexbio.ndexsearch.rest.model.ServerStatus} as JSON
      */
     @GET 
-    @Path("/database")
+    @Path("/source")
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Gets list of databases that can be queried for enrichment",
+    @Operation(summary = "Gets list of sources that can be queried",
                description="Result in JSON which is a list of objects with uuid and display\n" +
 "name for database that can be queried.",
                responses = {
@@ -43,13 +43,13 @@ public class SearchDatabase {
                                 content = @Content(mediaType = MediaType.APPLICATION_JSON,
                                   schema = @Schema(implementation = ErrorResponse.class)))
                })
-    public Response getDatabaseResults() {
+    public Response getSourceResults() {
         ObjectMapper omappy = new ObjectMapper();
 
         try {
            //EnrichmentEngine enricher = Configuration.getInstance().getEnrichmentEngine();
            return Response.serverError().build();
-           //return Response.ok(omappy.writeValueAsString(enricher.getDatabaseResults()), MediaType.APPLICATION_JSON).build();
+           //return Response.ok(omappy.writeValueAsString(enricher.getSourceResults()), MediaType.APPLICATION_JSON).build();
         }
         catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error querying for system information", ex);

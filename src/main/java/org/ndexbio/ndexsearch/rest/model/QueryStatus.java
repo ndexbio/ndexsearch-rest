@@ -1,10 +1,12 @@
 package org.ndexbio.ndexsearch.rest.model;
 
+import java.util.List;
+
 /**
  *
  * @author churas
  */
-public class EnrichmentQueryStatus {
+public class QueryStatus {
     
     public static final String SUBMITTED_STATUS = "submitted";
     public static final String PROCESSING_STATUS = "processing";
@@ -16,8 +18,11 @@ public class EnrichmentQueryStatus {
     private int _progress;
     private long _wallTime;
     private long _startTime;
+    private List<String> _inputSourceList;
+    private List<String> _query;
     
-    public EnrichmentQueryStatus(){
+    
+    public QueryStatus(){
         
     }
     
@@ -26,24 +31,26 @@ public class EnrichmentQueryStatus {
      * to {@code startTime} passed into this method.
      * @param startTime Current time in milliseconds, usually set with value from {@link java.lang.System.currentTimeMillis()}
      */
-    public EnrichmentQueryStatus(long startTime){
+    public QueryStatus(long startTime){
         _startTime = startTime;
     }
     
     /**
      * Creates new {@link #EnrichmentQueryStatus} by copying data
-     * from {@code eqr} passed in
-     * @param eqr {@link org.ndexbio.ndexsearch.rest.model.EnrichmentQueryResults} to copy from
+     * from {@code qr} passed in
+     * @param qr {@link org.ndexbio.ndexsearch.rest.model.QueryResults} to copy from
      */
-    public EnrichmentQueryStatus(EnrichmentQueryResults eqr){
-        if (eqr == null){
+    public QueryStatus(QueryResults qr){
+        if (qr == null){
             return;
         }
-        _status = eqr.getStatus();
-        _message = eqr.getMessage();
-        _progress = eqr.getProgress();
-        _wallTime = eqr.getWallTime();
-        _startTime = eqr.getStartTime();
+        _status = qr.getStatus();
+        _message = qr.getMessage();
+        _progress = qr.getProgress();
+        _wallTime = qr.getWallTime();
+        _startTime = qr.getStartTime();
+        _inputSourceList = qr.getInputSourceList();
+        _query = qr.getQuery();
     }
  
     /**
@@ -52,7 +59,7 @@ public class EnrichmentQueryStatus {
      * @param eqs
      * @return Returns this object
      */
-    public EnrichmentQueryStatus updateStartTime(EnrichmentQueryStatus eqs){
+    public QueryStatus updateStartTime(QueryStatus eqs){
         if (eqs == null){
             return this;
         }
@@ -60,6 +67,22 @@ public class EnrichmentQueryStatus {
             _startTime = eqs.getStartTime();
         }
         return this;
+    }
+
+    public List<String> getInputSourceList() {
+        return _inputSourceList;
+    }
+
+    public void setInputSourceList(List<String> _inputSourceList) {
+        this._inputSourceList = _inputSourceList;
+    }
+
+    public List<String> getQuery() {
+        return _query;
+    }
+
+    public void setQuery(List<String> _query) {
+        this._query = _query;
     }
     
     public String getStatus() {

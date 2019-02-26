@@ -23,9 +23,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
-import org.ndexbio.ndexsearch.rest.model.EnrichmentQuery;
-import org.ndexbio.ndexsearch.rest.model.EnrichmentQueryResults;
-import org.ndexbio.ndexsearch.rest.model.EnrichmentQueryStatus;
+import org.ndexbio.ndexsearch.rest.model.Query;
+import org.ndexbio.ndexsearch.rest.model.QueryResults;
+import org.ndexbio.ndexsearch.rest.model.QueryStatus;
 import org.ndexbio.ndexsearch.rest.model.ErrorResponse;
 import org.ndexbio.ndexsearch.rest.model.Task;
 
@@ -46,10 +46,8 @@ public class Search {
     @Path("/")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Submits enrichment query",
-               description="Payload in JSON will have genelist which is a list of genes and databaselist which is a list of networkset names corresponding to NDEx enrichment network sets. These networks must be normalized such that “n” is gene name, “r” is gene id and “a” is alternate ids\n" +
-"Initially only signor, PID, wikipathway are supported.\n" +
-"\n" +
+    @Operation(summary = "Submits query",
+               description="Payload in JSON will have genelist which is a list of genes and sourceList which is a list of sources to query.\n" +
 "The service should upon post return 202 and set location to resource to poll for result. Which will\n" +
 "Match the URL of GET request below.",
                responses = {
@@ -63,8 +61,8 @@ public class Search {
                                 content = @Content(mediaType = MediaType.APPLICATION_JSON,
                                 schema = @Schema(implementation = ErrorResponse.class)))
                })
-    public Response requestEnrichment(@RequestBody(description="Query", required = true,
-                                                   content = @Content(schema = @Schema(implementation = EnrichmentQuery.class))) final EnrichmentQuery query) {
+    public Response requestQuery(@RequestBody(description="Query", required = true,
+                                                   content = @Content(schema = @Schema(implementation = Query.class))) final Query query) {
         ObjectMapper omappy = new ObjectMapper();
 
         try {
@@ -72,7 +70,7 @@ public class Search {
             String id = "12345";
             Task t = new Task();
             t.setId(id);
-            return Response.status(202).location(new URI("enrichment/" + id)).entity(omappy.writeValueAsString(t)).build();
+            return Response.status(202).location(new URI("/" + id)).entity(omappy.writeValueAsString(t)).build();
         } catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error requesting enrichment: " + ex.getMessage(), ex);
             
@@ -90,21 +88,21 @@ public class Search {
     @GET 
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Gets result of enrichment",
+    @Operation(summary = "Gets result of query",
                description="NOTE: For incomplete/failed jobs only Status, message, progress, and walltime will\n" +
 "be returned in JSON",
                responses = {
                    @ApiResponse(responseCode = "200",
                            description = "Success",
                            content = @Content(mediaType = MediaType.APPLICATION_JSON,
-                                schema = @Schema(implementation = EnrichmentQueryResults.class))),
+                                schema = @Schema(implementation = QueryResults.class))),
                    @ApiResponse(responseCode = "410",
                            description = "Task not found"),
                    @ApiResponse(responseCode = "500", description = "Server Error",
                                 content = @Content(mediaType = MediaType.APPLICATION_JSON,
                                 schema = @Schema(implementation = ErrorResponse.class)))
                })
-    public Response getEnrichmentQueryResults(@PathParam("id") final String id,
+    public Response getQueryResults(@PathParam("id") final String id,
             @Parameter(description = "Starting index of result, should be an integer 0 or larger") @QueryParam("start") int start,
             @Parameter(description = "Number of results to return, 0 for all") @QueryParam("size") int size) {
         ObjectMapper omappy = new ObjectMapper();
@@ -131,20 +129,20 @@ public class Search {
     @GET 
     @Path("/{id}/status")
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Gets status of enrichment",
+    @Operation(summary = "Gets status of query",
                description="This lets caller get status without getting the full result back",
                responses = {
                    @ApiResponse(responseCode = "200",
                            description = "Success",
                            content = @Content(mediaType = MediaType.APPLICATION_JSON,
-                                schema = @Schema(implementation = EnrichmentQueryStatus.class))),
+                                schema = @Schema(implementation = QueryStatus.class))),
                    @ApiResponse(responseCode = "410",
                            description = "Task not found"),
                    @ApiResponse(responseCode = "500", description = "Server Error",
                                 content = @Content(mediaType = MediaType.APPLICATION_JSON,
                                 schema = @Schema(implementation = ErrorResponse.class)))
                })
-    public Response getEnrichmentQueryStatus(@PathParam("id") final String id) {
+    public Response getQueryStatus(@PathParam("id") final String id) {
         ObjectMapper omappy = new ObjectMapper();
 
         try {
@@ -200,7 +198,7 @@ public class Search {
     
     @GET 
     @Path("/{id}/overlaynetwork")
-    @Operation(summary = "Gets result of enrichment from a specific database and network as CX",
+    @Operation(summary = "Gets result of from a specific source and network as CX",
                description="NOTE: For incomplete/failed 500 will be returned\n",
                responses = {
                    @ApiResponse(responseCode = "200",
@@ -211,7 +209,7 @@ public class Search {
                                 content = @Content(mediaType = MediaType.APPLICATION_JSON,
                                 schema = @Schema(implementation = ErrorResponse.class)))
                })
-    public Response getOverlayNetwork(@PathParam("id") final String id, @Parameter(description="UUID of database") @QueryParam("databaseUUID") final String databaseUUID,
+    public Response getOverlayNetwork(@PathParam("id") final String id, @Parameter(description="UUID of source", required = true) @QueryParam("sourceUUID") final String sourceUUID,
             @Parameter(description="UUID of network", required = true) @QueryParam("networkUUID") final String networkUUID) {
         ObjectMapper omappy = new ObjectMapper();
         InputStream in = null;

@@ -11,15 +11,12 @@ import java.util.List;
  *
  * @author churas
  */
-public class EnrichmentQueryResult {
+public class QueryResult {
     private String _networkUUID;
-    private String _databaseUUID;
-    private String _databaseName;
     private String _description;
     private int _percentOverlap;
     private int _nodes;
     private int _edges;
-    private double _pValue;
     private int _rank;
     private List<String> _hitGenes;
 
@@ -30,22 +27,6 @@ public class EnrichmentQueryResult {
 
     public void setNetworkUUID(String _networkUUID) {
         this._networkUUID = _networkUUID;
-    }
-
-    public String getDatabaseUUID() {
-        return _databaseUUID;
-    }
-
-    public void setDatabaseUUID(String _databaseUUID) {
-        this._databaseUUID = _databaseUUID;
-    }
-
-    public String getDatabaseName() {
-        return _databaseName;
-    }
-
-    public void setDatabaseName(String _databaseName) {
-        this._databaseName = _databaseName;
     }
 
     public String getDescription() {
@@ -78,14 +59,6 @@ public class EnrichmentQueryResult {
 
     public void setEdges(int _edges) {
         this._edges = _edges;
-    }
-
-    public double getpValue() {
-        return _pValue;
-    }
-
-    public void setpValue(double _pValue) {
-        this._pValue = _pValue;
     }
 
     public int getRank() {

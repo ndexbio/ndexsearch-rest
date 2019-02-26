@@ -8,9 +8,9 @@ package org.ndexbio.ndexsearch.rest.engine;
 import java.io.InputStream;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
 import org.ndexbio.ndexsearch.rest.model.SourceResults;
-import org.ndexbio.ndexsearch.rest.model.EnrichmentQuery;
-import org.ndexbio.ndexsearch.rest.model.EnrichmentQueryResults;
-import org.ndexbio.ndexsearch.rest.model.EnrichmentQueryStatus;
+import org.ndexbio.ndexsearch.rest.model.Query;
+import org.ndexbio.ndexsearch.rest.model.QueryResults;
+import org.ndexbio.ndexsearch.rest.model.QueryStatus;
 
 /**
  *
@@ -23,7 +23,7 @@ public interface SearchEngine extends Runnable {
      * @param query query to process
      * @return UUID as a string that is an identifier for query
      */
-    public String query(EnrichmentQuery query) throws SearchException;
+    public String query(Query query) throws SearchException;
     
     /**
      * Gets a summary of databases in engine
@@ -40,7 +40,7 @@ public interface SearchEngine extends Runnable {
      * @return
      * @throws SearchException  if there is an error
      */
-    public EnrichmentQueryResults getQueryResults(final String id, int start, int size) throws SearchException;
+    public QueryResults getQueryResults(final String id, int start, int size) throws SearchException;
     
     
     /**
@@ -49,7 +49,7 @@ public interface SearchEngine extends Runnable {
      * @return
      * @throws SearchException if there is an error
      */
-    public EnrichmentQueryStatus getQueryStatus(final String id) throws SearchException;
+    public QueryStatus getQueryStatus(final String id) throws SearchException;
     
     /**
      * Deletes query

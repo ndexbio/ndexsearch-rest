@@ -11,17 +11,17 @@ import java.util.List;
  *
  * @author churas
  */
-public class EnrichmentQueryResults extends EnrichmentQueryStatus {
+public class QueryResults extends QueryStatus {
 
     private int _numberOfHits;
     private int _start;
     private int _size;
-    private List<EnrichmentQueryResult> _results;
+    private List<QueryResult> _results;
 
-    public EnrichmentQueryResults(){
+    public QueryResults(){
         super();
     }
-    public EnrichmentQueryResults(long startTime){
+    public QueryResults(long startTime){
         super(startTime);
     }
     
@@ -30,10 +30,10 @@ public class EnrichmentQueryResults extends EnrichmentQueryStatus {
      * {@link #getResults()} data. That is set to value of {@code results} parameter
      * passed in.
      * @param eqr {@link org.ndexbio.ndexsearch.rest.model.EnrichmentQueryResults} to copy data from
-     * @param results List of {@link org.ndexbio.ndexsearch.rest.model.EnrichmentQueryResult} 
+     * @param results List of {@link org.ndexbio.ndexsearch.rest.model.QueryResult} 
      *        to set as results for this object
      */
-    public EnrichmentQueryResults(EnrichmentQueryResults eqr, List<EnrichmentQueryResult> results){
+    public QueryResults(QueryResults eqr, List<QueryResult> results){
         super(eqr);
         this._numberOfHits = eqr.getNumberOfHits();
         this._start = eqr.getStart();
@@ -41,7 +41,7 @@ public class EnrichmentQueryResults extends EnrichmentQueryStatus {
         _results = results;
     }
     
-    public EnrichmentQueryResults updateStartTime(EnrichmentQueryResults eqs) {
+    public QueryResults updateStartTime(QueryResults eqs) {
         super.updateStartTime(eqs);
         return this;
     }
@@ -70,11 +70,11 @@ public class EnrichmentQueryResults extends EnrichmentQueryStatus {
         this._size = _size;
     }
 
-    public List<EnrichmentQueryResult> getResults() {
+    public List<QueryResult> getResults() {
         return _results;
     }
 
-    public void setResults(List<EnrichmentQueryResult> _results) {
+    public void setResults(List<QueryResult> _results) {
         this._results = _results;
     }
     
