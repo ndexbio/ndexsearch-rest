@@ -120,11 +120,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
         }
         _logger.debug("Shutdown was invoked");
         if (this._enrichClient != null){
-           // try {
-               // _enrichClient.shutdown();
-          //  } catch(EnrichmentException ee){
-              //  _logger.error("Caught exception shutting down enrichment client", ee);
-          //  }
+            try {
+                _enrichClient.shutdown();
+            } catch(EnrichmentException ee){
+                _logger.error("Caught exception shutting down enrichment client", ee);
+            }
         }
     }
 
@@ -177,7 +177,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
         _queryResults.merge(id, updatedQueryResults, (oldval, newval) -> newval.updateStartTime(oldval));        
     }
     
-    protected SourceQueryResults processEnrichment(final String sourceName, Query query){
+    protected SourceQueryResults processEnrichment(final String sourceName, Query query) {
         EnrichmentQuery equery = new EnrichmentQuery();
         equery.setDatabaseList(Arrays.asList("ncipid"));
         equery.setGeneList(query.getGeneList());
@@ -187,7 +187,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
             String enrichTaskId = _enrichClient.query(equery);
             if (enrichTaskId == null){
                 _logger.error("Query failed");
-                throw new EnrichmentException("query failed");
+                sqr.setMessage("Enrichment failed for unknown reason");
+                sqr.setStatus(QueryResults.FAILED_STATUS);
+                sqr.setProgress(100);
             }
             sqr.setStatus(QueryResults.SUBMITTED_STATUS);
             sqr.setSourceUUID(enrichTaskId);
