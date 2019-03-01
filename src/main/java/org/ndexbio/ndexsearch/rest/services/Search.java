@@ -46,7 +46,7 @@ public class Search {
      */
     @POST 
     @Path("/")
-    //@Consumes(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Submits query",
                description="Payload in JSON will have genelist which is a list of genes and sourceList which is a list of sources to query.\n" +
@@ -68,6 +68,9 @@ public class Search {
         ObjectMapper omappy = new ObjectMapper();
 
         try {
+            // not sure why but I cannot get resteasy and jackson to worktogether to
+            // automatically translate json to Query class so I'm doing it after the
+            // fact
             Query bquery = omappy.readValue(query, Query.class);
             SearchEngine searcher = Configuration.getInstance().getSearchEngine();
             String id = searcher.query(bquery);
