@@ -40,7 +40,7 @@ public interface SearchEngine extends Runnable {
      * @return
      * @throws SearchException  if there is an error
      */
-    public QueryResults getQueryResults(final String id, int start, int size) throws SearchException;
+    public QueryResults getQueryResults(final String id, final String source, int start, int size) throws SearchException;
     
     
     /**
@@ -66,7 +66,7 @@ public interface SearchEngine extends Runnable {
      * @return
      * @throws SearchException 
      */
-    public InputStream getNetworkOverlayAsCX(final String id, final String databaseUUID, final String networkUUID) throws SearchException;
+    public InputStream getNetworkOverlayAsCX(final String id, final String sourceUUID, final String networkUUID) throws SearchException;
 
     
     /**

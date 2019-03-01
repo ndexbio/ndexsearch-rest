@@ -108,12 +108,15 @@ public class Search {
                })
     public Response getQueryResults(@PathParam("id") final String id,
             @Parameter(description = "Starting index of result, should be an integer 0 or larger") @QueryParam("start") int start,
-            @Parameter(description = "Number of results to return, 0 for all") @QueryParam("size") int size) {
+            @Parameter(description = "Number of results to return, 0 for all") @QueryParam("size") int size,
+            @Parameter(description = "Comma delimited list of sources to return results from For "
+                    + "start/size argument, results will be returned in order of listed sources "
+                    + "or by order in original query") @QueryParam("source") final String source) {
         ObjectMapper omappy = new ObjectMapper();
 
         try {
             SearchEngine searcher = Configuration.getInstance().getSearchEngine();
-            QueryResults eqr = searcher.getQueryResults(id, start, size);
+            QueryResults eqr = searcher.getQueryResults(id, source, start, size);
             if (eqr == null){
                 return Response.status(410).build();
             }
