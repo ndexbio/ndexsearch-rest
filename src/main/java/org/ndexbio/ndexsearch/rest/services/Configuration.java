@@ -43,8 +43,11 @@ public class Configuration {
     private static String _alternateConfigurationFile;
     private static NdexRestClientModelAccessLayer _client;
     private static SearchEngine _searchEngine;
-    private static String _enrichDatabaseDir;
-    private static String _enrichTaskDir;
+
+    private static String _searchDatabaseDir;
+    private static String _searchTaskDir;
+    
+    
     /**
      * Constructor that attempts to get configuration from properties file
      * specified via configPath
@@ -62,8 +65,8 @@ public class Configuration {
             _logger.error("Unable to read configuration " + configPath, io);
         }
         
-        _enrichDatabaseDir = props.getProperty(Configuration.DATABASE_DIR, "/tmp");
-        _enrichTaskDir = props.getProperty(Configuration.TASK_DIR);
+        _searchDatabaseDir = props.getProperty(Configuration.DATABASE_DIR, "/tmp");
+        _searchTaskDir = props.getProperty(Configuration.TASK_DIR);
         
         _client = getNDExClient(props);
         
@@ -80,7 +83,31 @@ public class Configuration {
         return _searchEngine;
     }
     
+    public String getSearchDatabaseDirectory(){
+        return _searchDatabaseDir;
+    }
+    
+    public String getSearchTaskDirectory(){
+        return _searchTaskDir;
+    }
 
+    public File getSourceResultsFile(){
+        return new File(this.getSearchDatabaseDirectory()+ File.separator +
+                              Configuration.SOURCE_RESULTS_JSON_FILE);
+    }
+    
+    public InternalSourceResults getSourceResults(){
+        ObjectMapper mapper = new ObjectMapper();
+        File dbres = getSourceResultsFile();
+        try {
+            return mapper.readValue(dbres, InternalSourceResults.class);
+        }
+        catch(IOException io){
+            _logger.error("caught io exception trying to load " + dbres.getAbsolutePath(), io);
+        }
+        return null;
+    }
+    
     /**
      * Using configuration create 
      * @return ndex client
@@ -91,7 +118,7 @@ public class Configuration {
             String user = props.getProperty(Configuration.NDEX_USER,"");
             String pass = props.getProperty(Configuration.NDEX_PASS,"");
             String server = props.getProperty(Configuration.NDEX_SERVER,"");
-            String useragent = props.getProperty(Configuration.NDEX_USERAGENT,"Enrichment");
+            String useragent = props.getProperty(Configuration.NDEX_USERAGENT,"IntegratedSearch/0.1.0");
             NdexRestClient nrc = new NdexRestClient(user, pass, server, useragent);
             _client = new NdexRestClientModelAccessLayer(nrc);
             return _client;
@@ -119,14 +146,15 @@ public class Configuration {
             
             try {
                 String configPath = null;
-                try {
-                    configPath = System.getenv(Configuration.NDEX_SEARCH_CONFIG);
-                } catch(SecurityException se){
-                    _logger.error("Caught security exception ", se);
-                }
                 if (_alternateConfigurationFile != null){
                     configPath = _alternateConfigurationFile;
                     _logger.info("Alternate configuration path specified: " + configPath);
+                } else {
+                    try {
+                        configPath = System.getenv(Configuration.NDEX_SEARCH_CONFIG);
+                    } catch(SecurityException se){
+                        _logger.error("Caught security exception ", se);
+                    }
                 }
                 if (configPath == null){
                     InitialContext ic = new InitialContext();

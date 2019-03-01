@@ -5,11 +5,10 @@
  */
 package org.ndexbio.ndexsearch.rest.engine;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
+import org.ndexbio.enrichment.rest.client.EnrichmentRestClientImpl;
 import org.ndexbio.ndexsearch.rest.searchmodel.SourceResult;
 import org.ndexbio.ndexsearch.rest.searchmodel.InternalSourceResults;
-import org.ndexbio.ndexsearch.rest.searchmodel.InternalGeneMap;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
 import org.slf4j.Logger;
@@ -25,15 +24,18 @@ public class BasicSearchEngineFactory {
 
     private String _dbDir;
     private String _taskDir;
-    private NdexRestClientModelAccessLayer _client;
-    private InternalSourceResults _databaseResults;
+    private NdexRestClientModelAccessLayer _keywordclient;
+    private InternalSourceResults _sourceResults;
     
     /**
      * Temp directory where query results will temporarily be stored.
      * @param tmpDir 
      */
     public BasicSearchEngineFactory(Configuration config){
-        
+        _keywordclient = config.getNDExClient();
+        _dbDir = config.getSearchDatabaseDirectory();
+        _taskDir = config.getSearchTaskDirectory();
+        _sourceResults = config.getSourceResults();
     }
     
     
@@ -41,14 +43,15 @@ public class BasicSearchEngineFactory {
      * Creates SearchEngine
      * @return 
      */
-    public SearchEngine getEnrichmentEngine() throws Exception {
-        BasicSearchEngineImpl searcher = new BasicSearchEngineImpl(_dbDir,
-                _taskDir,_client);
-        searcher.setDatabaseResults(_databaseResults);
-        for (SourceResult dr : _databaseResults.getResults()){
-            _logger.debug("Loading: " + dr.getName());
-            _logger.debug("Done with loading");
+    public SearchEngine getSearchEngine() throws Exception {
+        EnrichmentRestClient enrichClient = null;
+        for (SourceResult sr : _sourceResults.getResults()){
+            if (sr.getName().equals(SourceResult.ENRICHMENT_SERVICE)){
+                enrichClient = new EnrichmentRestClientImpl(sr.getEndPoint(), "");
+            }
         }
+        BasicSearchEngineImpl searcher = new BasicSearchEngineImpl(_dbDir,
+                _taskDir, _sourceResults,_keywordclient, enrichClient);
         return searcher;
     }
        

@@ -12,6 +12,7 @@ import java.util.jar.Manifest;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
+import org.ndexbio.ndexsearch.rest.engine.BasicSearchEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ndexbio.ndexsearch.rest.engine.SearchEngine;
@@ -32,19 +33,19 @@ public class SearchHttpServletDispatcher extends HttpServletDispatcher {
     public SearchHttpServletDispatcher(){
         super();
         _logger.info("In constructor");
-        //createAndStartSearchEngine();
+        createAndStartSearchEngine();
     }
     
     protected void createAndStartSearchEngine() {
-        
+        BasicSearchEngineFactory fac = new BasicSearchEngineFactory(Configuration.getInstance());
         try {
             _logger.debug("Creating Search Engine from factory");
-            //_searchEngine = fac.getSearchEngine();
+            _searchEngine = fac.getSearchEngine();
             _logger.debug("Starting Search Engine thread");
-            //_searchEngineThread = new Thread(_searchEngine);
-            //_searchEngineThread.start();
+            _searchEngineThread = new Thread(_searchEngine);
+            _searchEngineThread.start();
             _logger.debug("Enrichment Engine thread running id => " + Long.toString(_searchEngineThread.getId()));
-            //Configuration.getInstance().setSearchEngine(_searchEngine);
+            Configuration.getInstance().setSearchEngine(_searchEngine);
         }
         catch(Exception ex){
             _logger.error("Unable to start enrichment engine", ex);
@@ -55,7 +56,7 @@ public class SearchHttpServletDispatcher extends HttpServletDispatcher {
     public void init(javax.servlet.ServletConfig servletConfig) throws ServletException {
         super.init(servletConfig);
         _logger.info("Entering init()");
-        //updateVersion();
+        updateVersion();
         
         _logger.info("Exiting init()");
     }

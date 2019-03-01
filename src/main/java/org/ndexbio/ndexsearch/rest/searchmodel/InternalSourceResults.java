@@ -5,63 +5,19 @@
  */
 package org.ndexbio.ndexsearch.rest.searchmodel;
 
-import java.util.List;
-import java.util.Map;
-
 /**
  *
  * @author churas
  */
 public class InternalSourceResults extends SourceResults {
     
-    private Map<String, String> _databaseAccountOwnerMap;
-    private List<InternalGeneMap> _geneMapList;
-    private Map<String, Integer> _databaseUniqueGeneCount;
-    private int _universeUniqueGeneCount;
+    private String _foo;
 
-    /**
-     * Gets map of account owner for networks on NDEx for given databases
-     * The map is <database uuid> => <account name>
-     * @return
-     */
-    public Map<String, String> getDatabaseAccountOwnerMap() {
-        return _databaseAccountOwnerMap;
+    public String getFoo() {
+        return _foo;
     }
 
-    /**
-     * Gets map of account owner for networks on NDEx for given databases
-     * The map is <database uuid> => <account name>
-     * @return
-     */
-    public void setDatabaseAccountOwnerMap(Map<String, String> _databaseAccountOwnerMap) {
-        this._databaseAccountOwnerMap = _databaseAccountOwnerMap;
+    public void setFoo(String _foo) {
+        this._foo = _foo;
     }
-
-    public List<InternalGeneMap> getGeneMapList() {
-        return _geneMapList;
-    }
-
-    public void setGeneMapList(List<InternalGeneMap> _geneMapList) {
-        this._geneMapList = _geneMapList;
-    }
-
-    public Map<String, Integer> getDatabaseUniqueGeneCount() {
-        return _databaseUniqueGeneCount;
-    }
-
-    public void setDatabaseUniqueGeneCount(Map<String, Integer> _databaseUniqueGeneCount) {
-        this._databaseUniqueGeneCount = _databaseUniqueGeneCount;
-    }
-
-    public int getUniverseUniqueGeneCount() {
-        return _universeUniqueGeneCount;
-    }
-
-    public void setUniverseUniqueGeneCount(int _universeUniqueGeneCount) {
-        this._universeUniqueGeneCount = _universeUniqueGeneCount;
-    }
-
-    
-    
-    
 }

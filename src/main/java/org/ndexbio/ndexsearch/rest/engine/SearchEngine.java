@@ -30,7 +30,7 @@ public interface SearchEngine extends Runnable {
      * @return SourceResults object
      * @throws SearchException if there is an error
      */
-    public SourceResults getDatabaseResults() throws SearchException;
+    public SourceResults getSourceResults() throws SearchException;
     
     /**
      * Gets query results

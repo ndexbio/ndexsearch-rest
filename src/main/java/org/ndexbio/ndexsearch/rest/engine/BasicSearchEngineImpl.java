@@ -7,11 +7,13 @@ package org.ndexbio.ndexsearch.rest.engine;
 
 import java.io.InputStream;
 import java.util.HashSet;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
+import org.ndexbio.enrichment.rest.model.exceptions.EnrichmentException;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
+import org.ndexbio.ndexsearch.rest.searchmodel.InternalSourceResults;
 import org.ndexbio.ndexsearch.rest.searchmodel.SourceResults;
 import org.ndexbio.ndexsearch.rest.searchmodel.Query;
 import org.ndexbio.ndexsearch.rest.searchmodel.QueryResults;
@@ -52,22 +54,26 @@ public class BasicSearchEngineImpl implements SearchEngine {
      */
     private ConcurrentHashMap<String, ConcurrentHashMap<String, HashSet<String>>> _databases;
     
-    private AtomicReference<SourceResults> _databaseResults;
-    private NdexRestClientModelAccessLayer _client;
+    private AtomicReference<InternalSourceResults> _sourceResults;
+    private NdexRestClientModelAccessLayer _keywordclient;
+    private EnrichmentRestClient _enrichClient;
     
     private long _threadSleep = 10;
     
     public BasicSearchEngineImpl(final String dbDir,
             final String taskDir,
-            NdexRestClientModelAccessLayer client){
+            InternalSourceResults sourceResults,
+            NdexRestClientModelAccessLayer keywordclient,
+            EnrichmentRestClient enrichClient){
         _shutdown = false;
         _dbDir = dbDir;
         _taskDir = taskDir;
-        _client = client;
+        _keywordclient = keywordclient;
         _queryTasks = new ConcurrentHashMap<>();
         _queryResults = new ConcurrentHashMap<>();
-        _databaseResults = new AtomicReference<>();
+        _sourceResults = new AtomicReference<>();
         _queryTaskIds = new ConcurrentLinkedQueue<>();
+        _sourceResults.set(sourceResults);
     }
     
     /**
@@ -98,9 +104,16 @@ public class BasicSearchEngineImpl implements SearchEngine {
                 threadSleep();
                 continue;
             }
-            //processQuery(id,_queryTasks.remove(id));            
+            processQuery(id,_queryTasks.remove(id));            
         }
         _logger.debug("Shutdown was invoked");
+        if (this._enrichClient != null){
+            try {
+                _enrichClient.shutdown();
+            } catch(EnrichmentException ee){
+                _logger.error("Caught exception shutting down enrichment client", ee);
+            }
+        }
     }
 
     @Override
@@ -109,11 +122,14 @@ public class BasicSearchEngineImpl implements SearchEngine {
     }
     
     
-    public void setDatabaseResults(SourceResults dr){
-        _databaseResults.set(dr);
+    public void setDatabaseResults(InternalSourceResults dr){
+        _sourceResults.set(dr);
     }
 
-    
+    protected void processQuery(final String id, Query query){
+        
+        
+    }
     @Override
     public String query(Query thequery) throws SearchException {
         return null;
@@ -131,8 +147,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
     }
 
     @Override
-    public SourceResults getDatabaseResults() throws SearchException {
-        return _databaseResults.get();
+    public SourceResults getSourceResults() throws SearchException {
+        SourceResults sr = new SourceResults(_sourceResults.get());
+        return sr;
     }
     
     /**

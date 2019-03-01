@@ -15,6 +15,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.core.Response;
 import org.ndexbio.ndexsearch.rest.searchmodel.SourceResults;
 import org.ndexbio.enrichment.rest.model.ErrorResponse;
+import org.ndexbio.ndexsearch.rest.engine.SearchEngine;
 
 /**
  * Returns Sources that can be queried
@@ -47,9 +48,8 @@ public class SearchSource {
         ObjectMapper omappy = new ObjectMapper();
 
         try {
-           //EnrichmentEngine enricher = Configuration.getInstance().getEnrichmentEngine();
-           return Response.serverError().build();
-           //return Response.ok(omappy.writeValueAsString(enricher.getSourceResults()), MediaType.APPLICATION_JSON).build();
+           SearchEngine searcher = Configuration.getInstance().getSearchEngine();
+           return Response.ok(omappy.writeValueAsString(searcher.getSourceResults()), MediaType.APPLICATION_JSON).build();
         }
         catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error querying for system information", ex);

@@ -10,6 +10,11 @@ package org.ndexbio.ndexsearch.rest.searchmodel;
  * @author churas
  */
 public class SourceResult {
+    
+    public static final String ENRICHMENT_SERVICE = "enrichment";
+    public static final String KEYWORD_SERVICE = "keyword";
+    public static final String INTERACTOME_SERVER = "interactome";
+    
     private String _uuid;
     private String _description;
     private String _name;

@@ -25,6 +25,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import org.ndexbio.enrichment.rest.model.Task;
 import org.ndexbio.enrichment.rest.model.ErrorResponse;
+import org.ndexbio.ndexsearch.rest.engine.SearchEngine;
 import org.ndexbio.ndexsearch.rest.searchmodel.Query;
 import org.ndexbio.ndexsearch.rest.searchmodel.QueryResults;
 import org.ndexbio.ndexsearch.rest.searchmodel.QueryStatus;
@@ -66,11 +67,10 @@ public class Search {
         ObjectMapper omappy = new ObjectMapper();
 
         try {
-            //EnrichmentEngine enricher = Configuration.getInstance().getEnrichmentEngine();
-            String id = "12345";
+            SearchEngine searcher = Configuration.getInstance().getSearchEngine();
             Task t = new Task();
-            t.setId(id);
-            return Response.status(202).location(new URI("/" + id)).entity(omappy.writeValueAsString(t)).build();
+            t.setId(searcher.query(query));
+            return Response.status(202).location(new URI("/" + t.getId())).entity(omappy.writeValueAsString(t)).build();
         } catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error requesting enrichment: " + ex.getMessage(), ex);
             
@@ -82,8 +82,6 @@ public class Search {
             }
         }
     }
-    
-    
 
     @GET 
     @Path("/{id}")
@@ -108,12 +106,12 @@ public class Search {
         ObjectMapper omappy = new ObjectMapper();
 
         try {
-            //EnrichmentEngine enricher = Configuration.getInstance().getEnrichmentEngine();
-            //EnrichmentQueryResults eqr = enricher.getQueryResults(id, start, size);
-            //if (eqr == null){
-            return Response.status(410).build();
-            //}
-            //return Response.ok().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(eqr)).build();
+            SearchEngine searcher = Configuration.getInstance().getSearchEngine();
+            QueryResults eqr = searcher.getQueryResults(id, start, size);
+            if (eqr == null){
+                return Response.status(410).build();
+            }
+            return Response.ok().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(eqr)).build();
         }
         catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error querying for system information", ex);
@@ -146,12 +144,12 @@ public class Search {
         ObjectMapper omappy = new ObjectMapper();
 
         try {
-            //EnrichmentEngine enricher = Configuration.getInstance().getEnrichmentEngine();
-            //EnrichmentQueryStatus eqs = enricher.getQueryStatus(id);
-            //if (eqs ==  null){
-            return Response.status(410).build();
-            //}
-            //return Response.ok().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(eqs)).build();
+            SearchEngine searcher = Configuration.getInstance().getSearchEngine();
+            QueryStatus eqs = searcher.getQueryStatus(id);
+            if (eqs ==  null){
+              return Response.status(410).build();
+            }
+            return Response.ok().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(eqs)).build();
         }
         catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error querying for system information", ex);
@@ -181,8 +179,8 @@ public class Search {
         ObjectMapper omappy = new ObjectMapper();
 
         try {
-            //EnrichmentEngine enricher = Configuration.getInstance().getEnrichmentEngine();
-            //enricher.delete(id);
+            SearchEngine searcher = Configuration.getInstance().getSearchEngine();
+            searcher.delete(id);
             return Response.ok().build();
         }
         catch(Exception ex){
@@ -214,12 +212,12 @@ public class Search {
         ObjectMapper omappy = new ObjectMapper();
         InputStream in = null;
         try {
-            //EnrichmentEngine enricher = Configuration.getInstance().getEnrichmentEngine();
-            //in = enricher.getNetworkOverlayAsCX(id, databaseUUID, networkUUID);
-            //if (in == null){
-            return Response.status(410).build();
-            //}
-            //return Response.ok().type(MediaType.APPLICATION_JSON).entity(in).build();
+            SearchEngine searcher = Configuration.getInstance().getSearchEngine();
+            in = searcher.getNetworkOverlayAsCX(id, sourceUUID, networkUUID);
+            if (in == null){
+              return Response.status(410).build();
+            }
+            return Response.ok().type(MediaType.APPLICATION_JSON).entity(in).build();
         }
         catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error querying for system information", ex);
