@@ -13,7 +13,7 @@ import org.jboss.resteasy.mock.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
-import org.ndexbio.ndexsearch.rest.searchmodel.ServerStatus;
+import org.ndexbio.ndexsearch.rest.model.ServerStatus;
 
 /**
  *

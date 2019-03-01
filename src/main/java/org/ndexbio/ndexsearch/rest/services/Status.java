@@ -17,7 +17,7 @@ import java.io.File;
 import java.lang.management.OperatingSystemMXBean;
 import javax.ws.rs.core.Response;
 import org.ndexbio.enrichment.rest.model.ErrorResponse;
-import org.ndexbio.ndexsearch.rest.searchmodel.ServerStatus;
+import org.ndexbio.ndexsearch.rest.model.ServerStatus;
 
 /**
  * Returns status of Server
@@ -30,7 +30,7 @@ public class Status {
     
     /**
      * Returns status of server 
-     * @return {@link org.ndexbio.ndexsearch.rest.searchmodel.ServerStatus} as JSON
+     * @return {@link org.ndexbio.ndexsearch.rest.model.ServerStatus} as JSON
      */
     @GET // This annotation indicates GET request
     @Path("/status")

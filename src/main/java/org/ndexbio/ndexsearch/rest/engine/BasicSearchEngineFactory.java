@@ -7,10 +7,11 @@ package org.ndexbio.ndexsearch.rest.engine;
 
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClientImpl;
-import org.ndexbio.ndexsearch.rest.searchmodel.SourceResult;
-import org.ndexbio.ndexsearch.rest.searchmodel.InternalSourceResults;
+import org.ndexbio.ndexsearch.rest.model.SourceResult;
+import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

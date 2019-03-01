@@ -27,7 +27,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.ndexbio.enrichment.rest.client.EnrichmentRestClientImpl;
 import org.ndexbio.enrichment.rest.model.DatabaseResult;
 import org.ndexbio.enrichment.rest.model.DatabaseResults;
 import org.ndexbio.enrichment.rest.model.EnrichmentQuery;
@@ -35,8 +34,8 @@ import org.ndexbio.enrichment.rest.model.EnrichmentQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.ndexbio.ndexsearch.rest.searchmodel.SourceResult;
-import org.ndexbio.ndexsearch.rest.searchmodel.InternalSourceResults;
+import org.ndexbio.ndexsearch.rest.model.SourceResult;
+import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
 import org.ndexbio.ndexsearch.rest.services.SearchHttpServletDispatcher;
 
@@ -123,7 +122,7 @@ public class App {
                 System.out.flush();
                 return;
             }
-            
+            /**
             if (mode.equals(TESTQUERY_MODE)){
                 System.out.println("Testing REST endpoints with a basic query");
                 Configuration.setAlternateConfigurationFile(optionSet.valueOf(CONF).toString());
@@ -140,7 +139,7 @@ public class App {
                 }
                 client.shutdown();
                 return;
-            }
+            }*/
                         
             if (mode.equals(RUNSERVER_MODE)){
                 Configuration.setAlternateConfigurationFile(optionSet.valueOf(CONF).toString());
@@ -170,6 +169,7 @@ public class App {
                 HashMap<String, String> initMap = new HashMap<>();
                 initMap.put("resteasy.servlet.mapping.prefix", "/");
                 initMap.put("javax.ws.rs.Application", "org.ndexbio.ndexsearch.rest.SearchApplication");
+                initMap.put("com.sun.jersey.api.json.POJOMappingFeature", "true");
                 final ServletHolder restEasyServlet = new ServletHolder(
                      new SearchHttpServletDispatcher());
                 

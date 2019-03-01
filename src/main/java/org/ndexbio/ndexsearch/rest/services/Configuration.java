@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.Properties;
 import javax.naming.InitialContext;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
-import org.ndexbio.ndexsearch.rest.searchmodel.InternalSourceResults;
+import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
 import org.ndexbio.model.exceptions.NdexException;
 import org.ndexbio.rest.client.NdexRestClient;
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;

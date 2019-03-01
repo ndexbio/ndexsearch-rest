@@ -1,4 +1,4 @@
-package org.ndexbio.ndexsearch.rest.searchmodel;
+package org.ndexbio.ndexsearch.rest.model;
 
 import java.util.List;
 

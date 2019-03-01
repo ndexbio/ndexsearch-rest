@@ -22,7 +22,7 @@
         <logback.version>1.2.3</logback.version>
         <commons-math3.version>3.6.1</commons-math3.version>
         <commons-io.version>2.6</commons-io.version>
-        <ndex-object-model.version>2.4.0</ndex-object-model.version>
+        <ndex-object-model.version>2.4.1a1</ndex-object-model.version>
         <ndex-enrichment-rest-model.version>0.1.0</ndex-enrichment-rest-model.version>
         <ndex-enrichment-rest-client.version>0.1.0</ndex-enrichment-rest-client.version>
         <ndex-java-client.version>2.4.0</ndex-java-client.version>
@@ -39,16 +39,6 @@
         </repository>
     </repositories>
     <dependencies>
-        <dependency>
-            <groupId>org.ndexbio.enrichment.rest.model</groupId>
-            <artifactId>ndex-enrichment-rest-model</artifactId>
-            <version>${ndex-enrichment-rest-model.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.ndexbio.enrichment.rest.client</groupId>
-            <artifactId>ndex-enrichment-rest-client</artifactId>
-            <version>${ndex-enrichment-rest-client.version}</version>
-        </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
                 <artifactId>javax.servlet-api</artifactId>
@@ -76,6 +66,38 @@
             <artifactId>ndex-object-model</artifactId>
             <version>${ndex-object-model.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.ndexbio.enrichment.rest.client</groupId>
+            <artifactId>ndex-enrichment-rest-client</artifactId>
+            <version>${ndex-enrichment-rest-client.version}</version>
+        </dependency>
+        <!--resteasy-->
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxrs</artifactId>
+            <version>${resteasy.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-client</artifactId>
+            <version>${resteasy.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxb-provider</artifactId>
+            <version>${resteasy.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jackson2-provider</artifactId>
+            <version>${resteasy.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-multipart-provider</artifactId>
+            <version>${resteasy.version}</version>
+        </dependency> 
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
@@ -108,32 +130,6 @@
             <version>${jackson.version}</version>
         </dependency>
         
-        <!--resteasy-->
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxrs</artifactId>
-            <version>${resteasy.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-client</artifactId>
-            <version>${resteasy.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxb-provider</artifactId>
-            <version>${resteasy.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jackson2-provider</artifactId>
-            <version>${resteasy.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-multipart-provider</artifactId>
-            <version>${resteasy.version}</version>
-        </dependency> 
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-jaxrs2</artifactId>
@@ -190,6 +186,11 @@
             <artifactId>hamcrest-core</artifactId>
             <version>${hamcrest.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ndexbio.enrichment.rest.model</groupId>
+            <artifactId>ndex-enrichment-rest-model</artifactId>
+            <version>${ndex-enrichment-rest-model.version}</version>
         </dependency>
     </dependencies>
     <scm>

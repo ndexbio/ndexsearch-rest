@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.ndexbio.ndexsearch.rest.searchmodel;
+package org.ndexbio.ndexsearch.rest.model;
 
 import java.util.List;
 
@@ -20,9 +20,9 @@ public class SourceResults {
     }
     
     /**
-     * Performs a shallow copy of {@link org.ndexbio.ndexsearch.rest.searchmodel.InternalSourceResults}
+     * Performs a shallow copy of {@link org.ndexbio.ndexsearch.rest.model.InternalSourceResults}
      * passed in via {@code isr} parameter
-     * @param isr {@link org.ndexbio.ndexsearch.rest.searchmodel.InternalSourceResults} object to copy from
+     * @param isr {@link org.ndexbio.ndexsearch.rest.model.InternalSourceResults} object to copy from
      */
     public SourceResults(InternalSourceResults isr){
         if (isr == null){

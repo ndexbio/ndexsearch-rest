@@ -5,7 +5,6 @@
  */
 package org.ndexbio.ndexsearch.rest.model;
 
-import org.ndexbio.ndexsearch.rest.searchmodel.ServerStatus;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 

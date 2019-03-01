@@ -26,14 +26,15 @@ import javax.ws.rs.core.Response;
 import org.ndexbio.enrichment.rest.model.Task;
 import org.ndexbio.enrichment.rest.model.ErrorResponse;
 import org.ndexbio.ndexsearch.rest.engine.SearchEngine;
-import org.ndexbio.ndexsearch.rest.searchmodel.Query;
-import org.ndexbio.ndexsearch.rest.searchmodel.QueryResults;
-import org.ndexbio.ndexsearch.rest.searchmodel.QueryStatus;
+import org.ndexbio.ndexsearch.rest.model.Query;
+import org.ndexbio.ndexsearch.rest.model.QueryResults;
+import org.ndexbio.ndexsearch.rest.model.QueryStatus;
 
 /**
  * Returns status of Server
  * @author churas
  */
+@org.jboss.resteasy.annotations.providers.jaxb.IgnoreMediaTypes("application/*+json")
 @Path("/")
 public class Search {
     
@@ -41,11 +42,11 @@ public class Search {
     
     /**
      * Returns status of server 
-     * @return {@link org.ndexbio.ndexsearch.rest.searchmodel.ServerStatus} as JSON
+     * @return {@link org.ndexbio.ndexsearch.rest.model.ServerStatus} as JSON
      */
     @POST 
     @Path("/")
-    @Consumes(MediaType.APPLICATION_JSON)
+    //@Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Submits query",
                description="Payload in JSON will have genelist which is a list of genes and sourceList which is a list of sources to query.\n" +
@@ -63,14 +64,16 @@ public class Search {
                                 schema = @Schema(implementation = ErrorResponse.class)))
                })
     public Response requestQuery(@RequestBody(description="Query", required = true,
-                                                   content = @Content(schema = @Schema(implementation = Query.class))) final Query query) {
+                                                   content = @Content(schema = @Schema(implementation = Query.class))) final String query) {
         ObjectMapper omappy = new ObjectMapper();
 
         try {
+            Query bquery = omappy.readValue(query, Query.class);
             SearchEngine searcher = Configuration.getInstance().getSearchEngine();
+            String id = searcher.query(bquery);
             Task t = new Task();
-            t.setId(searcher.query(query));
-            return Response.status(202).location(new URI("/" + t.getId())).entity(omappy.writeValueAsString(t)).build();
+            t.setId(id);
+            return Response.status(202).location(new URI("/" + id)).type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(t)).build();
         } catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error requesting enrichment: " + ex.getMessage(), ex);
             

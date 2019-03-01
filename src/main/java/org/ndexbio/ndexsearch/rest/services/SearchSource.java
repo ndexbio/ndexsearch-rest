@@ -13,7 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.core.Response;
-import org.ndexbio.ndexsearch.rest.searchmodel.SourceResults;
+import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.enrichment.rest.model.ErrorResponse;
 import org.ndexbio.ndexsearch.rest.engine.SearchEngine;
 
@@ -28,7 +28,7 @@ public class SearchSource {
     
     /**
      * Returns status of server 
-     * @return {@link org.ndexbio.ndexsearch.rest.searchmodel.ServerStatus} as JSON
+     * @return {@link org.ndexbio.ndexsearch.rest.model.ServerStatus} as JSON
      */
     @GET 
     @Path("/source")
