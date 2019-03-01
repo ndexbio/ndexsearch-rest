@@ -20,6 +20,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
 import org.ndexbio.enrichment.rest.model.EnrichmentQuery;
+import org.ndexbio.enrichment.rest.model.EnrichmentQueryResult;
+import org.ndexbio.enrichment.rest.model.EnrichmentQueryResults;
 import org.ndexbio.enrichment.rest.model.exceptions.EnrichmentException;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
 import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
@@ -27,6 +29,7 @@ import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.ndexsearch.rest.model.Query;
 import org.ndexbio.ndexsearch.rest.model.QueryResults;
 import org.ndexbio.ndexsearch.rest.model.QueryStatus;
+import org.ndexbio.ndexsearch.rest.model.SourceQueryResult;
 import org.ndexbio.ndexsearch.rest.model.SourceQueryResults;
 import org.ndexbio.ndexsearch.rest.model.SourceResult;
 
@@ -171,6 +174,25 @@ public class BasicSearchEngineImpl implements SearchEngine {
         }
         return qr;
     }
+    
+    protected QueryResults getQueryResultsFromDbOrFilesystem(final String id){
+        QueryResults qr = _queryResults.get(id);
+        if (qr != null){
+            return qr;
+        }
+        ObjectMapper mappy = new ObjectMapper();
+        File qrFile = new File(getQueryResultsFilePath(id));
+        if (qrFile.isFile() == false){
+            _logger.error(qrFile.getAbsolutePath() + " is not a file");
+            return null;
+        }
+        try {
+            return mappy.readValue(qrFile, QueryResults.class);
+        }catch(IOException io){
+            _logger.error("Caught exception trying to load " +qrFile.getAbsolutePath(), io);
+        }
+        return null;
+    }
 
     protected void updateQueryResultsInDb(final String id,
             QueryResults updatedQueryResults){
@@ -261,6 +283,60 @@ public class BasicSearchEngineImpl implements SearchEngine {
     }
     
     /**
+     * 
+     * @param sqRes
+     * @return number of hits for this source
+     */
+    protected int updateEnrichmentSourceQueryResults(SourceQueryResults sqRes){
+        try {
+            EnrichmentQueryResults qr = this._enrichClient.getQueryResults(sqRes.getSourceUUID(), 0, 0);
+            sqRes.setMessage(qr.getMessage());
+            sqRes.setNumberOfHits(qr.getNumberOfHits());
+            sqRes.setProgress(qr.getProgress());
+            sqRes.setStatus(qr.getStatus());
+            
+            sqRes.setWallTime(qr.getWallTime());
+            List<SourceQueryResult> sqResults = new LinkedList<SourceQueryResult>();
+            for (EnrichmentQueryResult qRes : qr.getResults()){
+                SourceQueryResult sqr = new SourceQueryResult();
+                sqr.setDescription(qRes.getDescription());
+                sqr.setEdges(qRes.getEdges());
+                sqr.setHitGenes(qRes.getHitGenes());
+                sqr.setNetworkUUID(qRes.getNetworkUUID());
+                sqr.setNodes(qRes.getNodes());
+                sqr.setPercentOverlap(qRes.getPercentOverlap());
+                sqr.setRank(qRes.getRank());
+                sqResults.add(sqr);
+            }
+            sqRes.setResults(sqResults);
+            return qr.getNumberOfHits();
+        }catch(EnrichmentException ee){
+            _logger.error("caught exception", ee);
+        }
+        return 0;
+    }
+    protected void checkAndUpdateQueryResults(QueryResults qr){
+        // if its complete just return
+        if (qr.getStatus().equals(QueryResults.COMPLETE_STATUS)){
+            return;
+        }
+        if (qr.getStatus().equals(QueryResults.FAILED_STATUS)){
+            return;
+        }
+        int hitCount = 0;
+        for (SourceQueryResults sqRes : qr.getSources()){
+            _logger.debug("Examining status of " + sqRes.getSourceName());
+            if (sqRes.getProgress() == 100){
+                continue;
+            }
+            if (sqRes.getSourceName().equals("enrichment")){
+                hitCount += updateEnrichmentSourceQueryResults(sqRes);
+            }
+        }
+        qr.setNumberOfHits(hitCount);
+    }
+    
+    /**
      * Returns
      * @param id Id of the query. 
      * @param start starting index to return from. Starting index is 0.
@@ -272,12 +348,37 @@ public class BasicSearchEngineImpl implements SearchEngine {
      */
     @Override
     public QueryResults getQueryResults(String id, int start, int size) throws SearchException {
-        return null;
+        _logger.info("Got queryresults request" + id);
+        QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
+        if (qr == null){
+            return null;
+        }
+        if (start < 0){
+            throw new SearchException("start parameter must be value of 0 or greater");
+        }
+        if (size < 0){
+            throw new SearchException("size parameter must be value of 0 or greater");
+        }
+        checkAndUpdateQueryResults(qr);
+
+        if (start == 0 && size == 0){
+            return qr;
+        }
+        // TODO need to filter by start and size
+        return qr;
     }
 
     @Override
     public QueryStatus getQueryStatus(String id) throws SearchException {
-        return null;
+        QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
+        if (qr == null){
+            return null;
+        }
+        checkAndUpdateQueryResults(qr);
+        for (SourceQueryResults sqr : qr.getSources()){
+            sqr.setResults(null);
+        }
+        return qr;
     }
 
     @Override

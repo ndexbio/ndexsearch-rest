@@ -146,7 +146,7 @@ public class App {
                 Properties props = getPropertiesFromConf(optionSet.valueOf(CONF).toString());
                 ch.qos.logback.classic.Logger rootLog = 
         		(ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-		rootLog.setLevel(Level.DEBUG);
+		rootLog.setLevel(Level.INFO);
                 String logDir = props.getProperty(App.RUNSERVER_LOGDIR, ".");
                 RolloverFileOutputStream os = new RolloverFileOutputStream(logDir + File.separator + "ndexsearch_yyyy_mm_dd.log", true);
 		
@@ -169,7 +169,6 @@ public class App {
                 HashMap<String, String> initMap = new HashMap<>();
                 initMap.put("resteasy.servlet.mapping.prefix", "/");
                 initMap.put("javax.ws.rs.Application", "org.ndexbio.ndexsearch.rest.SearchApplication");
-                initMap.put("com.sun.jersey.api.json.POJOMappingFeature", "true");
                 final ServletHolder restEasyServlet = new ServletHolder(
                      new SearchHttpServletDispatcher());
                 

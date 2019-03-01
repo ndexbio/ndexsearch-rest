@@ -18,7 +18,7 @@ public class SourceQueryResults {
     private String _status;
     private String _message;
     private int _progress;
-    private int _wallTime;
+    private long _wallTime;
     private int _numberOfHits;
     private int _sourceRank;
     private List<SourceQueryResult> _results;
@@ -63,11 +63,11 @@ public class SourceQueryResults {
         this._progress = _progress;
     }
 
-    public int getWallTime() {
+    public long getWallTime() {
         return _wallTime;
     }
 
-    public void setWallTime(int _wallTime) {
+    public void setWallTime(long _wallTime) {
         this._wallTime = _wallTime;
     }
 

@@ -20,6 +20,7 @@ public class QueryStatus {
     private int _numberOfHits;
     private int _start;
     private int _size;
+    private String _source;
     private long _startTime;
     private List<String> _inputSourceList;
     private List<String> _query;
@@ -117,6 +118,38 @@ public class QueryStatus {
 
     public void setWallTime(long _wallTime) {
         this._wallTime = _wallTime;
+    }
+
+    public int getNumberOfHits() {
+        return _numberOfHits;
+    }
+
+    public void setNumberOfHits(int _numberOfHits) {
+        this._numberOfHits = _numberOfHits;
+    }
+
+    public int getStart() {
+        return _start;
+    }
+
+    public void setStart(int _start) {
+        this._start = _start;
+    }
+
+    public int getSize() {
+        return _size;
+    }
+
+    public void setSize(int _size) {
+        this._size = _size;
+    }
+
+    public String getSource() {
+        return _source;
+    }
+
+    public void setSource(String _source) {
+        this._source = _source;
     }
 
     public long getStartTime() {
