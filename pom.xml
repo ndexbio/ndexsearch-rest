@@ -7,7 +7,7 @@
     <version>0.1.0</version>
     <packaging>war</packaging>
 
-    <name>ndexsearch-rest</name>
+    <name>NDEx Integrated Search REST service</name>
 
     <properties>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
@@ -23,6 +23,8 @@
         <commons-math3.version>3.6.1</commons-math3.version>
         <commons-io.version>2.6</commons-io.version>
         <ndex-object-model.version>2.4.0</ndex-object-model.version>
+        <ndex-enrichment-rest-model.version>0.1.0</ndex-enrichment-rest-model.version>
+        <ndex-enrichment-rest-client.version>0.1.0</ndex-enrichment-rest-client.version>
         <ndex-java-client.version>2.4.0</ndex-java-client.version>
         <jopt-simple.version>5.0.4</jopt-simple.version>
         <hamcrest.version>2.1</hamcrest.version>
@@ -37,6 +39,16 @@
         </repository>
     </repositories>
     <dependencies>
+        <dependency>
+            <groupId>org.ndexbio.enrichment.rest.model</groupId>
+            <artifactId>ndex-enrichment-rest-model</artifactId>
+            <version>${ndex-enrichment-rest-model.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ndexbio.enrichment.rest.client</groupId>
+            <artifactId>ndex-enrichment-rest-client</artifactId>
+            <version>${ndex-enrichment-rest-client.version}</version>
+        </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
                 <artifactId>javax.servlet-api</artifactId>

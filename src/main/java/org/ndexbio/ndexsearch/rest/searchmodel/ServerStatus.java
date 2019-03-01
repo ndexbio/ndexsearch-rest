@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.ndexbio.ndexsearch.rest.model;
+package org.ndexbio.ndexsearch.rest.searchmodel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 

@@ -23,11 +23,11 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
-import org.ndexbio.ndexsearch.rest.model.Query;
-import org.ndexbio.ndexsearch.rest.model.QueryResults;
-import org.ndexbio.ndexsearch.rest.model.QueryStatus;
-import org.ndexbio.ndexsearch.rest.model.ErrorResponse;
-import org.ndexbio.ndexsearch.rest.model.Task;
+import org.ndexbio.enrichment.rest.model.Task;
+import org.ndexbio.enrichment.rest.model.ErrorResponse;
+import org.ndexbio.ndexsearch.rest.searchmodel.Query;
+import org.ndexbio.ndexsearch.rest.searchmodel.QueryResults;
+import org.ndexbio.ndexsearch.rest.searchmodel.QueryStatus;
 
 /**
  * Returns status of Server
@@ -40,7 +40,7 @@ public class Search {
     
     /**
      * Returns status of server 
-     * @return {@link org.ndexbio.ndexsearch.rest.model.ServerStatus} as JSON
+     * @return {@link org.ndexbio.ndexsearch.rest.searchmodel.ServerStatus} as JSON
      */
     @POST 
     @Path("/")

@@ -1,4 +1,4 @@
-package org.ndexbio.ndexsearch.rest.model;
+package org.ndexbio.ndexsearch.rest.searchmodel;
 
 import java.util.List;
 
@@ -38,7 +38,7 @@ public class QueryStatus {
     /**
      * Creates new {@link #EnrichmentQueryStatus} by copying data
      * from {@code qr} passed in
-     * @param qr {@link org.ndexbio.ndexsearch.rest.model.QueryResults} to copy from
+     * @param qr {@link org.ndexbio.ndexsearch.rest.searchmodel.QueryResults} to copy from
      */
     public QueryStatus(QueryResults qr){
         if (qr == null){

@@ -7,10 +7,10 @@ package org.ndexbio.ndexsearch.rest.engine;
 
 import java.io.InputStream;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
-import org.ndexbio.ndexsearch.rest.model.SourceResults;
-import org.ndexbio.ndexsearch.rest.model.Query;
-import org.ndexbio.ndexsearch.rest.model.QueryResults;
-import org.ndexbio.ndexsearch.rest.model.QueryStatus;
+import org.ndexbio.ndexsearch.rest.searchmodel.SourceResults;
+import org.ndexbio.ndexsearch.rest.searchmodel.Query;
+import org.ndexbio.ndexsearch.rest.searchmodel.QueryResults;
+import org.ndexbio.ndexsearch.rest.searchmodel.QueryStatus;
 
 /**
  *

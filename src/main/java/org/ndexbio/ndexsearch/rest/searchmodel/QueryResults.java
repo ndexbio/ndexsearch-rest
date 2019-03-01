@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.ndexbio.ndexsearch.rest.model;
+package org.ndexbio.ndexsearch.rest.searchmodel;
 
 import java.util.List;
 
@@ -30,7 +30,7 @@ public class QueryResults extends QueryStatus {
      * {@link #getResults()} data. That is set to value of {@code results} parameter
      * passed in.
      * @param eqr {@link org.ndexbio.ndexsearch.rest.model.EnrichmentQueryResults} to copy data from
-     * @param results List of {@link org.ndexbio.ndexsearch.rest.model.QueryResult} 
+     * @param results List of {@link org.ndexbio.ndexsearch.rest.searchmodel.QueryResult} 
      *        to set as results for this object
      */
     public QueryResults(QueryResults eqr, List<QueryResult> results){

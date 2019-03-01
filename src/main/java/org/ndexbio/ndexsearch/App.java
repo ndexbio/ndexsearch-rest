@@ -27,12 +27,16 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.ndexbio.enrichment.rest.client.EnrichmentRestClientImpl;
+import org.ndexbio.enrichment.rest.model.DatabaseResult;
+import org.ndexbio.enrichment.rest.model.DatabaseResults;
+import org.ndexbio.enrichment.rest.model.EnrichmentQuery;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.ndexbio.ndexsearch.rest.model.SourceResult;
-import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
+import org.ndexbio.ndexsearch.rest.searchmodel.SourceResult;
+import org.ndexbio.ndexsearch.rest.searchmodel.InternalSourceResults;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
 import org.ndexbio.ndexsearch.rest.services.SearchHttpServletDispatcher;
 
@@ -67,10 +71,12 @@ public class App {
     public static final String EXAMPLE_CONF_MODE = "exampleconf";
     public static final String EXAMPLE_SOURCERES_MODE = "examplesourceresults";
     public static final String RUNSERVER_MODE = "runserver";
+    public static final String TESTQUERY_MODE = "testquery";
     
     public static final String SUPPORTED_MODES = ", " + EXAMPLE_CONF_MODE +
                                                     ", " + EXAMPLE_SOURCERES_MODE +
-                                                    ", " + RUNSERVER_MODE;
+                                                    ", " + RUNSERVER_MODE + 
+                                                    ", " + TESTQUERY_MODE;
     
     public static void main(String[] args){
 
@@ -115,6 +121,24 @@ public class App {
             if (mode.equals(EXAMPLE_SOURCERES_MODE)){
                 System.out.println(generateExampleSourceResults());
                 System.out.flush();
+                return;
+            }
+            
+            if (mode.equals(TESTQUERY_MODE)){
+                System.out.println("Testing REST endpoints with a basic query");
+                Configuration.setAlternateConfigurationFile(optionSet.valueOf(CONF).toString());
+                Properties props = getPropertiesFromConf(optionSet.valueOf(CONF).toString());
+                EnrichmentRestClientImpl client = new EnrichmentRestClientImpl("http://localhost:8080", null);
+                EnrichmentQuery query = new EnrichmentQuery();
+                query.setDatabaseList(Arrays.asList("ncipid"));
+                query.setGeneList(Arrays.asList("vcam1"));
+                System.out.println(client.query(query));
+                
+                DatabaseResults dbres = client.getDatabaseResults();
+                for (DatabaseResult res : dbres.getResults()){
+                    System.out.println(res.getName());
+                }
+                client.shutdown();
                 return;
             }
                         

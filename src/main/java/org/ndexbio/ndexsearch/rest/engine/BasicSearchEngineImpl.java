@@ -12,10 +12,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
-import org.ndexbio.ndexsearch.rest.model.SourceResults;
-import org.ndexbio.ndexsearch.rest.model.Query;
-import org.ndexbio.ndexsearch.rest.model.QueryResults;
-import org.ndexbio.ndexsearch.rest.model.QueryStatus;
+import org.ndexbio.ndexsearch.rest.searchmodel.SourceResults;
+import org.ndexbio.ndexsearch.rest.searchmodel.Query;
+import org.ndexbio.ndexsearch.rest.searchmodel.QueryResults;
+import org.ndexbio.ndexsearch.rest.searchmodel.QueryStatus;
 
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
 import org.slf4j.Logger;
@@ -141,7 +141,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
      * @param start starting index to return from. Starting index is 0.
      * @param size Number of results to return. If 0 means all from starting index so
      *             to get all set both {@code start} and {@code size} to 0.
-     * @return {@link org.ndexbio.ndexsearch.rest.model.QueryResults} object
+     * @return {@link org.ndexbio.ndexsearch.rest.searchmodel.QueryResults} object
      *         or null if no result could be found. 
      * @throws SearchException If there was an error getting the results
      */
