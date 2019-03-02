@@ -6,6 +6,7 @@
 package org.ndexbio.ndexsearch.rest.model;
 
 import java.util.List;
+import org.ndexbio.enrichment.rest.model.DatabaseResult;
 
 /**
  *
@@ -24,7 +25,7 @@ public class SourceResult {
     private String _status;
     private String _endPoint;
     private String _version;
-    private List<String> _databases;
+    private List<DatabaseResult> _databases;
     
 
     public String getUuid() {
@@ -83,11 +84,11 @@ public class SourceResult {
         this._version = _version;
     }
 
-    public List<String> getDatabases() {
+    public List<DatabaseResult> getDatabases() {
         return _databases;
     }
 
-    public void setDatabases(List<String> _databases) {
+    public void setDatabases(List<DatabaseResult> _databases) {
         this._databases = _databases;
     }
 }

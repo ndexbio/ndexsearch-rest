@@ -122,24 +122,6 @@ public class App {
                 System.out.flush();
                 return;
             }
-            /**
-            if (mode.equals(TESTQUERY_MODE)){
-                System.out.println("Testing REST endpoints with a basic query");
-                Configuration.setAlternateConfigurationFile(optionSet.valueOf(CONF).toString());
-                Properties props = getPropertiesFromConf(optionSet.valueOf(CONF).toString());
-                EnrichmentRestClientImpl client = new EnrichmentRestClientImpl("http://localhost:8080", null);
-                EnrichmentQuery query = new EnrichmentQuery();
-                query.setDatabaseList(Arrays.asList("ncipid"));
-                query.setGeneList(Arrays.asList("vcam1"));
-                System.out.println(client.query(query));
-                
-                DatabaseResults dbres = client.getDatabaseResults();
-                for (DatabaseResult res : dbres.getResults()){
-                    System.out.println(res.getName());
-                }
-                client.shutdown();
-                return;
-            }*/
                         
             if (mode.equals(RUNSERVER_MODE)){
                 Configuration.setAlternateConfigurationFile(optionSet.valueOf(CONF).toString());
@@ -217,7 +199,20 @@ public class App {
         sr.setEndPoint("http://localhost:8085/enrichment");
         sr.setVersion("0.1.0");
         sr.setStatus("ok");
-        sr.setDatabases(Arrays.asList("ncipid", "signor", "biogrid"));
+        DatabaseResult dr = new DatabaseResult();
+        dr.setDescription("This is a description of a signor database");
+        dr.setName("signor");
+        dr.setNumberOfNetworks("50");
+        String druuid = "89a90a24-2fa8-4a57-ae4b-7c30a180e8e6";
+        dr.setUuid(druuid);
+        
+        DatabaseResult drtwo = new DatabaseResult();
+        drtwo.setDescription("This is a description of a ncipid database");
+        drtwo.setName("ncipid");
+        drtwo.setNumberOfNetworks("200");
+        String drtwouuid = "e508cf31-79af-463e-b8b6-ff34c87e1734";
+        drtwo.setUuid(drtwouuid);
+        sr.setDatabases(Arrays.asList(dr, drtwo));
         
         SourceResult srtwo = new SourceResult();
         srtwo.setDescription("This is a description of interactome service");

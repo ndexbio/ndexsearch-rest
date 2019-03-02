@@ -5,7 +5,6 @@
  */
 package org.ndexbio.ndexsearch.rest.engine;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -19,6 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
+import org.ndexbio.enrichment.rest.model.DatabaseResult;
+import org.ndexbio.enrichment.rest.model.DatabaseResults;
 import org.ndexbio.enrichment.rest.model.EnrichmentQuery;
 import org.ndexbio.enrichment.rest.model.EnrichmentQueryResult;
 import org.ndexbio.enrichment.rest.model.EnrichmentQueryResults;
@@ -246,16 +247,19 @@ public class BasicSearchEngineImpl implements SearchEngine {
         if (sourceName == null){
             return null;
         }
+        List<String> dbList = new LinkedList<>();
         InternalSourceResults isr = _sourceResults.get();
         for (SourceResult sr : isr.getResults()){
             if (sr.getName()== null){
                 continue;
             }
             if (sr.getName().equals(sourceName)){
-                return sr.getDatabases();
+                for(DatabaseResult dr : sr.getDatabases()){
+                    dbList.add(dr.getName());
+                }
             }
         }
-        return null;
+        return dbList;
     }
     
     protected SourceQueryResults processKeyword(final String sourceName, Query query) {
