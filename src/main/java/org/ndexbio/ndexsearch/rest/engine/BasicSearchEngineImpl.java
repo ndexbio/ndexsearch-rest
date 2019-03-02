@@ -205,7 +205,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
     
     protected SourceQueryResults processEnrichment(final String sourceName, Query query) {
         EnrichmentQuery equery = new EnrichmentQuery();
-        equery.setDatabaseList(Arrays.asList("ncipid"));
+        equery.setDatabaseList(getEnrichmentDatabaseList(sourceName));
         equery.setGeneList(query.getGeneList());
         try {
             SourceQueryResults sqr = new SourceQueryResults();
@@ -238,6 +238,22 @@ public class BasicSearchEngineImpl implements SearchEngine {
             }
             if (sr.getName().equals(sourceName)){
                 return sr.getUuid();
+            }
+        }
+        return null;
+    }
+    
+    protected List<String> getEnrichmentDatabaseList(final String sourceName){
+        if (sourceName == null){
+            return null;
+        }
+        InternalSourceResults isr = _sourceResults.get();
+        for (SourceResult sr : isr.getResults()){
+            if (sr.getName()== null){
+                continue;
+            }
+            if (sr.getName().equals(sourceName)){
+                return sr.getDatabases();
             }
         }
         return null;

@@ -217,6 +217,7 @@ public class App {
         sr.setEndPoint("http://localhost:8085/enrichment");
         sr.setVersion("0.1.0");
         sr.setStatus("ok");
+        sr.setDatabases(Arrays.asList("ncipid", "signor", "biogrid"));
         
         SourceResult srtwo = new SourceResult();
         srtwo.setDescription("This is a description of interactome service");
