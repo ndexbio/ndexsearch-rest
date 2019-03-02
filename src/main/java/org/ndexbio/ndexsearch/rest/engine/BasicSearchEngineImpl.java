@@ -278,7 +278,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
                 sqr.setStatus(QueryResults.FAILED_STATUS);
                 sqr.setProgress(100);
                 return sqr;
-            } 
+            }
+            int rankCounter = 0;
             List<SourceQueryResult> sqrList = new LinkedList<>();
             for(NetworkSummary ns : nrs.getNetworks()){
                 SourceQueryResult sr = new SourceQueryResult();
@@ -287,6 +288,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
                 sr.setNodes(ns.getNodeCount());
                 sr.setNetworkUUID(ns.getExternalId().toString());
                 sr.setPercentOverlap(0);
+                sr.setRank(rankCounter++);
                 sqrList.add(sr);
             }
             sqr.setNumberOfHits(sqrList.size());
@@ -366,6 +368,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
     @Override
     public SourceResults getSourceResults() throws SearchException {
         SourceResults sr = new SourceResults(_sourceResults.get());
+        
         return sr;
     }
     
@@ -385,7 +388,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
             List<SourceQueryResult> sqResults = new LinkedList<SourceQueryResult>();
             for (EnrichmentQueryResult qRes : qr.getResults()){
                 SourceQueryResult sqr = new SourceQueryResult();
-                sqr.setDescription(qRes.getDescription());
+                sqr.setDescription(qRes.getDatabaseName() + ": " + qRes.getDescription());
                 sqr.setEdges(qRes.getEdges());
                 sqr.setHitGenes(qRes.getHitGenes());
                 sqr.setNetworkUUID(qRes.getNetworkUUID());
