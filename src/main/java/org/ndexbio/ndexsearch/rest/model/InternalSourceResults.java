@@ -11,13 +11,4 @@ package org.ndexbio.ndexsearch.rest.model;
  */
 public class InternalSourceResults extends SourceResults {
     
-    private String _foo;
-
-    public String getFoo() {
-        return _foo;
-    }
-
-    public void setFoo(String _foo) {
-        this._foo = _foo;
-    }
 }
