@@ -28,8 +28,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.ndexbio.enrichment.rest.model.DatabaseResult;
-import org.ndexbio.enrichment.rest.model.DatabaseResults;
-import org.ndexbio.enrichment.rest.model.EnrichmentQuery;
+import org.ndexbio.ndexsearch.rest.CorsFilter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -157,7 +156,7 @@ public class App {
                 restEasyServlet.setInitOrder(1);
                 restEasyServlet.setInitParameters(initMap);
                 webappContext.addServlet(restEasyServlet, "/*");
-                
+                webappContext.addFilter(CorsFilter.class, "/*", null);
                 ContextHandlerCollection contexts = new ContextHandlerCollection();
                 contexts.setHandlers(new Handler[] { webappContext });
  
