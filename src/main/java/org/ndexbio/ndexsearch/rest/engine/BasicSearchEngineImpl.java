@@ -336,8 +336,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
             
             if (source.equals(SourceResult.ENRICHMENT_SERVICE)){
                 sqr = processEnrichment(source, query);
+                sqr.setSourceRank(0);
             } else if (source.equals(SourceResult.KEYWORD_SERVICE)){
                 sqr = processKeyword(source, query);
+                sqr.setSourceRank(1);
             }
             
             if (sqr != null){
