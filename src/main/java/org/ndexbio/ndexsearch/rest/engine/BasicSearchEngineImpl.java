@@ -392,16 +392,18 @@ public class BasicSearchEngineImpl implements SearchEngine {
             
             sqRes.setWallTime(qr.getWallTime());
             List<SourceQueryResult> sqResults = new LinkedList<SourceQueryResult>();
-            for (EnrichmentQueryResult qRes : qr.getResults()){
-                SourceQueryResult sqr = new SourceQueryResult();
-                sqr.setDescription(qRes.getDatabaseName() + ": " + qRes.getDescription());
-                sqr.setEdges(qRes.getEdges());
-                sqr.setHitGenes(qRes.getHitGenes());
-                sqr.setNetworkUUID(qRes.getNetworkUUID());
-                sqr.setNodes(qRes.getNodes());
-                sqr.setPercentOverlap(qRes.getPercentOverlap());
-                sqr.setRank(qRes.getRank());
-                sqResults.add(sqr);
+            if (qr.getResults() != null){
+                for (EnrichmentQueryResult qRes : qr.getResults()){
+                    SourceQueryResult sqr = new SourceQueryResult();
+                    sqr.setDescription(qRes.getDatabaseName() + ": " + qRes.getDescription());
+                    sqr.setEdges(qRes.getEdges());
+                    sqr.setHitGenes(qRes.getHitGenes());
+                    sqr.setNetworkUUID(qRes.getNetworkUUID());
+                    sqr.setNodes(qRes.getNodes());
+                    sqr.setPercentOverlap(qRes.getPercentOverlap());
+                    sqr.setRank(qRes.getRank());
+                    sqResults.add(sqr);
+                }
             }
             sqRes.setResults(sqResults);
             sqRes.setNumberOfHits(sqResults.size());
@@ -434,6 +436,28 @@ public class BasicSearchEngineImpl implements SearchEngine {
         qr.setNumberOfHits(hitCount);
     }
     
+    protected void filterQueryResultsBySourceList(QueryResults qr, final String source){
+        if (source == null || source.isEmpty() || source.trim().isEmpty()){
+            _logger.debug("Source not defined leave all results in");
+            return;
+        }
+        
+        String[] splitStr = source.split("\\s+,\\s+");
+        HashSet<String> sourceSet = new HashSet<>();
+        for (String entry : splitStr){
+            sourceSet.add(entry);
+        }
+        List<SourceQueryResults> newSqrList = new LinkedList<>();
+        for (SourceQueryResults sqr : qr.getSources()){
+            if (!sourceSet.contains(sqr.getSourceName())){
+                _logger.debug(sqr.getSourceName() + " not in source list. Skipping.");
+                continue;
+            }
+            newSqrList.add(sqr);
+        }
+        qr.setSources(newSqrList);
+        return;
+    }
     /**
      * Returns
      * @param id Id of the query. 
@@ -460,6 +484,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
             throw new SearchException("size parameter must be value of 0 or greater");
         }
         checkAndUpdateQueryResults(qr);
+        
+        filterQueryResultsBySourceList(qr, source);
 
         if (start == 0 && size == 0){
             return qr;
