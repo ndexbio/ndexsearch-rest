@@ -6,16 +6,16 @@
 package org.ndexbio.ndexsearch.rest.model.comparators;
 
 import java.util.Comparator;
-import org.ndexbio.ndexsearch.rest.model.SourceQueryResult;
+import org.ndexbio.ndexsearch.rest.model.SourceQueryResults;
 
 /**
- * Sorts {@link org.ndexbio.ndexsearch.rest.model.SourceQueryResult} by 
- * {@link org.ndexbio.ndexsearch.rest.model.SourceQueryResult#getRank()}
+ * Sorts {@link org.ndexbio.ndexsearch.rest.model.SourceQueryResults} by 
+ * {@link org.ndexbio.ndexsearch.rest.model.SourceQueryResults#getSourceRank()}
  * with lower rank value appearing first.
  * @author churas
  */
-public class SourceQueryResultByRank implements Comparator {
-
+public class SourceQueryResultsBySourceRank implements Comparator{
+    
     /**
      * Compares two {@link org.ndexbio.ndexsearch.rest.model.SourceQueryResult} objects
      * by rank
@@ -37,20 +37,21 @@ public class SourceQueryResultByRank implements Comparator {
         if (o1 == null && o2 != null){
             return 1;
         }
-        if (o1 instanceof SourceQueryResult == false){
-            throw new ClassCastException ("o1 is not of type SourceQueryResult");
+        if (o1 instanceof SourceQueryResults == false){
+            throw new ClassCastException ("o1 is not of type SourceQueryResults");
         }
-        if (o2 instanceof SourceQueryResult == false){
-            throw new ClassCastException ("o2 is not of type SourceQueryResult");
+        if (o2 instanceof SourceQueryResults == false){
+            throw new ClassCastException ("o2 is not of type SourceQueryResults");
         }
-        SourceQueryResult sqr1 = (SourceQueryResult)o1;
-        SourceQueryResult sqr2 = (SourceQueryResult)o2;
-        if (sqr1.getRank() < sqr2.getRank()){
+        SourceQueryResults sqr1 = (SourceQueryResults)o1;
+        SourceQueryResults sqr2 = (SourceQueryResults)o2;
+        if (sqr1.getSourceRank() < sqr2.getSourceRank()){
             return -1;
         }
-        if (sqr1.getRank() == sqr2.getRank()){
+        if (sqr1.getSourceRank() == sqr2.getSourceRank()){
             return 0;
         }
         return 1;
     }
+
 }

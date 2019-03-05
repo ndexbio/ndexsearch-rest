@@ -440,6 +440,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
      * @param start starting index to return from. Starting index is 0.
      * @param size Number of results to return. If 0 means all from starting index so
      *             to get all set both {@code start} and {@code size} to 0.
+     * @param source comma delimited list of sources to return. null or empty string means 
+     *               all.
      * @return {@link org.ndexbio.ndexsearch.rest.model.QueryResults} object
      *         or null if no result could be found. 
      * @throws SearchException If there was an error getting the results
