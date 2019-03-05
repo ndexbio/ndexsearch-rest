@@ -39,8 +39,8 @@ public class QueryStatus {
     }
     
     /**
-     * Creates new {@link #EnrichmentQueryStatus} by copying data
-     * from {@code qr} passed in
+     * Creates new {@link #QueryStatus} by performing shallow copy of
+     * {@code qr} passed in
      * @param qr {@link org.ndexbio.ndexsearch.rest.model.QueryResults} to copy from
      */
     public QueryStatus(QueryResults qr){
@@ -51,6 +51,10 @@ public class QueryStatus {
         _message = qr.getMessage();
         _progress = qr.getProgress();
         _wallTime = qr.getWallTime();
+        _numberOfHits = qr.getNumberOfHits();
+        _start = qr.getStart();
+        _size = qr.getSize();
+        _source = qr.getSource();
         _startTime = qr.getStartTime();
         _inputSourceList = qr.getInputSourceList();
         _query = qr.getQuery();
