@@ -47,7 +47,10 @@ public class App {
     static Logger _logger = LoggerFactory.getLogger(App.class);
 
     
-    
+    /**
+     * Sets logging level valid values DEBUG INFO WARN ALL ERROR
+     */
+    public static final String RUNSERVER_LOGLEVEL = "runserver.log.level";
     /**
      * Sets log directory for embedded Jetty
      */
@@ -127,7 +130,7 @@ public class App {
                 Properties props = getPropertiesFromConf(optionSet.valueOf(CONF).toString());
                 ch.qos.logback.classic.Logger rootLog = 
         		(ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-		rootLog.setLevel(Level.INFO);
+                rootLog.setLevel(Level.toLevel(props.getProperty(App.RUNSERVER_LOGLEVEL, "INFO")));
                 String logDir = props.getProperty(App.RUNSERVER_LOGDIR, ".");
                 RolloverFileOutputStream os = new RolloverFileOutputStream(logDir + File.separator + "ndexsearch_yyyy_mm_dd.log", true);
 		
@@ -258,6 +261,8 @@ public class App {
         sb.append(App.RUNSERVER_CONTEXTPATH + " = /\n");
         sb.append(App.RUNSERVER_LOGDIR + " = /tmp/log\n");
         sb.append(App.RUNSERVER_PORT + " = 8080\n");
+        sb.append("# Valid log levels DEBUG INFO WARN ERROR ALL\n");
+        sb.append(App.RUNSERVER_LOGLEVEL + " = INFO\n");
         
         sb.append("\n# Sets name of json file containing source results.\n# This file ");
         sb.append("expected to reside in " + Configuration.DATABASE_DIR + " directory\n");
