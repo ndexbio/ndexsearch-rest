@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,9 +18,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.commons.io.FileUtils;
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
 import org.ndexbio.enrichment.rest.model.DatabaseResult;
-import org.ndexbio.enrichment.rest.model.DatabaseResults;
 import org.ndexbio.enrichment.rest.model.EnrichmentQuery;
 import org.ndexbio.enrichment.rest.model.EnrichmentQueryResult;
 import org.ndexbio.enrichment.rest.model.EnrichmentQueryResults;
@@ -36,6 +37,8 @@ import org.ndexbio.ndexsearch.rest.model.QueryStatus;
 import org.ndexbio.ndexsearch.rest.model.SourceQueryResult;
 import org.ndexbio.ndexsearch.rest.model.SourceQueryResults;
 import org.ndexbio.ndexsearch.rest.model.SourceResult;
+import org.ndexbio.ndexsearch.rest.model.comparators.SourceQueryResultByRank;
+import org.ndexbio.ndexsearch.rest.model.comparators.SourceQueryResultsBySourceRank;
 
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
 import org.slf4j.Logger;
@@ -77,6 +80,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
     private EnrichmentRestClient _enrichClient;
     
     private long _threadSleep = 10;
+    private SourceQueryResultsBySourceRank _sourceRankSorter;
+    private SourceQueryResultByRank _rankSorter;
     
     public BasicSearchEngineImpl(final String dbDir,
             final String taskDir,
@@ -93,6 +98,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
         _queryTaskIds = new ConcurrentLinkedQueue<>();
         _sourceResults.set(sourceResults);
         _enrichClient = enrichClient;
+        _sourceRankSorter = new SourceQueryResultsBySourceRank();
+        _rankSorter = new SourceQueryResultByRank();
     }
     
     /**
@@ -422,18 +429,31 @@ public class BasicSearchEngineImpl implements SearchEngine {
             return;
         }
         int hitCount = 0;
-        for (SourceQueryResults sqRes : qr.getSources()){
-            _logger.info("Examining status of " + sqRes.getSourceName());
-            if (sqRes.getProgress() == 100){
-                hitCount += sqRes.getNumberOfHits();
-                continue;
+        int numComplete = 0;
+        if (qr.getSources() != null){
+            for (SourceQueryResults sqRes : qr.getSources()){
+                _logger.info("Examining status of " + sqRes.getSourceName());
+                if (sqRes.getProgress() == 100){
+                    hitCount += sqRes.getNumberOfHits();
+                    numComplete++;
+                    continue;
+                }
+                if (sqRes.getSourceName().equals(SourceResult.ENRICHMENT_SERVICE)){
+                    _logger.info("adding hits to hit count");
+                    hitCount += updateEnrichmentSourceQueryResults(sqRes);
+                    if (sqRes.getProgress() == 100){
+                        numComplete++;
+                    }
+                }
             }
-            if (sqRes.getSourceName().equals(SourceResult.ENRICHMENT_SERVICE)){
-                _logger.info("adding hits to hit count");
-                hitCount += updateEnrichmentSourceQueryResults(sqRes);
-            } 
+            if (numComplete >= qr.getSources().size()){
+                qr.setProgress(100);
+                qr.setStatus(QueryStatus.COMPLETE_STATUS);
+            } else {
+                qr.setProgress(Math.round(((float)numComplete/(float)qr.getSources().size())*100));
+            }
+            qr.setNumberOfHits(hitCount);
         }
-        qr.setNumberOfHits(hitCount);
     }
     
     protected void filterQueryResultsBySourceList(QueryResults qr, final String source){
@@ -458,6 +478,46 @@ public class BasicSearchEngineImpl implements SearchEngine {
         qr.setSources(newSqrList);
         return;
     }
+    
+    protected void filterQueryResultsByStartAndSize(QueryResults qr, int start, int size){
+        if (start == 0 && size == 0){
+            return;
+        }
+        if (qr.getSources() == null || qr.getSources().isEmpty()){
+            return;
+        }
+        int counter = 0;
+        List<SourceQueryResults> newSQRS = null;
+        List<SourceQueryResult> srcQueryRes = null;
+        Collections.sort(qr.getSources(), _sourceRankSorter);
+        newSQRS = new LinkedList<>();
+        for (SourceQueryResults sqr : qr.getSources()){
+            Collections.sort(sqr.getResults(), _rankSorter);
+            
+            srcQueryRes = null;
+            for(SourceQueryResult sq : sqr.getResults()){
+                
+                if (counter < start){
+                    counter++;
+                    continue;
+                }
+                if (counter >= size){
+                    break;
+                }
+                if (srcQueryRes == null){
+                    srcQueryRes = new LinkedList<>();
+                }
+                srcQueryRes.add(sq);
+                counter++;
+            }
+            if (srcQueryRes != null){
+                sqr.setResults(srcQueryRes);
+                newSQRS.add(sqr);
+            }
+        }
+        qr.setSources(newSQRS);
+    }
+    
     /**
      * Returns
      * @param id Id of the query. 
@@ -472,7 +532,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
      */
     @Override
     public QueryResults getQueryResults(final String id, final String source, int start, int size) throws SearchException {
-        _logger.info("Got queryresults request" + id);
+        _logger.info("Got queryresults request: " + id);
         QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
         if (qr == null){
             return null;
@@ -484,13 +544,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
             throw new SearchException("size parameter must be value of 0 or greater");
         }
         checkAndUpdateQueryResults(qr);
-        
         filterQueryResultsBySourceList(qr, source);
-
-        if (start == 0 && size == 0){
-            return qr;
-        }
-        // TODO need to filter/sort by start and size and source
+        filterQueryResultsByStartAndSize(qr, start, size);
         return qr;
     }
 
@@ -510,6 +565,33 @@ public class BasicSearchEngineImpl implements SearchEngine {
     @Override
     public void delete(String id) throws SearchException {
         _logger.debug("Deleting task " + id);
+        QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
+        if (qr == null){
+            _logger.error("cant find " + id + " to delete");
+            return;
+        }
+        if (qr.getSources() == null){
+            return;
+        }
+        for (SourceQueryResults sqr: qr.getSources()){
+            if (sqr.getSourceName().equals(SourceResult.ENRICHMENT_SERVICE)){
+                try {
+                    _logger.debug("Calling enrichment DELETE on id: " + sqr.getSourceUUID());
+                    _enrichClient.delete(sqr.getSourceUUID());
+                } catch(EnrichmentException ee){
+                    throw new SearchException("caught error trying to delete enrichment: " + ee.getMessage());
+                }
+            }
+        }
+        // TODO delete the local file system copy
+        File thisTaskDir = new File(this._taskDir + File.separator + id);
+        if (thisTaskDir.exists() == false){
+            return;
+        }
+        _logger.debug("Attempting to delete task from filesystem: " + thisTaskDir.getAbsolutePath());
+        if (FileUtils.deleteQuietly(thisTaskDir) == false){
+            _logger.error("There was a problem deleting the directory: " + thisTaskDir.getAbsolutePath());
+        }
     }
 
     @Override

@@ -185,14 +185,14 @@ public class Search {
                                 schema = @Schema(implementation = ErrorResponse.class)))
                })
     public Response deleteQueryResult(@PathParam("id") final String id) {
-        ObjectMapper omappy = new ObjectMapper();
 
         try {
             SearchEngine searcher = Configuration.getInstance().getSearchEngine();
             searcher.delete(id);
-            return Response.ok().build();
+            return Response.status(200).build();
         }
         catch(Exception ex){
+            ObjectMapper omappy = new ObjectMapper();
             ErrorResponse er = new ErrorResponse("Error querying for system information", ex);
             try {
                 return Response.serverError().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(er)).build();
