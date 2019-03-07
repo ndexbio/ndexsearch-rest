@@ -43,7 +43,9 @@ import org.ndexbio.ndexsearch.rest.model.comparators.SourceQueryResultsBySourceR
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.ndexbio.interactomesearch.client.InteractomeRestClient;
+import org.ndexbio.interactomesearch.object.InteractomeSearchResult;
+import org.ndexbio.interactomesearch.object.SearchStatus;
 /**
  * Runs enrichment 
  * @author churas
@@ -78,6 +80,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
     private AtomicReference<InternalSourceResults> _sourceResults;
     private NdexRestClientModelAccessLayer _keywordclient;
     private EnrichmentRestClient _enrichClient;
+    private InteractomeRestClient _interactomeClient;
     
     private long _threadSleep = 10;
     private SourceQueryResultsBySourceRank _sourceRankSorter;
@@ -87,7 +90,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
             final String taskDir,
             InternalSourceResults sourceResults,
             NdexRestClientModelAccessLayer keywordclient,
-            EnrichmentRestClient enrichClient){
+            EnrichmentRestClient enrichClient, InteractomeRestClient interactomeClient){
         _shutdown = false;
         _dbDir = dbDir;
         _taskDir = taskDir;
@@ -98,6 +101,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
         _queryTaskIds = new ConcurrentLinkedQueue<>();
         _sourceResults.set(sourceResults);
         _enrichClient = enrichClient;
+        _interactomeClient = interactomeClient;
         _sourceRankSorter = new SourceQueryResultsBySourceRank();
         _rankSorter = new SourceQueryResultByRank();
     }
@@ -211,6 +215,31 @@ public class BasicSearchEngineImpl implements SearchEngine {
     }
     
     protected SourceQueryResults processEnrichment(final String sourceName, Query query) {
+        EnrichmentQuery equery = new EnrichmentQuery();
+        equery.setDatabaseList(getEnrichmentDatabaseList(sourceName));
+        equery.setGeneList(query.getGeneList());
+        try {
+            SourceQueryResults sqr = new SourceQueryResults();
+            sqr.setSourceName(sourceName);
+            String enrichTaskId = _enrichClient.query(equery);
+            if (enrichTaskId == null){
+                _logger.error("Query failed");
+                sqr.setMessage("Enrichment failed for unknown reason");
+                sqr.setStatus(QueryResults.FAILED_STATUS);
+                sqr.setProgress(100);
+                return sqr;
+            }
+            sqr.setStatus(QueryResults.SUBMITTED_STATUS);
+            sqr.setSourceUUID(enrichTaskId);
+            return sqr;
+        } catch(EnrichmentException ee){
+            _logger.error("Caught exception running enrichment", ee);
+        }
+        return null;
+    }
+
+    protected SourceQueryResults processInteractome(final String sourceName, Query query) {
+    	//TODO: change to use interactome client.
         EnrichmentQuery equery = new EnrichmentQuery();
         equery.setDatabaseList(getEnrichmentDatabaseList(sourceName));
         equery.setGeneList(query.getGeneList());
@@ -347,6 +376,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
             } else if (source.equals(SourceResult.KEYWORD_SERVICE)){
                 sqr = processKeyword(source, query);
                 sqr.setSourceRank(1);
+            } else if ( source.equals(SourceResult.INTERACTOME_SERVER)) {
+            	sqr = processInteractome(source, query);
+            	sqr.setSourceRank(2);
             }
             
             if (sqr != null){
@@ -398,7 +430,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
             sqRes.setStatus(qr.getStatus());
             
             sqRes.setWallTime(qr.getWallTime());
-            List<SourceQueryResult> sqResults = new LinkedList<SourceQueryResult>();
+            List<SourceQueryResult> sqResults = new LinkedList<>();
             if (qr.getResults() != null){
                 for (EnrichmentQueryResult qRes : qr.getResults()){
                     SourceQueryResult sqr = new SourceQueryResult();
@@ -420,6 +452,39 @@ public class BasicSearchEngineImpl implements SearchEngine {
         }
         return 0;
     }
+    
+    protected int updateInteractomeSourceQueryResults(SourceQueryResults sqRes){
+        try {
+            List<InteractomeSearchResult> qr = this._interactomeClient.getSearchResult(UUID.fromString(sqRes.getSourceUUID()));
+            SearchStatus status = this._interactomeClient.getSearchStatus(UUID.fromString(sqRes.getSourceUUID())); 
+            sqRes.setMessage(status.getMessage());
+            sqRes.setProgress(status.getProgress());
+            sqRes.setStatus(status.getStatus());
+            
+            sqRes.setWallTime(status.getWallTime());
+            List<SourceQueryResult> sqResults = new LinkedList<>();
+            if (qr != null){
+                for (InteractomeSearchResult qRes : qr){
+                    SourceQueryResult sqr = new SourceQueryResult();
+                    //sqr.setDescription(qRes.getSummary().getgetDatabaseName() + ": " + qRes.getDescription());
+                    sqr.setEdges(qRes.getSummary().getEdgeCount());
+                    sqr.setHitGenes(qRes.getHitGenes());
+                    sqr.setNetworkUUID(qRes.getNetworkUUID());
+                    sqr.setNodes(qRes.getSummary().getNodeCount());
+                    //sqr.setPercentOverlap(qRes.getPercentOverlap());
+                    sqr.setRank(qRes.getRank());
+                    sqResults.add(sqr);
+                }
+            }
+            sqRes.setResults(sqResults);
+            sqRes.setNumberOfHits(sqResults.size());
+            return sqRes.getNumberOfHits();
+        }catch(NdexException ee){
+            _logger.error("caught exception", ee);
+        }
+        return 0;
+    }
+        
     protected void checkAndUpdateQueryResults(QueryResults qr){
         // if its complete just return
         if (qr.getStatus().equals(QueryResults.COMPLETE_STATUS)){
@@ -441,6 +506,12 @@ public class BasicSearchEngineImpl implements SearchEngine {
                 if (sqRes.getSourceName().equals(SourceResult.ENRICHMENT_SERVICE)){
                     _logger.info("adding hits to hit count");
                     hitCount += updateEnrichmentSourceQueryResults(sqRes);
+                    if (sqRes.getProgress() == 100){
+                        numComplete++;
+                    }
+                } else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_SERVER)){
+                    _logger.info("adding hits to hit count");
+                    hitCount += updateInteractomeSourceQueryResults(sqRes);
                     if (sqRes.getProgress() == 100){
                         numComplete++;
                     }
@@ -581,6 +652,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
                 } catch(EnrichmentException ee){
                     throw new SearchException("caught error trying to delete enrichment: " + ee.getMessage());
                 }
+            } else if (sqr.getSourceName().equals(SourceResult.INTERACTOME_SERVER)) {
+            	//TODO handle this when a delete function is added to the interactome search.
             }
         }
         // TODO delete the local file system copy
@@ -595,7 +668,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
     }
 
     @Override
-    public InputStream getNetworkOverlayAsCX(final String id, final String sourceUUID, String networkUUID) throws SearchException {
+    public InputStream getNetworkOverlayAsCX(final String id, final String sourceUUID, String networkUUID) throws SearchException, NdexException {
         QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
         checkAndUpdateQueryResults(qr);
         for (SourceQueryResults sqRes : qr.getSources()){
@@ -621,6 +694,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
                     } catch(NdexException ne){
                         throw new SearchException("unable to get network " + ne.getMessage());
                     }
+                } else if ( sqRes.getSourceName().equals(SourceResult.INTERACTOME_SERVER)) {
+                	return this._interactomeClient.getOverlayedNetworkStream(UUID.fromString(sqRes.getSourceUUID()),
+                			UUID.fromString(sqr.getNetworkUUID()));
                 }
             }
         }

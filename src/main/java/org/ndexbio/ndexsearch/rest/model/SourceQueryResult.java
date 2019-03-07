@@ -6,6 +6,7 @@
 package org.ndexbio.ndexsearch.rest.model;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -18,7 +19,7 @@ public class SourceQueryResult {
     private int _nodes;
     private int _edges;
     private int _rank;
-    private List<String> _hitGenes;
+    private Set<String> _hitGenes;
 
 
     public String getNetworkUUID() {
@@ -69,11 +70,11 @@ public class SourceQueryResult {
         this._rank = _rank;
     }
 
-    public List<String> getHitGenes() {
+    public Set<String> getHitGenes() {
         return _hitGenes;
     }
 
-    public void setHitGenes(List<String> _hitGenes) {
+    public void setHitGenes(Set<String> _hitGenes) {
         this._hitGenes = _hitGenes;
     }
 }

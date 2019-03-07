@@ -14,7 +14,7 @@ import org.ndexbio.ndexsearch.rest.services.Status;
 
 public class SearchApplication extends Application {
 
-    private final Set<Object> _singletons = new HashSet<Object>();
+    private final Set<Object> _singletons = new HashSet<>();
     public SearchApplication() {        
         // Register our hello service
     }
