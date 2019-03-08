@@ -238,27 +238,24 @@ public class BasicSearchEngineImpl implements SearchEngine {
         return null;
     }
 
-    protected SourceQueryResults processInteractome(final String sourceName, Query query) {
-    	//TODO: change to use interactome client.
-        EnrichmentQuery equery = new EnrichmentQuery();
-        equery.setDatabaseList(getEnrichmentDatabaseList(sourceName));
-        equery.setGeneList(query.getGeneList());
+    protected SourceQueryResults processInteractome(final String sourceName, Query query)  {
+       
         try {
             SourceQueryResults sqr = new SourceQueryResults();
             sqr.setSourceName(sourceName);
-            String enrichTaskId = _enrichClient.query(equery);
-            if (enrichTaskId == null){
+            String interactomeTaskId = this._interactomeClient.search(query.getGeneList()).toString();
+            if (interactomeTaskId == null){
                 _logger.error("Query failed");
-                sqr.setMessage("Enrichment failed for unknown reason");
+                sqr.setMessage("Interactome failed for unknown reason");
                 sqr.setStatus(QueryResults.FAILED_STATUS);
                 sqr.setProgress(100);
                 return sqr;
             }
             sqr.setStatus(QueryResults.SUBMITTED_STATUS);
-            sqr.setSourceUUID(enrichTaskId);
+            sqr.setSourceUUID(interactomeTaskId);
             return sqr;
-        } catch(EnrichmentException ee){
-            _logger.error("Caught exception running enrichment", ee);
+        } catch(NdexException ee){
+            _logger.error("Caught exception running interactome", ee);
         }
         return null;
     }
