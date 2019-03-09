@@ -6,6 +6,8 @@
 package org.ndexbio.ndexsearch.rest.engine;
 
 import java.io.InputStream;
+
+import org.ndexbio.model.exceptions.NdexException;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
 import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.ndexsearch.rest.model.Query;
@@ -66,7 +68,7 @@ public interface SearchEngine extends Runnable {
      * @return
      * @throws SearchException 
      */
-    public InputStream getNetworkOverlayAsCX(final String id, final String sourceUUID, final String networkUUID) throws SearchException;
+    public InputStream getNetworkOverlayAsCX(final String id, final String sourceUUID, final String networkUUID) throws SearchException, NdexException;
 
     
     /**

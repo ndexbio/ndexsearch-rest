@@ -12,7 +12,7 @@
     <properties>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <resteasy.version>3.6.3.Final</resteasy.version>
+        <resteasy.version>3.1.4.Final</resteasy.version>
         <junit.version>4.12</junit.version>
         <easymock.version>3.0</easymock.version>
         <jetty.version>9.4.15.v20190215</jetty.version>
@@ -22,7 +22,6 @@
         <logback.version>1.2.3</logback.version>
         <commons-math3.version>3.6.1</commons-math3.version>
         <commons-io.version>2.6</commons-io.version>
-        <ndex-object-model.version>2.4.1a1</ndex-object-model.version>
         <ndex-enrichment-rest-model.version>0.1.0</ndex-enrichment-rest-model.version>
         <ndex-enrichment-rest-client.version>0.1.0</ndex-enrichment-rest-client.version>
         <ndex-java-client.version>2.4.0</ndex-java-client.version>
@@ -62,10 +61,10 @@
             <version>${ndex-java-client.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.ndexbio</groupId>
-            <artifactId>ndex-object-model</artifactId>
-            <version>${ndex-object-model.version}</version>
-        </dependency>
+        	<groupId>org.ndexbio</groupId>
+			<artifactId>ndex-interactome-search</artifactId>
+			<version>0.1.0</version>
+		</dependency>
         <dependency>
             <groupId>org.ndexbio.enrichment.rest.client</groupId>
             <artifactId>ndex-enrichment-rest-client</artifactId>
@@ -304,6 +303,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.2-beta-5</version> 
                 <configuration>
                     <archive>
                         <manifest>
@@ -327,7 +327,7 @@
             <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>buildnumber-maven-plugin</artifactId>
-        <version>1.4</version>
+        <version>1.3</version>
         <executions>
           <execution>
             <phase>generate-resources</phase>

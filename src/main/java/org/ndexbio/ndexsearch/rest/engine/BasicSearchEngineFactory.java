@@ -7,6 +7,7 @@ package org.ndexbio.ndexsearch.rest.engine;
 
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClientImpl;
+import org.ndexbio.interactomesearch.client.InteractomeRestClient;
 import org.ndexbio.ndexsearch.rest.model.SourceResult;
 import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
@@ -46,13 +47,18 @@ public class BasicSearchEngineFactory {
      */
     public SearchEngine getSearchEngine() throws Exception {
         EnrichmentRestClient enrichClient = null;
+        InteractomeRestClient interactomeClient = null;
         for (SourceResult sr : _sourceResults.getResults()){
             if (sr.getName().equals(SourceResult.ENRICHMENT_SERVICE)){
                 enrichClient = new EnrichmentRestClientImpl(sr.getEndPoint(), "");
             }
+            if (sr.getName().equals(SourceResult.INTERACTOME_SERVER)){
+            	interactomeClient = new InteractomeRestClient(sr.getEndPoint(), "");
+            }
+            
         }
         BasicSearchEngineImpl searcher = new BasicSearchEngineImpl(_dbDir,
-                _taskDir, _sourceResults,_keywordclient, enrichClient);
+                _taskDir, _sourceResults,_keywordclient, enrichClient, interactomeClient);
         return searcher;
     }
        
