@@ -9,32 +9,29 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.FileWriter;
 import org.jboss.resteasy.core.Dispatcher;
-import org.jboss.resteasy.mock.*;
+import org.jboss.resteasy.mock.MockDispatcherFactory;
+import org.jboss.resteasy.mock.MockHttpRequest;
+import org.jboss.resteasy.mock.MockHttpResponse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.ndexbio.enrichment.rest.model.ErrorResponse;
 import org.ndexbio.ndexsearch.App;
-
-import org.ndexbio.ndexsearch.rest.model.ServerStatus;
 
 /**
  *
  * @author churas
  */
-public class TestStatus {
-    
+public class TestSearchSource {
     public Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
     
     @Rule
     public TemporaryFolder _folder= new TemporaryFolder();
     
-    public TestStatus() {
-    }
-  
     @Test
-    public void testGetSuccess() throws Exception {
+    public void testGetSourceResultsSuccess() throws Exception {
         File tempDir = _folder.newFolder();
         try {
             File confFile = new File(tempDir.getAbsolutePath() + File.separator + "my.conf");
@@ -45,20 +42,20 @@ public class TestStatus {
             Configuration.setAlternateConfigurationFile(confFile.getAbsolutePath());
             Configuration.reloadConfiguration();
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
-            dispatcher.getRegistry().addSingletonResource(new Status());
+            dispatcher.getRegistry().addSingletonResource(new SearchSource());
 
-            MockHttpRequest request = MockHttpRequest.get("/status");
+            MockHttpRequest request = MockHttpRequest.get("/source");
 
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
-            assertEquals(200, response.getStatus());
+            assertEquals(500, response.getStatus());
             ObjectMapper mapper = new ObjectMapper();
-            ServerStatus ss = mapper.readValue(response.getOutput(),
-                    ServerStatus.class);
-            assertTrue(ss.getRestVersion() != null);
+            ErrorResponse er = mapper.readValue(response.getOutput(),
+                    ErrorResponse.class);
+            assertEquals("Configuration error", er.getMessage());
+            assertTrue(er.getDescription().contains("SearchEngine is null, which is"));
         } finally {
             _folder.delete();
         }
     }
-    
 }
