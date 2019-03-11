@@ -35,7 +35,7 @@ public class TestCorsFilter {
         mockResponse = support.mock(HttpServletResponse.class);
         mockResponse.addHeader("Access-Control-Allow-Origin", "*");
         mockResponse.addHeader("Access-Control-Allow-Methods","GET, OPTIONS, HEAD, PUT, POST");
-        mockResponse.addHeader("Access-Control-Allow-Headers", "Origin, Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+        mockResponse.addHeader("Access-Control-Allow-Headers", "Origin, payload, Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
         mockResponse.addHeader("Access-Control-Expose-Headers", "Location");
         mockFilterChain = support.mock(FilterChain.class);
     }
