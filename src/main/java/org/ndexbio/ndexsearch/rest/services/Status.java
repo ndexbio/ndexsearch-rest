@@ -54,7 +54,8 @@ public class Status {
             sObj.setStatus(ServerStatus.OK_STATUS);
             sObj.setRestVersion(SearchHttpServletDispatcher.getVersion());
             OperatingSystemMXBean omb = ManagementFactory.getOperatingSystemMXBean();
-            File taskDir = new File("/");
+            Configuration config = Configuration.getInstance();
+            File taskDir = new File(config.getSearchTaskDirectory());
             
             sObj.setPcDiskFull(100-(int)Math.round(((double)taskDir.getFreeSpace()/(double)taskDir.getTotalSpace())*100));
             return Response.ok().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(sObj)).build();
