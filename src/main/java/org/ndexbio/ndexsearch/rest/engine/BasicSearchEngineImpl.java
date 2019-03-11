@@ -624,8 +624,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
             return null;
         }
         checkAndUpdateQueryResults(qr);
-        for (SourceQueryResults sqr : qr.getSources()){
-            sqr.setResults(null);
+        if (qr.getSources() != null){
+            for (SourceQueryResults sqr : qr.getSources()){
+                sqr.setResults(null);
+            }
         }
         return qr;
     }
