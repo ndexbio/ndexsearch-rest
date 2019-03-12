@@ -115,9 +115,9 @@ public class Configuration {
     protected NdexRestClientModelAccessLayer getNDExClient(Properties props){
         
         try {
-            String user = props.getProperty(Configuration.NDEX_USER, null);
-            String pass = props.getProperty(Configuration.NDEX_PASS, null);
-            String server = props.getProperty(Configuration.NDEX_SERVER, "public.ndexbio.org");
+            String user = props.getProperty(Configuration.NDEX_USER);
+            String pass = props.getProperty(Configuration.NDEX_PASS);
+            String server = props.getProperty(Configuration.NDEX_SERVER);
             String useragent = props.getProperty(Configuration.NDEX_USERAGENT,"IntegratedSearch/0.1.0");
             NdexRestClient nrc = new NdexRestClient(user, pass, server, useragent);
             _client = new NdexRestClientModelAccessLayer(nrc);
@@ -130,10 +130,10 @@ public class Configuration {
             _logger.error("Caught IOException", io);
         }
         catch(NdexException ne){
-            _logger.error("caught NdexException", ne);
+            _logger.error("Caught NdexException", ne);
         }
         catch(Exception ex){
-            _logger.error("caught Exception", ex);
+            _logger.error("Caught Exception", ex);
         }
         return null;
     }
