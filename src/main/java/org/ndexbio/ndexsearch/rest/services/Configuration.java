@@ -25,6 +25,12 @@ import org.ndexbio.ndexsearch.rest.engine.SearchEngine;
  */
 public class Configuration {
     
+    /**
+     * Sets the REST end point for {@link org.ndexbio.ndexsearch.rest.services.Status}, 
+     * {@link org.ndexbio.ndexsearch.rest.services.Search} and 
+     * {@link org.ndexbio.ndexsearch.rest.services.SearchSource} classes
+     */
+    public static final String REST_PATH = "/";
     public static final String NDEX_SEARCH_CONFIG = "NDEX_SEARCH_CONFIG";
     
     public static final String DATABASE_DIR = "search.database.dir";

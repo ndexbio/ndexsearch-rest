@@ -35,7 +35,7 @@ import org.ndexbio.ndexsearch.rest.model.QueryStatus;
  * @author churas
  */
 @org.jboss.resteasy.annotations.providers.jaxb.IgnoreMediaTypes("application/*+json")
-@Path("/")
+@Path(Configuration.REST_PATH)
 public class Search {
     
     static Logger logger = LoggerFactory.getLogger(Search.class);

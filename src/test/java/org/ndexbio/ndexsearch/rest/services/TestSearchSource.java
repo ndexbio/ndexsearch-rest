@@ -44,8 +44,8 @@ public class TestSearchSource {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new SearchSource());
 
-            MockHttpRequest request = MockHttpRequest.get("/source");
-
+            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.REST_PATH + "/" +
+                                                          SearchSource.SOURCE_PATH));
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
             assertEquals(500, response.getStatus());

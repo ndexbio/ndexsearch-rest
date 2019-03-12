@@ -15,15 +15,15 @@ import javax.ws.rs.core.Response;
 import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.enrichment.rest.model.ErrorResponse;
 import org.ndexbio.ndexsearch.rest.engine.SearchEngine;
-import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
 
 /**
  * Returns Sources that can be queried
  * @author churas
  */
-@Path("/")
+@Path(Configuration.REST_PATH)
 public class SearchSource {
     
+    public static final String SOURCE_PATH = "/source";
     static Logger logger = LoggerFactory.getLogger(SearchSource.class);
     
     /**
@@ -31,7 +31,7 @@ public class SearchSource {
      * @return {@link org.ndexbio.ndexsearch.rest.model.ServerStatus} as JSON
      */
     @GET 
-    @Path("/source")
+    @Path(SOURCE_PATH)
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Gets list of sources that can be queried",
                description="Result in JSON which is a list of objects with uuid and display\n" +
@@ -53,15 +53,15 @@ public class SearchSource {
                 ErrorResponse er = new ErrorResponse();
                 er.setMessage("Configuration error");
                 er.setDescription("SearchEngine is null, which is most likely due to configuration error");
-                er.setErrorCode("SearchSource1");
+                er.setErrorCode("searchsource1");
                 return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
             }
             SourceResults sr = searcher.getSourceResults();
             if (sr == null){
                 ErrorResponse er = new ErrorResponse();
                 er.setMessage("No information found on sources");
-                er.setDescription("SourceResults is not, which is most likely due to configuration error");
-                er.setErrorCode("SearchSource2");
+                er.setDescription("SourceResults is null, which is most likely due to configuration error");
+                er.setErrorCode("searchsource2");
                 return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
            }
            return Response.ok(omappy.writeValueAsString(sr), MediaType.APPLICATION_JSON).build();

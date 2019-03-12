@@ -23,8 +23,10 @@ import org.ndexbio.ndexsearch.rest.model.ServerStatus;
  * Returns status of Server
  * @author churas
  */
-@Path("/")
+@Path(Configuration.REST_PATH)
 public class Status {
+    
+    public static final String STATUS_PATH = "/status";
     
     static Logger _logger = LoggerFactory.getLogger(Status.class);
     
@@ -33,7 +35,7 @@ public class Status {
      * @return {@link org.ndexbio.ndexsearch.rest.model.ServerStatus} as JSON
      */
     @GET // This annotation indicates GET request
-    @Path("/status")
+    @Path(STATUS_PATH)
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(summary = "Gets server status",
                description="Gets version, load, and diskusage of server",
