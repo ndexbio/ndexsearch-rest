@@ -15,6 +15,7 @@ import java.util.Set;
 public class SourceQueryResult {
     private String _networkUUID;
     private String _description;
+    private String _imageURL;
     private int _percentOverlap;
     private int _nodes;
     private int _edges;
@@ -37,6 +38,15 @@ public class SourceQueryResult {
     public void setDescription(String _description) {
         this._description = _description;
     }
+
+    public String getImageURL() {
+        return _imageURL;
+    }
+
+    public void setImageURL(String _imageURL) {
+        this._imageURL = _imageURL;
+    }
+
 
     public int getPercentOverlap() {
         return _percentOverlap;
