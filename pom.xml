@@ -4,7 +4,7 @@
 
     <groupId>org.ndexbio</groupId>
     <artifactId>ndexsearch-rest</artifactId>
-    <version>0.2.1</version>
+    <version>0.2.2</version>
     <packaging>war</packaging>
 
     <name>NDEx Integrated Search REST service</name>
@@ -63,7 +63,7 @@
         <dependency>
         	<groupId>org.ndexbio</groupId>
 			<artifactId>ndex-interactome-search</artifactId>
-			<version>0.1.0</version>
+			<version>0.2.0</version>
 		</dependency>
         <dependency>
             <groupId>org.ndexbio.enrichment.rest.client</groupId>

@@ -472,13 +472,13 @@ public class BasicSearchEngineImpl implements SearchEngine {
             if (qr != null){
                 for (InteractomeSearchResult qRes : qr){
                     SourceQueryResult sqr = new SourceQueryResult();
-                    //sqr.setDescription(qRes.getSummary().getgetDatabaseName() + ": " + qRes.getDescription());
-                    sqr.setEdges(qRes.getSummary().getEdgeCount());
+                    sqr.setDescription(qRes.getDescription());
+                    sqr.setEdges(qRes.getEdgeCount());
                     sqr.setHitGenes(qRes.getHitGenes());
                     sqr.setNetworkUUID(qRes.getNetworkUUID());
-                    sqr.setNodes(qRes.getSummary().getNodeCount());
-                    //sqr.setPercentOverlap(qRes.getPercentOverlap());
-                    sqr.setImageURL(Configuration.getInstance().getUnsetImageURL());
+                    sqr.setNodes(qRes.getNodeCount());
+                    sqr.setPercentOverlap(qRes.getPercentOverlap());
+                    sqr.setImageURL(qRes.getImageURL());
                     sqr.setRank(qRes.getRank());
                     sqResults.add(sqr);
                 }
