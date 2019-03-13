@@ -35,6 +35,7 @@ public class Configuration {
     
     public static final String DATABASE_DIR = "search.database.dir";
     public static final String TASK_DIR = "search.task.dir";
+    public static final String UNSET_IMAGE_URL = "search.unset.image.url";
     
     public static final String NDEX_USER = "ndex.user";
     public static final String NDEX_PASS = "ndex.password";
@@ -52,6 +53,7 @@ public class Configuration {
 
     private static String _searchDatabaseDir;
     private static String _searchTaskDir;
+    private static String _unsetImageURL;
     
     
     /**
@@ -73,6 +75,8 @@ public class Configuration {
         
         _searchDatabaseDir = props.getProperty(Configuration.DATABASE_DIR, "/tmp");
         _searchTaskDir = props.getProperty(Configuration.TASK_DIR);
+        _unsetImageURL = props.getProperty(Configuration.UNSET_IMAGE_URL,
+                                           "http://ndexbio.org/images/new_landing_page_logo.06974471.png");
         
         _client = getNDExClient(props);
         
@@ -87,6 +91,15 @@ public class Configuration {
     }
     public SearchEngine getSearchEngine(){
         return _searchEngine;
+    }
+    
+    /**
+     * Gets a URL to use for imageURL field when no value found
+     * from child service
+     * @return String containing URL to image file
+     */
+    public String getUnsetImageURL(){
+        return _unsetImageURL;
     }
     
     public String getSearchDatabaseDirectory(){

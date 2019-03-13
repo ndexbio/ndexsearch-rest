@@ -254,6 +254,10 @@ public class App {
         sb.append("\n# Sets Search database directory\n");
         sb.append(Configuration.DATABASE_DIR + " = /tmp\n");
         
+        sb.append("\n# Sets imageURL to use for results that lack imageURL\n");
+        sb.append(Configuration.UNSET_IMAGE_URL);
+        sb.append(" = http://ndexbio.org/images/new_landing_page_logo.06974471.png\n");
+        
         sb.append("\n# Sets Search task directory where results from queries are stored\n");
         sb.append(Configuration.TASK_DIR + " = /tmp/tasks\n");
         

@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import org.ndexbio.interactomesearch.client.InteractomeRestClient;
 import org.ndexbio.interactomesearch.object.InteractomeSearchResult;
 import org.ndexbio.interactomesearch.object.SearchStatus;
+import org.ndexbio.ndexsearch.rest.services.Configuration;
 /**
  * Runs enrichment 
  * @author churas
@@ -326,6 +327,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
                 sr.setNetworkUUID(ns.getExternalId().toString());
                 sr.setPercentOverlap(0);
                 sr.setRank(rankCounter++);
+                sr.setImageURL(Configuration.getInstance().getUnsetImageURL());
                 sqrList.add(sr);
             }
             sqr.setNumberOfHits(sqrList.size());
@@ -470,6 +472,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
                     sqr.setNetworkUUID(qRes.getNetworkUUID());
                     sqr.setNodes(qRes.getSummary().getNodeCount());
                     //sqr.setPercentOverlap(qRes.getPercentOverlap());
+                    sqr.setImageURL(Configuration.getInstance().getUnsetImageURL());
                     sqr.setRank(qRes.getRank());
                     sqResults.add(sqr);
                 }
