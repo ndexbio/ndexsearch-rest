@@ -241,9 +241,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
 
     protected SourceQueryResults processInteractome(final String sourceName, Query query)  {
        
+        SourceQueryResults sqr = new SourceQueryResults();
+        sqr.setSourceName(sourceName);
         try {
-            SourceQueryResults sqr = new SourceQueryResults();
-            sqr.setSourceName(sourceName);
             String interactomeTaskId = this._interactomeClient.search(query.getGeneList()).toString();
             if (interactomeTaskId == null){
                 _logger.error("Query failed");
@@ -256,9 +256,15 @@ public class BasicSearchEngineImpl implements SearchEngine {
             sqr.setSourceUUID(interactomeTaskId);
             return sqr;
         } catch(NdexException ee){
-            _logger.error("Caught exception running interactome", ee);
+            _logger.error("Caught ndexexception running interactome", ee);
+            sqr.setMessage("Interactome failed: " + ee.getMessage());
+        } catch(Exception ex){
+            _logger.error("Caught exception running interactome", ex);
+            sqr.setMessage("Interactome failed: " + ex.getMessage());
         }
-        return null;
+        sqr.setStatus(QueryResults.FAILED_STATUS);
+        sqr.setProgress(100);
+        return sqr;
     }
     
     protected String getUUIDOfSourceByName(final String sourceName){
