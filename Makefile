@@ -51,3 +51,16 @@ runwar: install ## Builds war file and runs webapp via Jetty
 javadocs: ## Generates javadoc documentation and launches browser
 	mvn javadoc:javadoc
 	$(BROWSER) target/site/apidocs/index.html
+
+installdependencies: ## For running on travis, checks out and builds dependencies
+	mkdir -p target/tmp
+	git clone --branch=master --depth=1 https://github.com/ndexbio/ndex-object-model target/tmp/ndex-object-model
+	cd target/tmp/ndex-object-model ; mvn clean install -DskipTests=true
+	git clone --branch=master --depth=1 https://github.com/ndexbio/ndex-enrichment-rest-model target/tmp/ndex-enrichment-rest-model
+	cd target/tmp/ndex-enrichment-rest-model ; mvn clean install -DskipTests=true
+	git clone --branch=chrisdev --depth=1 https://github.com/ndexbio/ndex-java-client target/tmp/ndex-java-client
+	cd target/tmp/ndex-java-client ; mvn clean install -DskipTests=true
+	git clone --branch=master --depth=1 https://github.com/ndexbio/ndex-java-client target/tmp/ndex-interactome-search
+	cd target/tmp/ndex-interactome-search ; mvn clean install -DskipTests=true
+	rm -rf target/tmp
+

@@ -9,6 +9,9 @@
 NDEx Search REST Service
 ========================
 
+[![Build Status](https://travis-ci.org/ndexbio/ndexsearch-rest.svg?branch=master)](https://travis-ci.org/ndexbio/ndexsearch-rest) 
+[![Coverage Status](https://coveralls.io/repos/github/ndexbio/ndexsearch-rest/badge.svg?branch=master)](https://coveralls.io/github/ndexbio/ndexsearch-rest?branch=master)
+
 Provides integrated search REST service using NDEx as a backend.
 This service runs using an embedded [Jetty][jetty] server and is invoked
 from the command line. 
