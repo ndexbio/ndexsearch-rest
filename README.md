@@ -30,7 +30,7 @@ Special Java modules to install (cause we haven't put these into maven central)
 * [ndex-enrichment-rest-client](https://github.com/ndexbio/ndex-enrichment-rest-client) built and installed via `mvn install`
 * [ndex-object-model](https://github.com/ndexbio/ndex-object-model) built and installed via `mvn install`
 * [ndex-java-client](https://github.com/ndexbio/ndex-java-client) built and installed via `mvn install`
-
+* [ndex-interactome-search](https://github.com/ndexbio/ndex-interactome-search) built and installed via `mvn install -DskipTests=true`
 
 Building NDEx Search REST Service  
 =================================
