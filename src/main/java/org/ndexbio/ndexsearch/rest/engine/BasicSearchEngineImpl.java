@@ -219,9 +219,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
         EnrichmentQuery equery = new EnrichmentQuery();
         equery.setDatabaseList(getEnrichmentDatabaseList(sourceName));
         equery.setGeneList(query.getGeneList());
+        SourceQueryResults sqr = new SourceQueryResults();
+        sqr.setSourceName(sourceName);
         try {
-            SourceQueryResults sqr = new SourceQueryResults();
-            sqr.setSourceName(sourceName);
             String enrichTaskId = _enrichClient.query(equery);
             if (enrichTaskId == null){
                 _logger.error("Query failed");
@@ -235,8 +235,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
             return sqr;
         } catch(EnrichmentException ee){
             _logger.error("Caught exception running enrichment", ee);
+            sqr.setMessage("Enrichment failed: " + ee.getMessage());
+            sqr.setStatus(QueryResults.FAILED_STATUS);
+            sqr.setProgress(100);
+            return sqr;  
         }
-        return null;
     }
 
     protected SourceQueryResults processInteractome(final String sourceName, Query query)  {
