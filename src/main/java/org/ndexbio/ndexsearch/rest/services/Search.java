@@ -73,19 +73,23 @@ public class Search {
             // fact
             Query bquery = omappy.readValue(query, Query.class);
             SearchEngine searcher = Configuration.getInstance().getSearchEngine();
+            if (searcher == null){
+                ErrorResponse er = new ErrorResponse();
+                er.setMessage("Configuration error");
+                er.setDescription("SearchEngine is null, which is most likely due to configuration error");
+                er.setErrorCode("search1");
+                return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
+            }
             String id = searcher.query(bquery);
+            if (id == null){
+                throw new NullPointerException("No id returned from search engine");
+            }
             Task t = new Task();
             t.setId(id);
             return Response.status(202).location(new URI("/" + id)).type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(t)).build();
         } catch(Exception ex){
-            ErrorResponse er = new ErrorResponse("Error requesting enrichment: " + ex.getMessage(), ex);
-            
-            try {
-                return Response.serverError().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(er)).build();
-            }
-            catch(JsonProcessingException jpe){
-                return Response.serverError().type(MediaType.APPLICATION_JSON).entity("hi").build();
-            }
+            ErrorResponse er = new ErrorResponse("Error requesting search", ex);
+            return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
     }
 
@@ -116,20 +120,22 @@ public class Search {
 
         try {
             SearchEngine searcher = Configuration.getInstance().getSearchEngine();
-            QueryResults eqr = searcher.getQueryResults(id, source, start, size);
-            if (eqr == null){
+            if (searcher == null){
+                ErrorResponse er = new ErrorResponse();
+                er.setMessage("Configuration error");
+                er.setDescription("SearchEngine is null, which is most likely due to configuration error");
+                er.setErrorCode("search2");
+                return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
+            }
+            QueryResults qr = searcher.getQueryResults(id, source, start, size);
+            if (qr == null){
                 return Response.status(410).build();
             }
-            return Response.ok().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(eqr)).build();
+            return Response.ok().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(qr)).build();
         }
         catch(Exception ex){
-            ErrorResponse er = new ErrorResponse("Error querying for system information", ex);
-            try {
-                return Response.serverError().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(er)).build();
-            }
-            catch(JsonProcessingException jpe){
-                return Response.serverError().type(MediaType.APPLICATION_JSON).entity("hi").build();
-            }
+            ErrorResponse er = new ErrorResponse("Error querying for results", ex);
+            return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
     }
 
@@ -154,6 +160,13 @@ public class Search {
 
         try {
             SearchEngine searcher = Configuration.getInstance().getSearchEngine();
+            if (searcher == null){
+                ErrorResponse er = new ErrorResponse();
+                er.setMessage("Configuration error");
+                er.setDescription("SearchEngine is null, which is most likely due to configuration error");
+                er.setErrorCode("search3");
+                return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
+            }
             QueryStatus eqs = searcher.getQueryStatus(id);
             if (eqs ==  null){
               return Response.status(410).build();
@@ -161,13 +174,8 @@ public class Search {
             return Response.ok().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(eqs)).build();
         }
         catch(Exception ex){
-            ErrorResponse er = new ErrorResponse("Error querying for system information", ex);
-            try {
-                return Response.serverError().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(er)).build();
-            }
-            catch(JsonProcessingException jpe){
-                return Response.serverError().type(MediaType.APPLICATION_JSON).entity("hi").build();
-            }
+            ErrorResponse er = new ErrorResponse("Error querying for results", ex);
+            return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
     }
 
@@ -188,18 +196,20 @@ public class Search {
 
         try {
             SearchEngine searcher = Configuration.getInstance().getSearchEngine();
+            if (searcher == null){
+                ErrorResponse er = new ErrorResponse();
+                er.setMessage("Configuration error");
+                er.setDescription("SearchEngine is null, which is most likely due to configuration error");
+                er.setErrorCode("search4");
+                return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
+            }
             searcher.delete(id);
             return Response.status(200).build();
         }
         catch(Exception ex){
             ObjectMapper omappy = new ObjectMapper();
-            ErrorResponse er = new ErrorResponse("Error querying for system information", ex);
-            try {
-                return Response.serverError().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(er)).build();
-            }
-            catch(JsonProcessingException jpe){
-                return Response.serverError().type(MediaType.APPLICATION_JSON).entity("hi").build();
-            }
+            ErrorResponse er = new ErrorResponse("Error deleting search result", ex);
+            return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
     }
     
@@ -222,6 +232,13 @@ public class Search {
         InputStream in = null;
         try {
             SearchEngine searcher = Configuration.getInstance().getSearchEngine();
+            if (searcher == null){
+                ErrorResponse er = new ErrorResponse();
+                er.setMessage("Configuration error");
+                er.setDescription("SearchEngine is null, which is most likely due to configuration error");
+                er.setErrorCode("search5");
+                return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
+            }
             in = searcher.getNetworkOverlayAsCX(id, sourceUUID, networkUUID);
             if (in == null){
               return Response.status(410).build();
@@ -229,13 +246,8 @@ public class Search {
             return Response.ok().type(MediaType.APPLICATION_JSON).entity(in).build();
         }
         catch(Exception ex){
-            ErrorResponse er = new ErrorResponse("Error querying for system information", ex);
-            try {
-                return Response.serverError().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(er)).build();
-            }
-            catch(JsonProcessingException jpe){
-                return Response.serverError().type(MediaType.APPLICATION_JSON).entity("hi").build();
-            }
+            ErrorResponse er = new ErrorResponse("Error querying for overlay network", ex);
+            return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
         /**
          * @TODO CHECK INTO THIS CAUSE IF I INCLUDE A CLOSE THIS DOESNT WORK
