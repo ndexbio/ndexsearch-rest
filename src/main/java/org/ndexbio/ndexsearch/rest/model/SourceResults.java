@@ -1,20 +1,19 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.ndexbio.ndexsearch.rest.model;
 
 import java.util.List;
 
 /**
- * Represents results of databases
+ * Contains information about sources that can
+ * be queried by this search
  * @author churas
  */
 public class SourceResults {
     
     private List<SourceResult> _results;
 
+    /**
+     * Constructor
+     */
     public SourceResults(){
         this(null);
     }
@@ -31,10 +30,18 @@ public class SourceResults {
         _results = isr.getResults();
     }
     
+    /**
+     * Gets list of sources
+     * @return 
+     */
     public List<SourceResult> getResults() {
         return _results;
     }
 
+    /**
+     * Sets list of sources
+     * @param _results 
+     */
     public void setResults(List<SourceResult> _results) {
         this._results = _results;
     }

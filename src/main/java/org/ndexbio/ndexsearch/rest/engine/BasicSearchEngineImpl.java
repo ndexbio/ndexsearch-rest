@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.ndexbio.ndexsearch.rest.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,8 +42,9 @@ import org.ndexbio.interactomesearch.client.InteractomeRestClient;
 import org.ndexbio.interactomesearch.object.InteractomeSearchResult;
 import org.ndexbio.interactomesearch.object.SearchStatus;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
+
 /**
- * Runs enrichment 
+ * Runs search 
  * @author churas
  */
 public class BasicSearchEngineImpl implements SearchEngine {
@@ -87,6 +83,16 @@ public class BasicSearchEngineImpl implements SearchEngine {
     private SourceQueryResultsBySourceRank _sourceRankSorter;
     private SourceQueryResultByRank _rankSorter;
     
+    /**
+     * Constructor
+     * 
+     * @param dbDir directory path containing networks in database
+     * @param taskDir directory path where tasks will be stored
+     * @param sourceResults
+     * @param keywordclient REST client for keyword search
+     * @param enrichClient REST client for enrichment query
+     * @param interactomeClient REST client for interactome query
+     */
     public BasicSearchEngineImpl(final String dbDir,
             final String taskDir,
             InternalSourceResults sourceResults,
@@ -115,6 +121,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
         _threadSleep = sleepTime;
     }
 
+    /**
+     * Calls {@link java.lang.Thread.sleep()} setting sleep time to
+     * value set by {@link #updateThreadSleepTime(long)} which by default
+     * is set to 10ms
+     */
     protected void threadSleep(){
         try {
             Thread.sleep(_threadSleep);
@@ -126,6 +137,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
     
     /**
      * Processes any query tasks, looping until {@link #shutdown()} is invoked
+     * Note: There is a delay in the loop which can be modified
+     * by {@link #updateThreadSleepTime(long) 
      */
     @Override
     public void run() {
@@ -147,6 +160,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
         }
     }
 
+    /**
+     * Tells the thread to exit after finishing its current processing
+     * task which is processed in {@link #run()} method
+     */
     @Override
     public void shutdown() {
         _shutdown = true;

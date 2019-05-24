@@ -1,12 +1,9 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.ndexbio.ndexsearch.rest.model;
 
 /**
- *
+ * Contains any data that is part of {@link #super} but
+ * should not be returned to external tools/clients
+ * 
  * @author churas
  */
 public class InternalSourceResults extends SourceResults {
