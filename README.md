@@ -112,7 +112,7 @@ information about services this integrated search and utilize.
 Run the following to create an example **searchresults.json** file:
 
 ```bash
-java -jar ndexsearch.jar --mode examplesourcersults > searchresults.json
+java -jar ndexsearch.jar --mode examplesourceresults > searchresults.json
 ```
 
 The **searchresults.json** file will look like this:
