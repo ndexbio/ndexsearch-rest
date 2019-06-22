@@ -13,6 +13,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.ndexbio.ndexsearch.App;
 import static org.junit.Assert.*;
+
+import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.ndexsearch.rest.model.SourceResults;
 
 /**
@@ -46,7 +48,7 @@ public class TestConfiguration {
         sb.append("\n");
         sb.append(App.RUNSERVER_PORT + " = 8080\n");
         sb.append(App.RUNSERVER_LOGLEVEL + " = INFO\n");
-        sb.append(Configuration.SOURCE_RESULTS_JSON_FILE+ " = " + Configuration.SOURCE_RESULTS_JSON_FILE + "\n");
+        sb.append(Configuration.SOURCE_CONFIGURATIONS_JSON_FILE+ " = " + Configuration.SOURCE_CONFIGURATIONS_JSON_FILE + "\n");
         return sb.toString();
     }
     
@@ -61,8 +63,8 @@ public class TestConfiguration {
             Configuration config = Configuration.getInstance();
             assertEquals("/tmp", config.getSearchDatabaseDirectory());
             assertNull(config.getSearchTaskDirectory());
-            assertEquals("/tmp/" + Configuration.SOURCE_RESULTS_JSON_FILE, config.getSourceResultsFile().getAbsolutePath());
-            assertNull(config.getSourceResults());
+            assertEquals("/tmp/" + Configuration.SOURCE_CONFIGURATIONS_JSON_FILE, config.getSourceConfigurationsFile().getAbsolutePath());
+            assertNull(config.getSourceConfigurations());
             assertNull(config.getSearchEngine());
             assertNull(config.getNDExClient());
         } finally {
@@ -86,20 +88,20 @@ public class TestConfiguration {
             fw.close();
             File databaseDir = new File(dbDir);
             assertTrue(databaseDir.mkdirs());
-            File srcResFile = new File(dbDir + File.separator + Configuration.SOURCE_RESULTS_JSON_FILE);
-            SourceResults sr = new SourceResults();
+            File srcResFile = new File(dbDir + File.separator + Configuration.SOURCE_CONFIGURATIONS_JSON_FILE);
+            SourceConfigurations sc = new SourceConfigurations();
             
             ObjectMapper mappy = new ObjectMapper();
             FileWriter out = new FileWriter(srcResFile);
-            mappy.writeValue(out, sr);
+            mappy.writeValue(out, sc);
             out.close();
             Configuration.setAlternateConfigurationFile(confFile.getAbsolutePath());
             Configuration.reloadConfiguration();
             Configuration config = Configuration.getInstance();
             assertEquals(dbDir, config.getSearchDatabaseDirectory());
             assertEquals(taskDir, config.getSearchTaskDirectory());
-            assertEquals(srcResFile.getAbsolutePath(), config.getSourceResultsFile().getAbsolutePath());
-            assertNotNull(config.getSourceResults());
+            assertEquals(srcResFile.getAbsolutePath(), config.getSourceConfigurationsFile().getAbsolutePath());
+            assertNotNull(config.getSourceConfigurations());
             assertNull(config.getSearchEngine());
             assertNull(config.getNDExClient());
         } finally {

@@ -5,11 +5,14 @@
  */
 package org.ndexbio.ndexsearch.rest.engine;
 
+import java.util.stream.Collectors;
+
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClientImpl;
 import org.ndexbio.interactomesearch.client.InteractomeRestClient;
 import org.ndexbio.ndexsearch.rest.model.SourceResult;
 import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
+import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
 
@@ -27,7 +30,7 @@ public class BasicSearchEngineFactory {
     private String _dbDir;
     private String _taskDir;
     private NdexRestClientModelAccessLayer _keywordclient;
-    private InternalSourceResults _sourceResults;
+    private SourceConfigurations _sourceConfigurations;
     
     /**
      * Temp directory where query results will temporarily be stored.
@@ -37,7 +40,7 @@ public class BasicSearchEngineFactory {
         _keywordclient = config.getNDExClient();
         _dbDir = config.getSearchDatabaseDirectory();
         _taskDir = config.getSearchTaskDirectory();
-        _sourceResults = config.getSourceResults();
+        _sourceConfigurations = config.getSourceConfigurations();
     }
     
     
@@ -48,7 +51,9 @@ public class BasicSearchEngineFactory {
     public SearchEngine getSearchEngine() throws Exception {
         EnrichmentRestClient enrichClient = null;
         InteractomeRestClient interactomeClient = null;
-        for (SourceResult sr : _sourceResults.getResults()){
+        
+        final InternalSourceResults sourceResults = new SourceConfigurationsToSourceResults().apply(_sourceConfigurations);
+        for (SourceResult sr : sourceResults.getResults()){
             if (sr.getName().equals(SourceResult.ENRICHMENT_SERVICE)){
                 enrichClient = new EnrichmentRestClientImpl(sr.getEndPoint(), "");
             }
@@ -58,7 +63,7 @@ public class BasicSearchEngineFactory {
             
         }
         BasicSearchEngineImpl searcher = new BasicSearchEngineImpl(_dbDir,
-                _taskDir, _sourceResults,_keywordclient, enrichClient, interactomeClient);
+                _taskDir, sourceResults, _keywordclient, enrichClient, interactomeClient);
         return searcher;
     }
        
