@@ -12,6 +12,7 @@ import org.ndexbio.enrichment.rest.client.EnrichmentRestClientImpl;
 import org.ndexbio.interactomesearch.client.InteractomeRestClient;
 import org.ndexbio.ndexsearch.rest.model.SourceResult;
 import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
+import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
@@ -52,18 +53,17 @@ public class BasicSearchEngineFactory {
         EnrichmentRestClient enrichClient = null;
         InteractomeRestClient interactomeClient = null;
         
-        final InternalSourceResults sourceResults = new SourceConfigurationsToSourceResults().apply(_sourceConfigurations);
-        for (SourceResult sr : sourceResults.getResults()){
-            if (sr.getName().equals(SourceResult.ENRICHMENT_SERVICE)){
-                enrichClient = new EnrichmentRestClientImpl(sr.getEndPoint(), "");
+        for (SourceConfiguration sc : _sourceConfigurations.getSources()){
+            if (sc.getName().equals(SourceResult.ENRICHMENT_SERVICE)){
+                enrichClient = new EnrichmentRestClientImpl(sc.getEndPoint(), "");
             }
-            if (sr.getName().equals(SourceResult.INTERACTOME_SERVER)){
-            	interactomeClient = new InteractomeRestClient(sr.getEndPoint(), "");
+            if (sc.getName().equals(SourceResult.INTERACTOME_SERVICE)){
+            	interactomeClient = new InteractomeRestClient(sc.getEndPoint(), "");
             }
             
         }
         BasicSearchEngineImpl searcher = new BasicSearchEngineImpl(_dbDir,
-                _taskDir, sourceResults, _keywordclient, enrichClient, interactomeClient);
+                _taskDir, _sourceConfigurations, _keywordclient, enrichClient, interactomeClient);
         return searcher;
     }
        
