@@ -16,7 +16,7 @@ public class SourceConfigurations {
      * Constructor
      */
     public SourceConfigurations(){
-        _sources = new ArrayList<SourceConfiguration>();
+        _sources = null;
     }
     
 
