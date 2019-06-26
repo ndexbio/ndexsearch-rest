@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
 import org.ndexbio.enrichment.rest.model.DatabaseResult;
+import org.ndexbio.enrichment.rest.model.DatabaseResults;
 import org.ndexbio.enrichment.rest.model.EnrichmentQuery;
 import org.ndexbio.enrichment.rest.model.EnrichmentQueryResult;
 import org.ndexbio.enrichment.rest.model.EnrichmentQueryResults;
@@ -43,6 +44,7 @@ import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ndexbio.interactomesearch.client.InteractomeRestClient;
+import org.ndexbio.interactomesearch.object.InteractomeRefNetworkEntry;
 import org.ndexbio.interactomesearch.object.InteractomeSearchResult;
 import org.ndexbio.interactomesearch.object.SearchStatus;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
@@ -292,14 +294,18 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		if (sourceName == null) {
 			return null;
 		}
-		SourceResults isr = getSourceResults();
-		for (SourceResult sr : isr.getResults()) {
-			if (sr.getName() == null) {
-				continue;
+		try {
+			SourceResults isr = getSourceResults();
+			for (SourceResult sr : isr.getResults()) {
+				if (sr.getName() == null) {
+					continue;
+				}
+				if (sr.getName().equals(sourceName)) {
+					return sr.getUuid();
+				}
 			}
-			if (sr.getName().equals(sourceName)) {
-				return sr.getUuid();
-			}
+		} catch (SearchException e) {
+			e.printStackTrace();
 		}
 		return null;
 	}
@@ -309,16 +315,20 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			return null;
 		}
 		List<String> dbList = new LinkedList<>();
-		SourceResults isr = getSourceResults();
-		for (SourceResult sr : isr.getResults()) {
-			if (sr.getName() == null) {
-				continue;
-			}
-			if (sr.getName().equals(sourceName)) {
-				for (DatabaseResult dr : sr.getDatabases()) {
-					dbList.add(dr.getName());
+		try {
+			SourceResults isr = getSourceResults();
+			for (SourceResult sr : isr.getResults()) {
+				if (sr.getName() == null) {
+					continue;
+				}
+				if (sr.getName().equals(sourceName)) {
+					for (DatabaseResult dr : sr.getDatabases()) {
+						dbList.add(dr.getName());
+					}
 				}
 			}
+		} catch (SearchException e) {
+			e.printStackTrace();
 		}
 		return dbList;
 	}
@@ -447,17 +457,32 @@ public class BasicSearchEngineImpl implements SearchEngine {
 					sourceResult.setDescription(sourceConfiguration.getDescription());
 					sourceResult.setEndPoint(sourceConfiguration.getEndPoint());
 
-					if (sourceConfiguration.getName() == SourceResult.ENRICHMENT_SERVICE) {
+					if (SourceResult.ENRICHMENT_SERVICE.equals(sourceConfiguration.getName())) {
 						try {
-							this._enrichClient.getDatabaseResults();
-						} catch (EnrichmentException e) {
-							e.printStackTrace();
+							DatabaseResults dbResults = this._enrichClient.getDatabaseResults();
+							sourceResult.setDatabases(dbResults.getResults());
+							sourceResult.setVersion("0.1.0");
+							sourceResult.setUuid("eeb4af50-83c4-4e33-ac21-87142403589b");
+							sourceResult.setNumberOfNetworks("242");
+							sourceResult.setStatus("ok");
+						} catch (javax.ws.rs.ProcessingException e) {
+								sourceResult.setStatus("error");
+							}
+						 catch (EnrichmentException e) {
+							sourceResult.setStatus("error");
 						}
-					} else if (sourceConfiguration.getName() == SourceResult.INTERACTOME_SERVICE) {
+					} else if (SourceResult.INTERACTOME_SERVICE.equals(sourceConfiguration.getName())) {
 						try {
-							this._interactomeClient.getDatabase();
-						} catch (NdexException e) {
-							e.printStackTrace();
+							List<InteractomeRefNetworkEntry> dbResults = this._interactomeClient.getDatabase();
+							sourceResult.setVersion("0.1.1a1");
+							sourceResult.setUuid("0857a397-3453-4ae4-8208-e33a283c85ec");
+							sourceResult.setNumberOfNetworks("2009");
+							sourceResult.setStatus("ok");
+						} catch (javax.ws.rs.ProcessingException e) {
+							sourceResult.setStatus("error");
+						}
+						catch (NdexException e) {
+							sourceResult.setStatus("error");
 						}
 					} else if (sourceConfiguration.getName() == SourceResult.KEYWORD_SERVICE) {
 

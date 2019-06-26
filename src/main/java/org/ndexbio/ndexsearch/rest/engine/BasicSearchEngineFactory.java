@@ -20,6 +20,8 @@ import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  *
  * @author churas
@@ -53,8 +55,9 @@ public class BasicSearchEngineFactory {
         EnrichmentRestClient enrichClient = null;
         InteractomeRestClient interactomeClient = null;
         
-        for (SourceConfiguration sc : _sourceConfigurations.getSources()){
-            if (sc.getName().equals(SourceResult.ENRICHMENT_SERVICE)){
+        for (SourceConfiguration sc : _sourceConfigurations.getSources()) {
+        	
+        	if (sc.getName().equals(SourceResult.ENRICHMENT_SERVICE)){
                 enrichClient = new EnrichmentRestClientImpl(sc.getEndPoint(), "");
             }
             if (sc.getName().equals(SourceResult.INTERACTOME_SERVICE)){
