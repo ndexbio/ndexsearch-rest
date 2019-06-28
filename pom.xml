@@ -63,7 +63,7 @@
         <dependency>
         	<groupId>org.ndexbio</groupId>
 			<artifactId>ndex-interactome-search</artifactId>
-			<version>0.2.1</version>
+			<version>0.2.2</version>
 		</dependency>
         <dependency>
             <groupId>org.ndexbio.enrichment.rest.client</groupId>
