@@ -60,7 +60,7 @@ installdependencies: ## For running on travis, checks out and builds dependencie
 	cd target/tmp/ndex-enrichment-rest-model ; mvn clean install -DskipTests=true
 	git clone --branch=v2.4.2 --depth=1 https://github.com/ndexbio/ndex-java-client target/tmp/ndex-java-client
 	cd target/tmp/ndex-java-client ; mvn clean install -DskipTests=true
-	git clone --branch=master --depth=1 https://github.com/ndexbio/ndex-interactome-search target/tmp/ndex-interactome-search
+	git clone --branch=chris2.2 --depth=1 https://github.com/ndexbio/ndex-interactome-search target/tmp/ndex-interactome-search
 	cd target/tmp/ndex-interactome-search ; mvn clean install -DskipTests=true
 	git clone --branch=master --depth=1 https://github.com/ndexbio/ndex-enrichment-rest-client target/tmp/ndex-enrichment-rest-client
 	cd target/tmp/ndex-enrichment-rest-client ; mvn clean install -DskipTests=true
