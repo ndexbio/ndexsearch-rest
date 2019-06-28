@@ -29,7 +29,7 @@ public class TestConfiguration {
     
     
     public String getAlternateConfigurationAsStrNoNDExInfo(final String dbDir,
-            final String taskDir, final String logDir){
+            final String taskDir, final String logDir, final String sourcePollingInterval){
         StringBuilder sb = new StringBuilder();
         
         sb.append(Configuration.DATABASE_DIR);
@@ -49,6 +49,10 @@ public class TestConfiguration {
         sb.append(App.RUNSERVER_PORT + " = 8080\n");
         sb.append(App.RUNSERVER_LOGLEVEL + " = INFO\n");
         sb.append(Configuration.SOURCE_CONFIGURATIONS_JSON_FILE+ " = " + Configuration.SOURCE_CONFIGURATIONS_JSON_FILE + "\n");
+        sb.append(Configuration.SOURCE_POLLING_INTERVAL);
+        sb.append(" = ");
+        sb.append(sourcePollingInterval);
+        sb.append("\n");
         return sb.toString();
     }
     
@@ -82,8 +86,9 @@ public class TestConfiguration {
             String dbDir = tempDir.getAbsolutePath() + File.separator + "db";
             String taskDir = tempDir.getAbsolutePath() + File.separator + "tasks";
             String logDir = tempDir.getAbsolutePath() + File.separator + "logs";
-    
-            fw.write(this.getAlternateConfigurationAsStrNoNDExInfo(dbDir, taskDir, logDir));
+            String sourcePollingInterval = "667";
+            
+            fw.write(this.getAlternateConfigurationAsStrNoNDExInfo(dbDir, taskDir, logDir, sourcePollingInterval));
             fw.flush();
             fw.close();
             File databaseDir = new File(dbDir);
@@ -102,11 +107,50 @@ public class TestConfiguration {
             assertEquals(taskDir, config.getSearchTaskDirectory());
             assertEquals(srcResFile.getAbsolutePath(), config.getSourceConfigurationsFile().getAbsolutePath());
             assertNotNull(config.getSourceConfigurations());
+            assertEquals(config.getSourcePollingInterval(), 667);
             assertNull(config.getSearchEngine());
             assertNull(config.getNDExClient());
         } finally {
             _folder.delete();
         }
-        
     }
+
+    @Test
+    public void testValidAlternateConfigurationNoSourcePollingInterval() throws Exception {
+        File tempDir = _folder.newFolder();
+        try {
+            File confFile = new File(tempDir.getAbsolutePath() + File.separator + "my.conf");
+            FileWriter fw = new FileWriter(confFile);
+            String dbDir = tempDir.getAbsolutePath() + File.separator + "db";
+            String taskDir = tempDir.getAbsolutePath() + File.separator + "tasks";
+            String logDir = tempDir.getAbsolutePath() + File.separator + "logs";
+            String sourcePollingInterval = "";
+            
+            fw.write(this.getAlternateConfigurationAsStrNoNDExInfo(dbDir, taskDir, logDir, sourcePollingInterval));
+            fw.flush();
+            fw.close();
+            File databaseDir = new File(dbDir);
+            assertTrue(databaseDir.mkdirs());
+            File srcResFile = new File(dbDir + File.separator + Configuration.SOURCE_CONFIGURATIONS_JSON_FILE);
+            SourceConfigurations sc = new SourceConfigurations();
+            
+            ObjectMapper mappy = new ObjectMapper();
+            FileWriter out = new FileWriter(srcResFile);
+            mappy.writeValue(out, sc);
+            out.close();
+            Configuration.setAlternateConfigurationFile(confFile.getAbsolutePath());
+            Configuration.reloadConfiguration();
+            Configuration config = Configuration.getInstance();
+            assertEquals(dbDir, config.getSearchDatabaseDirectory());
+            assertEquals(taskDir, config.getSearchTaskDirectory());
+            assertEquals(srcResFile.getAbsolutePath(), config.getSourceConfigurationsFile().getAbsolutePath());
+            assertNotNull(config.getSourceConfigurations());
+            assertEquals(config.getSourcePollingInterval(), 300000);
+            assertNull(config.getSearchEngine());
+            assertNull(config.getNDExClient());
+        } finally {
+            _folder.delete();
+        }
+    }
+    
 }

@@ -5,13 +5,10 @@
  */
 package org.ndexbio.ndexsearch.rest.engine;
 
-import java.util.stream.Collectors;
-
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClientImpl;
 import org.ndexbio.interactomesearch.client.InteractomeRestClient;
 import org.ndexbio.ndexsearch.rest.model.SourceResult;
-import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
 import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
@@ -19,8 +16,6 @@ import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -34,6 +29,7 @@ public class BasicSearchEngineFactory {
     private String _taskDir;
     private NdexRestClientModelAccessLayer _keywordclient;
     private SourceConfigurations _sourceConfigurations;
+    private long _sourcePollingInterval;
     
     /**
      * Temp directory where query results will temporarily be stored.
@@ -44,6 +40,7 @@ public class BasicSearchEngineFactory {
         _dbDir = config.getSearchDatabaseDirectory();
         _taskDir = config.getSearchTaskDirectory();
         _sourceConfigurations = config.getSourceConfigurations();
+        _sourcePollingInterval = config.getSourcePollingInterval();
     }
     
     
@@ -66,7 +63,7 @@ public class BasicSearchEngineFactory {
             
         }
         BasicSearchEngineImpl searcher = new BasicSearchEngineImpl(_dbDir,
-                _taskDir, _sourceConfigurations, _keywordclient, enrichClient, interactomeClient);
+                _taskDir, _sourceConfigurations, _sourcePollingInterval, _keywordclient, enrichClient, interactomeClient);
         return searcher;
     }
        

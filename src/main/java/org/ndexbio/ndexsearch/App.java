@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
 
 import org.ndexbio.ndexsearch.rest.model.SourceResult;
 import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
+import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
+import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
 import org.ndexbio.ndexsearch.rest.services.SearchHttpServletDispatcher;
 
@@ -70,12 +72,14 @@ public class App {
     public static final String MODE = "mode";
     public static final String CONF = "conf";    
     public static final String EXAMPLE_CONF_MODE = "exampleconf";
-    public static final String EXAMPLE_SOURCERES_MODE = "examplesourceresults";
+    public static final String EXAMPLE_SOURCE_CONF_MODE = "examplesourceconfig";
+    public static final String EXAMPLE_SOURCE_RES_MODE = "examplesourceresults";
     public static final String RUNSERVER_MODE = "runserver";
     public static final String TESTQUERY_MODE = "testquery";
     
     public static final String SUPPORTED_MODES = ", " + EXAMPLE_CONF_MODE +
-                                                    ", " + EXAMPLE_SOURCERES_MODE +
+    												", " + EXAMPLE_SOURCE_CONF_MODE +
+                                                    ", " + EXAMPLE_SOURCE_RES_MODE +
                                                     ", " + RUNSERVER_MODE + 
                                                     ", " + TESTQUERY_MODE;
     
@@ -119,7 +123,12 @@ public class App {
                 System.out.flush();
                 return;
             }
-            if (mode.equals(EXAMPLE_SOURCERES_MODE)){
+            if (mode.equals(EXAMPLE_SOURCE_CONF_MODE)){
+                System.out.println(generateExampleSourceConfigurations());
+                System.out.flush();
+                return;
+            }
+            if (mode.equals(EXAMPLE_SOURCE_RES_MODE)){
                 System.out.println(generateExampleSourceResults());
                 System.out.flush();
                 return;
@@ -183,6 +192,38 @@ public class App {
         Properties props = new Properties();
         props.load(new FileInputStream(path));
         return props;
+    }
+    
+    
+    /**
+     * Generates an example source configurations file
+     * file as String
+     * @return String 
+     * @throws Exception If there was a problem generating output
+     */
+    public static String generateExampleSourceConfigurations() throws Exception {
+        SourceConfiguration scA = new SourceConfiguration();
+        scA.setDescription("This is a description of enrichment source");
+        scA.setName("enrichment");
+        scA.setEndPoint("http://localhost:8095/enrichment");
+     
+        
+        SourceConfiguration scB = new SourceConfiguration();
+        scB.setDescription("This is a description of interactome service");
+        scB.setName("interactome");
+        scB.setEndPoint("http://localhost:8096/interactome");
+   
+        
+        SourceConfiguration scC = new SourceConfiguration();
+        scC.setDescription("This is a description of keyword service");
+        scC.setName("keyword");
+        scC.setEndPoint("http://localhost:8097/keyword");  
+        
+        SourceConfigurations scs = new  SourceConfigurations();
+        scs.setSources(Arrays.asList(scA, scB, scC));
+        ObjectMapper mappy = new ObjectMapper();
+        
+        return mappy.writerWithDefaultPrettyPrinter().writeValueAsString(scs);
     }
     
     /**

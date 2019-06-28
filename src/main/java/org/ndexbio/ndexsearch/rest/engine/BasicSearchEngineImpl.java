@@ -12,6 +12,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -32,7 +36,6 @@ import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.ndexsearch.rest.model.Query;
 import org.ndexbio.ndexsearch.rest.model.QueryResults;
 import org.ndexbio.ndexsearch.rest.model.QueryStatus;
-import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.ndexsearch.rest.model.SourceQueryResult;
 import org.ndexbio.ndexsearch.rest.model.SourceQueryResults;
@@ -60,6 +63,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
 
 	static Logger _logger = LoggerFactory.getLogger(BasicSearchEngineImpl.class);
 
+	ScheduledExecutorService _servicePollExecutor;
+	private long _sourcePollingInterval;
+	
 	private String _dbDir;
 	private String _taskDir;
 	private boolean _shutdown;
@@ -82,6 +88,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	private ConcurrentHashMap<String, ConcurrentHashMap<String, HashSet<String>>> _databases;
 
 	private AtomicReference<SourceConfigurations> _sourceConfigurations;
+	private AtomicReference<SourceResults> _sourceResults;
 	private NdexRestClientModelAccessLayer _keywordclient;
 	private EnrichmentRestClient _enrichClient;
 	private InteractomeRestClient _interactomeClient;
@@ -100,7 +107,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 * @param enrichClient      REST client for enrichment query
 	 * @param interactomeClient REST client for interactome query
 	 */
-	public BasicSearchEngineImpl(final String dbDir, final String taskDir, SourceConfigurations sourceConfigurations,
+	public BasicSearchEngineImpl(final String dbDir, final String taskDir, SourceConfigurations sourceConfigurations, long sourcePollingInterval,
 			NdexRestClientModelAccessLayer keywordclient, EnrichmentRestClient enrichClient,
 			InteractomeRestClient interactomeClient) {
 		_shutdown = false;
@@ -110,12 +117,15 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		_queryTasks = new ConcurrentHashMap<>();
 		_queryResults = new ConcurrentHashMap<>();
 		_sourceConfigurations = new AtomicReference<>();
+		_sourcePollingInterval = sourcePollingInterval;
+		_sourceResults = new AtomicReference<>();
 		_queryTaskIds = new ConcurrentLinkedQueue<>();
 		_sourceConfigurations.set(sourceConfigurations);
 		_enrichClient = enrichClient;
 		_interactomeClient = interactomeClient;
 		_sourceRankSorter = new SourceQueryResultsBySourceRank();
 		_rankSorter = new SourceQueryResultByRank();
+		_servicePollExecutor = Executors.newSingleThreadScheduledExecutor();
 	}
 
 	/**
@@ -146,6 +156,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 */
 	@Override
 	public void run() {
+		ScheduledFuture<?> servicePollFuture = _servicePollExecutor.scheduleWithFixedDelay(
+				() -> {
+					updateSourceResults();
+				}, 0, _sourcePollingInterval,TimeUnit.MILLISECONDS);
+		
 		while (_shutdown == false) {
 			String id = _queryTaskIds.poll();
 			if (id == null) {
@@ -154,7 +169,12 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			}
 			processQuery(id, _queryTasks.remove(id));
 		}
+		
 		_logger.debug("Shutdown was invoked");
+		
+		servicePollFuture.cancel(true);
+		_servicePollExecutor.shutdown();
+		
 		if (this._enrichClient != null) {
 			try {
 				_enrichClient.shutdown();
@@ -446,8 +466,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		return id;
 	}
 
-	@Override
-	public SourceResults getSourceResults() throws SearchException {
+	private void updateSourceResults() {
 		SourceConfigurations sourceConfigurations = _sourceConfigurations.get();
 		final List<SourceResult> sourceResults = sourceConfigurations.getSources().stream()
 				.map((sourceConfiguration) -> {
@@ -485,13 +504,22 @@ public class BasicSearchEngineImpl implements SearchEngine {
 							sourceResult.setStatus("error");
 						}
 					} else if (sourceConfiguration.getName() == SourceResult.KEYWORD_SERVICE) {
-
+						sourceResult.setVersion("0.2.0");
+						sourceResult.setUuid("33b9c3ca-13e5-48b9-bcd2-09070203350a");
+						sourceResult.setNumberOfNetworks("2009");
+						sourceResult.setStatus("ok");
 					}
 					return sourceResult;
 				}).collect(Collectors.toList());
 		InternalSourceResults internalSourceResults = new InternalSourceResults();
 		internalSourceResults.setResults(sourceResults);
-		return internalSourceResults;
+		_sourceResults.set(internalSourceResults);
+	}
+	
+	@Override
+	public SourceResults getSourceResults() throws SearchException {
+		
+		return _sourceResults.get();
 	}
 
 	/**

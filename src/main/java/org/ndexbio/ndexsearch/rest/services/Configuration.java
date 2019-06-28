@@ -45,6 +45,8 @@ public class Configuration {
     
     
     public static final String SOURCE_CONFIGURATIONS_JSON_FILE = "source.configurations.json";
+    public static final String SOURCE_POLLING_INTERVAL = "source.polling.interval";
+    private static final long DEFAULT_SOURCE_POLLING_INTERVAL = 300000;
     
     private static Configuration INSTANCE;
     private static final Logger _logger = LoggerFactory.getLogger(Configuration.class);
@@ -55,6 +57,8 @@ public class Configuration {
     private static String _searchDatabaseDir;
     private static String _searchTaskDir;
     private static String _unsetImageURL;
+    
+    private static String _sourcePollingInterval;
     
     
     /**
@@ -78,7 +82,7 @@ public class Configuration {
         _searchTaskDir = props.getProperty(Configuration.TASK_DIR);
         _unsetImageURL = props.getProperty(Configuration.UNSET_IMAGE_URL,
                                            "http://ndexbio.org/images/new_landing_page_logo.06974471.png");
-        
+        _sourcePollingInterval = props.getProperty(Configuration.SOURCE_POLLING_INTERVAL, Long.toString(DEFAULT_SOURCE_POLLING_INTERVAL));
         _client = getNDExClient(props);
         
     }
@@ -127,6 +131,15 @@ public class Configuration {
         }
         return null;
     }
+    
+    public long getSourcePollingInterval() {
+    	try {
+    	return Long.valueOf(_sourcePollingInterval);
+    	} catch (NumberFormatException e) {
+    		_logger.error("caught exception parsing source.polling.interval value", e);
+    		return DEFAULT_SOURCE_POLLING_INTERVAL;
+    	}
+    	}
     
     /**
      * Using configuration create 
