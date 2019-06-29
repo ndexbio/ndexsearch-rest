@@ -22,17 +22,22 @@ public class TestApp {
     }
     
     @Test
+    public void testGenerateExampleSourceConfiguration() throws Exception {
+        String res = App.generateExampleSourceConfigurations();
+        assertTrue(res.contains("http://localhost:8095/enrichment"));  
+    }
+    
+    @Test
     public void testGenerateExampleSourceResults() throws Exception {
         String res = App.generateExampleSourceResults();
-        assertTrue(res.contains("This is a description of enrichment source"));
-        
+        assertTrue(res.contains("This is a description of enrichment source"));  
     }
     
     @Test
     public void testExampleModes(){
         String[] args = {"--mode", App.EXAMPLE_CONF_MODE};
         App.main(args);
-        String[] oargs = {"--mode", App.EXAMPLE_SOURCERES_MODE};
+        String[] oargs = {"--mode", App.EXAMPLE_SOURCE_RES_MODE};
         App.main(oargs);
     }
 }

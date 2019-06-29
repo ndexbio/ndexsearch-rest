@@ -9,6 +9,7 @@ import java.util.Properties;
 import javax.naming.InitialContext;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
 import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
+import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.model.exceptions.NdexException;
 import org.ndexbio.rest.client.NdexRestClient;
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
@@ -43,7 +44,9 @@ public class Configuration {
     public static final String NDEX_USERAGENT = "ndex.useragent";
     
     
-    public static final String SOURCE_RESULTS_JSON_FILE = "sourceresults.json";
+    public static final String SOURCE_CONFIGURATIONS_JSON_FILE = "source.configurations.json";
+    public static final String SOURCE_POLLING_INTERVAL = "source.polling.interval";
+    private static final long DEFAULT_SOURCE_POLLING_INTERVAL = 300000;
     
     private static Configuration INSTANCE;
     private static final Logger _logger = LoggerFactory.getLogger(Configuration.class);
@@ -54,6 +57,8 @@ public class Configuration {
     private static String _searchDatabaseDir;
     private static String _searchTaskDir;
     private static String _unsetImageURL;
+    
+    private static String _sourcePollingInterval;
     
     
     /**
@@ -77,7 +82,7 @@ public class Configuration {
         _searchTaskDir = props.getProperty(Configuration.TASK_DIR);
         _unsetImageURL = props.getProperty(Configuration.UNSET_IMAGE_URL,
                                            "http://ndexbio.org/images/new_landing_page_logo.06974471.png");
-        
+        _sourcePollingInterval = props.getProperty(Configuration.SOURCE_POLLING_INTERVAL, Long.toString(DEFAULT_SOURCE_POLLING_INTERVAL));
         _client = getNDExClient(props);
         
     }
@@ -110,22 +115,31 @@ public class Configuration {
         return _searchTaskDir;
     }
 
-    public File getSourceResultsFile(){
+    public File getSourceConfigurationsFile(){
         return new File(this.getSearchDatabaseDirectory()+ File.separator +
-                              Configuration.SOURCE_RESULTS_JSON_FILE);
+                              Configuration.SOURCE_CONFIGURATIONS_JSON_FILE);
     }
     
-    public InternalSourceResults getSourceResults(){
+    public SourceConfigurations getSourceConfigurations(){
         ObjectMapper mapper = new ObjectMapper();
-        File dbres = getSourceResultsFile();
+        File dbres = getSourceConfigurationsFile();
         try {
-            return mapper.readValue(dbres, InternalSourceResults.class);
+            return mapper.readValue(dbres, SourceConfigurations.class);
         }
         catch(IOException io){
             _logger.error("caught io exception trying to load " + dbres.getAbsolutePath(), io);
         }
         return null;
     }
+    
+    public long getSourcePollingInterval() {
+    	try {
+    	return Long.valueOf(_sourcePollingInterval);
+    	} catch (NumberFormatException e) {
+    		_logger.error("caught exception parsing source.polling.interval value", e);
+    		return DEFAULT_SOURCE_POLLING_INTERVAL;
+    	}
+    	}
     
     /**
      * Using configuration create 
