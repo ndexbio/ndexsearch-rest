@@ -5,8 +5,9 @@
  */
 package org.ndexbio.ndexsearch.rest.model;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  *
@@ -21,8 +22,13 @@ public class SourceQueryResult {
     private int _edges;
     private int _rank;
     private Set<String> _hitGenes;
+    private Map<String,Object> _details;
 
 
+    public SourceQueryResult() {
+    	_details= new TreeMap<>();
+    }
+    
     public String getNetworkUUID() {
         return _networkUUID;
     }
@@ -87,4 +93,12 @@ public class SourceQueryResult {
     public void setHitGenes(Set<String> _hitGenes) {
         this._hitGenes = _hitGenes;
     }
+
+	public Map<String,Object> getDetails() {
+		return _details;
+	}
+
+	public void setDetails(Map<String,Object> _details) {
+		this._details = _details;
+	}
 }

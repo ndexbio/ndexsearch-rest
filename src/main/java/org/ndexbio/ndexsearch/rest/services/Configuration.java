@@ -44,7 +44,7 @@ public class Configuration {
     public static final String NDEX_USERAGENT = "ndex.useragent";
     
     
-    public static final String SOURCE_CONFIGURATIONS_JSON_FILE = "source.configurations.json";
+    public static final String SOURCE_CONFIGURATIONS_JSON_FILE = "source.configurations";
     public static final String SOURCE_POLLING_INTERVAL = "source.polling.interval";
     private static final long DEFAULT_SOURCE_POLLING_INTERVAL = 300000;
     
@@ -58,6 +58,7 @@ public class Configuration {
     private static String _searchTaskDir;
     private static String _unsetImageURL;
     
+    private  String _sourceConfiguration;
     private static String _sourcePollingInterval;
     
     
@@ -68,8 +69,8 @@ public class Configuration {
     private Configuration(final String configPath)
     {
         Properties props = new Properties();
-        try {
-            props.load(new FileInputStream(configPath));
+        try (FileInputStream s = new FileInputStream(configPath) ) {
+            props.load(s);
         }
         catch(FileNotFoundException fne){
             _logger.error("No configuration found at " + configPath, fne);
@@ -82,6 +83,7 @@ public class Configuration {
         _searchTaskDir = props.getProperty(Configuration.TASK_DIR);
         _unsetImageURL = props.getProperty(Configuration.UNSET_IMAGE_URL,
                                            "http://ndexbio.org/images/new_landing_page_logo.06974471.png");
+        _sourceConfiguration = props.getProperty(SOURCE_CONFIGURATIONS_JSON_FILE, "source.configurations.json");
         _sourcePollingInterval = props.getProperty(Configuration.SOURCE_POLLING_INTERVAL, Long.toString(DEFAULT_SOURCE_POLLING_INTERVAL));
         _client = getNDExClient(props);
         
@@ -116,8 +118,7 @@ public class Configuration {
     }
 
     public File getSourceConfigurationsFile(){
-        return new File(this.getSearchDatabaseDirectory()+ File.separator +
-                              Configuration.SOURCE_CONFIGURATIONS_JSON_FILE);
+        return new File(this.getSearchDatabaseDirectory()+ File.separator + _sourceConfiguration);
     }
     
     public SourceConfigurations getSourceConfigurations(){
