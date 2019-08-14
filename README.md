@@ -84,6 +84,9 @@ The `ndexsearch.conf` file will look like the following:
 # Sets Search database directory
 search.database.dir = /tmp
 
+# Sets imageURL to use for results that lack imageURL
+search.unset.image.url = http://ndexbio.org/images/new_landing_page_logo.06974471.png
+
 # Sets Search task directory where results from queries are stored
 search.task.dir = /tmp/tasks
 
@@ -91,14 +94,17 @@ search.task.dir = /tmp/tasks
 runserver.contextpath = /
 runserver.log.dir = /tmp/log
 runserver.port = 8080
+# Valid log levels DEBUG INFO WARN ERROR ALL
+runserver.log.level = INFO
 
 # Sets name of json file containing source results.
 # This file expected to reside in search.database.dir directory
-sourceresults.json = sourceresults.json
+source.configurations = source.configurations.json
 ndex.user = bob
 ndex.password = somepassword
 ndex.server = public.ndexbio.org
 ndex.useragent = NDExSearch/1.0
+
 ```
 
 Replace **/tmp** paths with full path location to **searchdb** directory created
