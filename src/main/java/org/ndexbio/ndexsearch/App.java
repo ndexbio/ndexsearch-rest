@@ -73,13 +73,11 @@ public class App {
     public static final String CONF = "conf";    
     public static final String EXAMPLE_CONF_MODE = "exampleconf";
     public static final String EXAMPLE_SOURCE_CONF_MODE = "examplesourceconfig";
-    public static final String EXAMPLE_SOURCE_RES_MODE = "examplesourceresults";
     public static final String RUNSERVER_MODE = "runserver";
     public static final String TESTQUERY_MODE = "testquery";
     
     public static final String SUPPORTED_MODES = ", " + EXAMPLE_CONF_MODE +
-    												", " + EXAMPLE_SOURCE_CONF_MODE +
-                                                    ", " + EXAMPLE_SOURCE_RES_MODE +
+    						    ", " + EXAMPLE_SOURCE_CONF_MODE +
                                                     ", " + RUNSERVER_MODE + 
                                                     ", " + TESTQUERY_MODE;
     
@@ -125,11 +123,6 @@ public class App {
             }
             if (mode.equals(EXAMPLE_SOURCE_CONF_MODE)){
                 System.out.println(generateExampleSourceConfigurations());
-                System.out.flush();
-                return;
-            }
-            if (mode.equals(EXAMPLE_SOURCE_RES_MODE)){
-                System.out.println(generateExampleSourceResults());
                 System.out.flush();
                 return;
             }
@@ -225,65 +218,7 @@ public class App {
         
         return mappy.writerWithDefaultPrettyPrinter().writeValueAsString(scs);
     }
-    
-    /**
-     * Generates an example {@link org.ndexbio.ndexsearch.rest.services.Configuration#SOURCE_RESULTS_JSON_FILE}
-     * file as String
-     * @return String 
-     * @throws Exception If there was a problem generating output
-     */
-    public static String generateExampleSourceResults() throws Exception {
-        SourceResult sr = new SourceResult();
-        sr.setDescription("This is a description of enrichment source");
-        sr.setName("enrichment");
-        sr.setNumberOfNetworks("350");
-        String sruuid = "eeb4af50-83c4-4e33-ac21-87142403589b";
-        sr.setUuid(sruuid);
-        sr.setEndPoint("http://localhost:8085/enrichment");
-        sr.setVersion("0.1.0");
-        sr.setStatus("ok");
-        DatabaseResult dr = new DatabaseResult();
-        dr.setDescription("This is a description of a signor database");
-        dr.setName("signor");
-        dr.setNumberOfNetworks("50");
-        String druuid = "89a90a24-2fa8-4a57-ae4b-7c30a180e8e6";
-        dr.setUuid(druuid);
-        
-        DatabaseResult drtwo = new DatabaseResult();
-        drtwo.setDescription("This is a description of a ncipid database");
-        drtwo.setName("ncipid");
-        drtwo.setNumberOfNetworks("200");
-        String drtwouuid = "e508cf31-79af-463e-b8b6-ff34c87e1734";
-        drtwo.setUuid(drtwouuid);
-        sr.setDatabases(Arrays.asList(dr, drtwo));
-        
-        SourceResult srtwo = new SourceResult();
-        srtwo.setDescription("This is a description of interactome service");
-        srtwo.setName("interactome");
-        srtwo.setNumberOfNetworks("2009");
-        String srtwouuid = "0857a397-3453-4ae4-8208-e33a283c85ec";
-        srtwo.setUuid(srtwouuid);
-        srtwo.setEndPoint("http://localhost:8086/interactome");
-        srtwo.setVersion("0.1.1a1");
-        srtwo.setStatus("ok");
-        
-        SourceResult srthree = new SourceResult();
-        srthree.setDescription("This is a description of keyword service");
-        srthree.setName("keyword");
-        srthree.setNumberOfNetworks("2009");
-        String srthreeuuid = "33b9c3ca-13e5-48b9-bcd2-09070203350a";
-        srthree.setUuid(srthreeuuid);
-        srthree.setEndPoint("http://localhost:8086/keyword");
-        srthree.setVersion("0.2.0");
-        srthree.setStatus("ok");
-        
-        
-        InternalSourceResults idr = new InternalSourceResults();
-        idr.setResults(Arrays.asList(sr, srtwo, srthree));
-        ObjectMapper mappy = new ObjectMapper();
-        
-        return mappy.writerWithDefaultPrettyPrinter().writeValueAsString(idr);
-    }
+
     /**
      * Generates example Configuration file writing to standard out
      * @return Example configuration as String
