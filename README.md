@@ -57,7 +57,7 @@ The above command will create a jar file under **target/** named
 **ndexsearch-rest-\<VERSION\>-jar-with-dependencies.jar** that
 is a command line application
 
-Running Enrichment REST Service
+Running NDEx Search REST Service
 ===============================
 
 The following steps cover how to configure and run integrated search REST service.
@@ -104,58 +104,33 @@ ndex.useragent = NDExSearch/1.0
 Replace **/tmp** paths with full path location to **searchdb** directory created
 earlier.
 
-### Step 2 Create sourceresults.json file
+### Step 2 Create source.configurations.json file
 
 This file (which resides in **search.database.dir**) contains
 information about services this integrated search and utilize.
 
-Run the following to create an example **searchresults.json** file:
+Run the following to create an example **source.configurations.json** file:
 
 ```bash
-java -jar ndexsearch.jar --mode examplesourceresults > searchresults.json
+java -jar ndexsearch.jar --mode examplesourceconfig > source.configurations.json
 ```
 
-The **searchresults.json** file will look like this:
+The **source.configurations.json** file will look like this:
 
 ```bash
 {
-  "results" : [ {
+  "sources" : [ {
     "name" : "enrichment",
     "description" : "This is a description of enrichment source",
-    "numberOfNetworks" : "350",
-    "uuid" : "eeb4af50-83c4-4e33-ac21-87142403589b",
-    "endPoint" : "http://localhost:8085/enrichment",
-    "version" : "0.1.0",
-    "status" : "ok",
-    "databases" : [ {
-      "name" : "signor",
-      "description" : "This is a description of a signor database",
-      "numberOfNetworks" : "50",
-      "uuid" : "89a90a24-2fa8-4a57-ae4b-7c30a180e8e6"
-    }, {
-      "name" : "ncipid",
-      "description" : "This is a description of a ncipid database",
-      "numberOfNetworks" : "200",
-      "uuid" : "e508cf31-79af-463e-b8b6-ff34c87e1734"
-    } ]
+    "endPoint" : "http://localhost:8095/enrichment"
   }, {
     "name" : "interactome",
     "description" : "This is a description of interactome service",
-    "numberOfNetworks" : "2009",
-    "uuid" : "0857a397-3453-4ae4-8208-e33a283c85ec",
-    "endPoint" : "http://localhost:8086/interactome",
-    "version" : "0.1.1a1",
-    "status" : "ok",
-    "databases" : null
+    "endPoint" : "http://localhost:8096/interactome"
   }, {
     "name" : "keyword",
     "description" : "This is a description of keyword service",
-    "numberOfNetworks" : "2009",
-    "uuid" : "33b9c3ca-13e5-48b9-bcd2-09070203350a",
-    "endPoint" : "http://localhost:8086/keyword",
-    "version" : "0.2.0",
-    "status" : "ok",
-    "databases" : null
+    "endPoint" : "http://localhost:8097/keyword"
   } ]
 }
 ```
@@ -165,7 +140,7 @@ Each service under **results** has various fields needed to access that service
 ### Step 4 Run the service
 
 ```bash
-jav -jar ndexsearch.jar --mode runserver --conf enrichment.conf
+jav -jar ndexsearch.jar --mode runserver --conf ndexsearch.conf
 ```
 
 
