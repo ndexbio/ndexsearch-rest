@@ -246,7 +246,7 @@ public class App {
         
         sb.append("\n# Sets name of json file containing source results.\n# This file ");
         sb.append("expected to reside in " + Configuration.DATABASE_DIR + " directory\n");
-        sb.append(Configuration.SOURCE_CONFIGURATIONS_JSON_FILE+ " = " + Configuration.SOURCE_CONFIGURATIONS_JSON_FILE + "\n");
+        sb.append(Configuration.SOURCE_CONFIGURATIONS_JSON_FILE+ " = " + Configuration.SOURCE_CONFIGURATIONS_JSON_FILE + ".json\n");
         sb.append(Configuration.NDEX_USER+ " = bob\n");
         sb.append(Configuration.NDEX_PASS+ " = somepassword\n");
         sb.append(Configuration.NDEX_SERVER+ " = public.ndexbio.org\n");
