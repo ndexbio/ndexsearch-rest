@@ -510,14 +510,15 @@ public class BasicSearchEngineImpl implements SearchEngine {
 					sourceResult.setName(sourceConfiguration.getName());
 					sourceResult.setDescription(sourceConfiguration.getDescription());
 					sourceResult.setEndPoint(sourceConfiguration.getEndPoint());
+					String sourceName = sourceConfiguration.getName();
 
-					if (SourceResult.ENRICHMENT_SERVICE.equals(sourceConfiguration.getName())) {
+					if (SourceResult.ENRICHMENT_SERVICE.equals(sourceName)) {
 						try {
 							DatabaseResults dbResults = this._enrichClient.getDatabaseResults();
 							sourceResult.setDatabases(dbResults.getResults());
 							sourceResult.setVersion("0.1.0");
 							sourceResult.setUuid("eeb4af50-83c4-4e33-ac21-87142403589b");
-							sourceResult.setNumberOfNetworks("242");
+							sourceResult.setNumberOfNetworks(242);
 							sourceResult.setStatus("ok");
 						} catch (javax.ws.rs.ProcessingException e) {
 								sourceResult.setStatus("error");
@@ -525,12 +526,12 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						 catch (EnrichmentException e) {
 							sourceResult.setStatus("error");
 						}
-					} else if (SourceResult.INTERACTOME_PPI_SERVICE.equals(sourceConfiguration.getName())) {
+					} else if (SourceResult.INTERACTOME_PPI_SERVICE.equals(sourceName)) {
 						try {
 							List<InteractomeRefNetworkEntry> dbResults = this._interactomeClient_ppi.getDatabase();
 							sourceResult.setVersion("0.1.1a1");
 							sourceResult.setUuid("0857a397-3453-4ae4-8208-e33a283c85ec");
-							sourceResult.setNumberOfNetworks("2009");
+							sourceResult.setNumberOfNetworks(dbResults.size());
 							sourceResult.setStatus("ok");
 						} catch (javax.ws.rs.ProcessingException e) {
 							sourceResult.setStatus("error");
@@ -538,12 +539,12 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						catch (NdexException e) {
 							sourceResult.setStatus("error");
 						}
-					} else if (SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE.equals(sourceConfiguration.getName())) {
+					} else if (SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE.equals(sourceName)) {
 						try {
 							List<InteractomeRefNetworkEntry> dbResults = this._interactomeClient_association.getDatabase();
-							sourceResult.setVersion("0.1.1a1");
+							sourceResult.setVersion("0.2");
 							sourceResult.setUuid("1857a397-3453-4ae4-8208-e33a283c85ec");
-							sourceResult.setNumberOfNetworks("2009");
+							sourceResult.setNumberOfNetworks(dbResults.size());
 							sourceResult.setStatus("ok");
 						} catch (javax.ws.rs.ProcessingException e) {
 							sourceResult.setStatus("error");
@@ -551,10 +552,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						catch (NdexException e) {
 							sourceResult.setStatus("error");
 						}
-					}  else if (sourceConfiguration.getName() == SourceResult.KEYWORD_SERVICE) {
+					}  else if (sourceName == SourceResult.KEYWORD_SERVICE) {
 						sourceResult.setVersion("0.2.0");
 						sourceResult.setUuid("33b9c3ca-13e5-48b9-bcd2-09070203350a");
-						sourceResult.setNumberOfNetworks("2009");
+						sourceResult.setNumberOfNetworks(2009);
 						sourceResult.setStatus("ok");
 					}
 					return sourceResult;
@@ -617,7 +618,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			
 			List<InteractomeSearchResult> qr = client
 					.getSearchResult(UUID.fromString(sqRes.getSourceUUID()));
-			SearchStatus status = this._interactomeClient_ppi.getSearchStatus(UUID.fromString(sqRes.getSourceUUID()));
+			SearchStatus status = client.getSearchStatus(UUID.fromString(sqRes.getSourceUUID()));
 			sqRes.setMessage(status.getMessage());
 			sqRes.setProgress(status.getProgress());
 			sqRes.setStatus(status.getStatus());
@@ -635,6 +636,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 					sqr.setPercentOverlap(qRes.getPercentOverlap());
 					sqr.setImageURL(qRes.getImageURL());
 					sqr.setRank(qRes.getRank());
+					sqr.setDetails(qRes.getDetails());
 					sqResults.add(sqr);
 				}
 			}
