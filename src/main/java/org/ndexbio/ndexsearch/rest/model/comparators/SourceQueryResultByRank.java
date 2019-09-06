@@ -14,7 +14,7 @@ import org.ndexbio.ndexsearch.rest.model.SourceQueryResult;
  * with lower rank value appearing first.
  * @author churas
  */
-public class SourceQueryResultByRank implements Comparator {
+public class SourceQueryResultByRank implements Comparator <SourceQueryResult> {
 
     /**
      * Compares two {@link org.ndexbio.ndexsearch.rest.model.SourceQueryResult} objects
@@ -27,7 +27,7 @@ public class SourceQueryResultByRank implements Comparator {
      * @throws ClassCastException if either input parameter cannot be cast to {@link org.ndexbio.ndexsearch.rest.model.SourceQueryResult}       
      */
     @Override
-    public int compare(Object o1, Object o2) {
+    public int compare(SourceQueryResult o1, SourceQueryResult o2) {
         if (o1 == null && o2 == null){
             return 0;
         }
@@ -37,18 +37,11 @@ public class SourceQueryResultByRank implements Comparator {
         if (o1 == null && o2 != null){
             return 1;
         }
-        if (o1 instanceof SourceQueryResult == false){
-            throw new ClassCastException ("o1 is not of type SourceQueryResult");
-        }
-        if (o2 instanceof SourceQueryResult == false){
-            throw new ClassCastException ("o2 is not of type SourceQueryResult");
-        }
-        SourceQueryResult sqr1 = (SourceQueryResult)o1;
-        SourceQueryResult sqr2 = (SourceQueryResult)o2;
-        if (sqr1.getRank() < sqr2.getRank()){
+
+        if (o1.getRank() < o2.getRank()){
             return -1;
         }
-        if (sqr1.getRank() == sqr2.getRank()){
+        if (o1.getRank() == o2.getRank()){
             return 0;
         }
         return 1;

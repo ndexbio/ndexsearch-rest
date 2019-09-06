@@ -91,7 +91,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	private AtomicReference<SourceResults> _sourceResults;
 	private NdexRestClientModelAccessLayer _keywordclient;
 	private EnrichmentRestClient _enrichClient;
-	private InteractomeRestClient _interactomeClient;
+	private InteractomeRestClient _interactomeClient_ppi;
+	private InteractomeRestClient _interactomeClient_association;
+
 
 	private long _threadSleep = 10;
 	private SourceQueryResultsBySourceRank _sourceRankSorter;
@@ -109,7 +111,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 */
 	public BasicSearchEngineImpl(final String dbDir, final String taskDir, SourceConfigurations sourceConfigurations, long sourcePollingInterval,
 			NdexRestClientModelAccessLayer keywordclient, EnrichmentRestClient enrichClient,
-			InteractomeRestClient interactomeClient) {
+			InteractomeRestClient interactomeClient_ppi, InteractomeRestClient interactomeClient_association) {
 		_shutdown = false;
 		_dbDir = dbDir;
 		_taskDir = taskDir;
@@ -122,7 +124,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		_queryTaskIds = new ConcurrentLinkedQueue<>();
 		_sourceConfigurations.set(sourceConfigurations);
 		_enrichClient = enrichClient;
-		_interactomeClient = interactomeClient;
+		_interactomeClient_ppi = interactomeClient_ppi;
+		this._interactomeClient_association = interactomeClient_association;
 		_sourceRankSorter = new SourceQueryResultsBySourceRank();
 		_rankSorter = new SourceQueryResultByRank();
 		_servicePollExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -282,15 +285,15 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		}
 	}
 
-	protected SourceQueryResults processInteractome(final String sourceName, Query query) {
+	protected SourceQueryResults processInteractome_PPI(final String sourceName, Query query) {
 
 		SourceQueryResults sqr = new SourceQueryResults();
 		sqr.setSourceName(sourceName);
 		try {
-			String interactomeTaskId = this._interactomeClient.search(query.getGeneList()).toString();
+			String interactomeTaskId = this._interactomeClient_ppi.search(query.getGeneList()).toString();
 			if (interactomeTaskId == null) {
 				_logger.error("Query failed");
-				sqr.setMessage("Interactome failed for unknown reason");
+				sqr.setMessage("Interactome-ppi failed for unknown reason");
 				sqr.setStatus(QueryResults.FAILED_STATUS);
 				sqr.setProgress(100);
 				return sqr;
@@ -299,17 +302,46 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			sqr.setSourceUUID(interactomeTaskId);
 			return sqr;
 		} catch (NdexException ee) {
-			_logger.error("Caught ndexexception running interactome", ee);
+			_logger.error("Caught ndexexception running interactome-ppi", ee);
 			sqr.setMessage("Interactome failed: " + ee.getMessage());
 		} catch (Exception ex) {
-			_logger.error("Caught exception running interactome", ex);
-			sqr.setMessage("Interactome failed: " + ex.getMessage());
+			_logger.error("Caught exception running interactome-ppi", ex);
+			sqr.setMessage("Interactome-ppi failed: " + ex.getMessage());
 		}
 		sqr.setStatus(QueryResults.FAILED_STATUS);
 		sqr.setProgress(100);
 		return sqr;
 	}
 
+	protected SourceQueryResults processInteractome_association(final String sourceName, Query query) {
+
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceName(sourceName);
+		try {
+			String interactomeTaskId = this._interactomeClient_association.search(query.getGeneList()).toString();
+			if (interactomeTaskId == null) {
+				_logger.error("Query failed");
+				sqr.setMessage("Interactome-association failed for unknown reason");
+				sqr.setStatus(QueryResults.FAILED_STATUS);
+				sqr.setProgress(100);
+				return sqr;
+			}
+			sqr.setStatus(QueryResults.SUBMITTED_STATUS);
+			sqr.setSourceUUID(interactomeTaskId);
+			return sqr;
+		} catch (NdexException ee) {
+			_logger.error("Caught ndexexception running interactome-association", ee);
+			sqr.setMessage("Interactome-association failed: " + ee.getMessage());
+		} catch (Exception ex) {
+			_logger.error("Caught exception running interactome-association", ex);
+			sqr.setMessage("Interactome-association failed: " + ex.getMessage());
+		}
+		sqr.setStatus(QueryResults.FAILED_STATUS);
+		sqr.setProgress(100);
+		return sqr;
+	}
+
+	
 	protected String getUUIDOfSourceByName(final String sourceName) {
 		if (sourceName == null) {
 			return null;
@@ -432,9 +464,12 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			} else if (source.equals(SourceResult.KEYWORD_SERVICE)) {
 				sqr = processKeyword(source, query);
 				sqr.setSourceRank(1);
-			} else if (source.equals(SourceResult.INTERACTOME_SERVICE)) {
-				sqr = processInteractome(source, query);
+			} else if (source.equals(SourceResult.INTERACTOME_PPI_SERVICE)) {
+				sqr = processInteractome_PPI(source, query);
 				sqr.setSourceRank(2);
+			} else if (source.equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
+				sqr = processInteractome_association(source, query);
+				sqr.setSourceRank(3);
 			}
 
 			if (sqr != null) {
@@ -490,9 +525,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						 catch (EnrichmentException e) {
 							sourceResult.setStatus("error");
 						}
-					} else if (SourceResult.INTERACTOME_SERVICE.equals(sourceConfiguration.getName())) {
+					} else if (SourceResult.INTERACTOME_PPI_SERVICE.equals(sourceConfiguration.getName())) {
 						try {
-							List<InteractomeRefNetworkEntry> dbResults = this._interactomeClient.getDatabase();
+							List<InteractomeRefNetworkEntry> dbResults = this._interactomeClient_ppi.getDatabase();
 							sourceResult.setVersion("0.1.1a1");
 							sourceResult.setUuid("0857a397-3453-4ae4-8208-e33a283c85ec");
 							sourceResult.setNumberOfNetworks("2009");
@@ -503,7 +538,20 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						catch (NdexException e) {
 							sourceResult.setStatus("error");
 						}
-					} else if (sourceConfiguration.getName() == SourceResult.KEYWORD_SERVICE) {
+					} else if (SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE.equals(sourceConfiguration.getName())) {
+						try {
+							List<InteractomeRefNetworkEntry> dbResults = this._interactomeClient_association.getDatabase();
+							sourceResult.setVersion("0.1.1a1");
+							sourceResult.setUuid("1857a397-3453-4ae4-8208-e33a283c85ec");
+							sourceResult.setNumberOfNetworks("2009");
+							sourceResult.setStatus("ok");
+						} catch (javax.ws.rs.ProcessingException e) {
+							sourceResult.setStatus("error");
+						}
+						catch (NdexException e) {
+							sourceResult.setStatus("error");
+						}
+					}  else if (sourceConfiguration.getName() == SourceResult.KEYWORD_SERVICE) {
 						sourceResult.setVersion("0.2.0");
 						sourceResult.setUuid("33b9c3ca-13e5-48b9-bcd2-09070203350a");
 						sourceResult.setNumberOfNetworks("2009");
@@ -560,11 +608,16 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		return 0;
 	}
 
-	protected int updateInteractomeSourceQueryResults(SourceQueryResults sqRes) {
+	// type should be either 'i' or 'a' which maps to interactom ppi and association. 
+	protected int updateInteractomeSourceQueryResults(SourceQueryResults sqRes, String type) {
+		
 		try {
-			List<InteractomeSearchResult> qr = this._interactomeClient
+			InteractomeRestClient client = type.equals("i")? 
+					_interactomeClient_ppi : _interactomeClient_association;
+			
+			List<InteractomeSearchResult> qr = client
 					.getSearchResult(UUID.fromString(sqRes.getSourceUUID()));
-			SearchStatus status = this._interactomeClient.getSearchStatus(UUID.fromString(sqRes.getSourceUUID()));
+			SearchStatus status = this._interactomeClient_ppi.getSearchStatus(UUID.fromString(sqRes.getSourceUUID()));
 			sqRes.setMessage(status.getMessage());
 			sqRes.setProgress(status.getProgress());
 			sqRes.setStatus(status.getStatus());
@@ -618,9 +671,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
 					if (sqRes.getProgress() == 100) {
 						numComplete++;
 					}
-				} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_SERVICE)) {
+				} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_PPI_SERVICE) || 
+						sqRes.getSourceName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
 					_logger.info("adding hits to hit count");
-					hitCount += updateInteractomeSourceQueryResults(sqRes);
+					hitCount += updateInteractomeSourceQueryResults(sqRes,
+							(sqRes.getSourceName().equals(SourceResult.INTERACTOME_PPI_SERVICE)? "i": "a"));
 					if (sqRes.getProgress() == 100) {
 						numComplete++;
 					}
@@ -765,7 +820,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				} catch (EnrichmentException ee) {
 					throw new SearchException("caught error trying to delete enrichment: " + ee.getMessage());
 				}
-			} else if (sqr.getSourceName().equals(SourceResult.INTERACTOME_SERVICE)) {
+			} else if ( sqr.getSourceName().equals(SourceResult.INTERACTOME_PPI_SERVICE) || 
+					    sqr.getSourceName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
 				// TODO handle this when a delete function is added to the interactome search.
 			}
 		}
@@ -808,8 +864,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
 					} catch (NdexException ne) {
 						throw new SearchException("unable to get network " + ne.getMessage());
 					}
-				} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_SERVICE)) {
-					return this._interactomeClient.getOverlayedNetworkStream(UUID.fromString(sqRes.getSourceUUID()),
+				} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_PPI_SERVICE)) {
+					return this._interactomeClient_ppi.getOverlayedNetworkStream(UUID.fromString(sqRes.getSourceUUID()),
+							UUID.fromString(sqr.getNetworkUUID()));
+				} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
+					return this._interactomeClient_association.getOverlayedNetworkStream(UUID.fromString(sqRes.getSourceUUID()),
 							UUID.fromString(sqr.getNetworkUUID()));
 				}
 			}

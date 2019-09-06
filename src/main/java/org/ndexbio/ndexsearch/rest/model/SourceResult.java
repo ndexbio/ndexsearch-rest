@@ -13,7 +13,8 @@ public class SourceResult {
     
     public static final String ENRICHMENT_SERVICE = "enrichment";
     public static final String KEYWORD_SERVICE = "keyword";
-    public static final String INTERACTOME_SERVICE = "interactome";
+    public static final String INTERACTOME_PPI_SERVICE = "interactome-ppi";
+    public static final String INTERACTOME_GENEASSOCIATION_SERVICE = "interactome-association";
     
     private String _uuid;
     private String _description;
