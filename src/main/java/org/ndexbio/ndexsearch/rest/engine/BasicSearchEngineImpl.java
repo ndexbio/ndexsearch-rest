@@ -36,6 +36,7 @@ import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.ndexsearch.rest.model.Query;
 import org.ndexbio.ndexsearch.rest.model.QueryResults;
 import org.ndexbio.ndexsearch.rest.model.QueryStatus;
+import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.ndexsearch.rest.model.SourceQueryResult;
 import org.ndexbio.ndexsearch.rest.model.SourceQueryResults;
@@ -170,7 +171,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				threadSleep();
 				continue;
 			}
-			processQuery(id, _queryTasks.remove(id));
+				processQuery(id, _queryTasks.remove(id));
 		}
 		
 		_logger.debug("Shutdown was invoked");
@@ -274,7 +275,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				return sqr;
 			}
 			sqr.setStatus(QueryResults.SUBMITTED_STATUS);
-			sqr.setSourceUUID(enrichTaskId);
+			sqr.setSourceTaskId(enrichTaskId);
 			return sqr;
 		} catch (EnrichmentException ee) {
 			_logger.error("Caught exception running enrichment", ee);
@@ -299,7 +300,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				return sqr;
 			}
 			sqr.setStatus(QueryResults.SUBMITTED_STATUS);
-			sqr.setSourceUUID(interactomeTaskId);
+			sqr.setSourceTaskId(interactomeTaskId);
 			return sqr;
 		} catch (NdexException ee) {
 			_logger.error("Caught ndexexception running interactome-ppi", ee);
@@ -327,7 +328,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				return sqr;
 			}
 			sqr.setStatus(QueryResults.SUBMITTED_STATUS);
-			sqr.setSourceUUID(interactomeTaskId);
+			sqr.setSourceTaskId(interactomeTaskId);
 			return sqr;
 		} catch (NdexException ee) {
 			_logger.error("Caught ndexexception running interactome-association", ee);
@@ -422,7 +423,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			sqr.setNumberOfHits(sqrList.size());
 			sqr.setProgress(100);
 			sqr.setStatus(QueryResults.COMPLETE_STATUS);
-			sqr.setSourceUUID(getUUIDOfSourceByName(sourceName));
+			sqr.setSourceTaskId(getUUIDOfSourceByName(sourceName));
 			sqr.setResults(sqrList);
 			_logger.info("Returning sqr");
 			return sqr;
@@ -434,6 +435,12 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		return null;
 	}
 
+	/**
+	 * 
+	 * @param id task id
+	 * @param query
+	 * @throws NdexException 
+	 */
 	protected void processQuery(final String id, Query query) {
 
 		QueryResults qr = getQueryResultsFromDb(id);
@@ -457,7 +464,19 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		SourceQueryResults sqr = null;
 		for (String source : query.getSourceList()) {
 			_logger.info("Querying service: " + source);
-
+			
+			SourceConfiguration sourceConf = this._sourceConfigurations.get().getSourceConfigurationByName(source);
+			if ( sourceConf == null) {
+				String message = "Source " + source + " is not configured in this server."; 
+				_logger.error(message);
+				qr.setStatus(QueryResults.FAILED_STATUS);
+				qr.setMessage(message);
+				qr.setProgress(100);
+				updateQueryResultsInDb(id, qr);
+				return;
+			}	
+			
+			
 			if (source.equals(SourceResult.ENRICHMENT_SERVICE)) {
 				sqr = processEnrichment(source, query);
 				sqr.setSourceRank(0);
@@ -474,6 +493,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 
 			if (sqr != null) {
 				_logger.info("Adding SourceQueryResult for " + source);
+				sqr.setSourceUUID(sourceConf.getUuid());
 				sqrList.add(sqr);
 				qr.setSources(sqrList);
 				updateQueryResultsInDb(id, qr);
@@ -508,6 +528,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 
 					final SourceResult sourceResult = new SourceResult();
 					sourceResult.setName(sourceConfiguration.getName());
+					sourceResult.setUuid(sourceConfiguration.getUuid().toString());
 					sourceResult.setDescription(sourceConfiguration.getDescription());
 					sourceResult.setEndPoint(sourceConfiguration.getEndPoint());
 					String sourceName = sourceConfiguration.getName();
@@ -517,7 +538,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 							DatabaseResults dbResults = this._enrichClient.getDatabaseResults();
 							sourceResult.setDatabases(dbResults.getResults());
 							sourceResult.setVersion("0.1.0");
-							sourceResult.setUuid("eeb4af50-83c4-4e33-ac21-87142403589b");
+							//sourceResult.setUuid("eeb4af50-83c4-4e33-ac21-87142403589b");
 							sourceResult.setNumberOfNetworks(242);
 							sourceResult.setStatus("ok");
 						} catch (javax.ws.rs.ProcessingException e) {
@@ -530,7 +551,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						try {
 							List<InteractomeRefNetworkEntry> dbResults = this._interactomeClient_ppi.getDatabase();
 							sourceResult.setVersion("0.1.1a1");
-							sourceResult.setUuid("0857a397-3453-4ae4-8208-e33a283c85ec");
+							//sourceResult.setUuid("0857a397-3453-4ae4-8208-e33a283c85ec");
 							sourceResult.setNumberOfNetworks(dbResults.size());
 							sourceResult.setStatus("ok");
 						} catch (javax.ws.rs.ProcessingException e) {
@@ -543,7 +564,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						try {
 							List<InteractomeRefNetworkEntry> dbResults = this._interactomeClient_association.getDatabase();
 							sourceResult.setVersion("0.2");
-							sourceResult.setUuid("1857a397-3453-4ae4-8208-e33a283c85ec");
+							//sourceResult.setUuid("1857a397-3453-4ae4-8208-e33a283c85ec");
 							sourceResult.setNumberOfNetworks(dbResults.size());
 							sourceResult.setStatus("ok");
 						} catch (javax.ws.rs.ProcessingException e) {
@@ -554,7 +575,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						}
 					}  else if (sourceName == SourceResult.KEYWORD_SERVICE) {
 						sourceResult.setVersion("0.2.0");
-						sourceResult.setUuid("33b9c3ca-13e5-48b9-bcd2-09070203350a");
+						//sourceResult.setUuid("33b9c3ca-13e5-48b9-bcd2-09070203350a");
 						sourceResult.setNumberOfNetworks(2009);
 						sourceResult.setStatus("ok");
 					}
@@ -578,7 +599,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 */
 	protected int updateEnrichmentSourceQueryResults(SourceQueryResults sqRes) {
 		try {
-			EnrichmentQueryResults qr = this._enrichClient.getQueryResults(sqRes.getSourceUUID(), 0, 0);
+			EnrichmentQueryResults qr = this._enrichClient.getQueryResults(sqRes.getSourceTaskId(), 0, 0);
 			sqRes.setMessage(qr.getMessage());
 			sqRes.setProgress(qr.getProgress());
 			sqRes.setStatus(qr.getStatus());
@@ -616,9 +637,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			InteractomeRestClient client = type.equals("i")? 
 					_interactomeClient_ppi : _interactomeClient_association;
 			
-			List<InteractomeSearchResult> qr = client
-					.getSearchResult(UUID.fromString(sqRes.getSourceUUID()));
-			SearchStatus status = client.getSearchStatus(UUID.fromString(sqRes.getSourceUUID()));
+			UUID interactomeTaskId = UUID.fromString(sqRes.getSourceTaskId());
+			List<InteractomeSearchResult> qr = client.getSearchResult(interactomeTaskId);
+			SearchStatus status = client.getSearchStatus(interactomeTaskId);
 			sqRes.setMessage(status.getMessage());
 			sqRes.setProgress(status.getProgress());
 			sqRes.setStatus(status.getStatus());
@@ -817,8 +838,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		for (SourceQueryResults sqr : qr.getSources()) {
 			if (sqr.getSourceName().equals(SourceResult.ENRICHMENT_SERVICE)) {
 				try {
-					_logger.debug("Calling enrichment DELETE on id: " + sqr.getSourceUUID());
-					_enrichClient.delete(sqr.getSourceUUID());
+					_logger.debug("Calling enrichment DELETE on id: " + sqr.getSourceTaskId());
+					_enrichClient.delete(sqr.getSourceTaskId());
 				} catch (EnrichmentException ee) {
 					throw new SearchException("caught error trying to delete enrichment: " + ee.getMessage());
 				}
@@ -844,16 +865,40 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
 		checkAndUpdateQueryResults(qr);
 		for (SourceQueryResults sqRes : qr.getSources()) {
-			if (sqRes.getSourceUUID().equals(sourceUUID) == false) {
+			if ( ! sqRes.getSourceUUID().equals(UUID.fromString(sourceUUID))) {
 				continue;
 			}
-			for (SourceQueryResult sqr : sqRes.getResults()) {
+			
+			if (sqRes.getSourceName().equals(SourceResult.ENRICHMENT_SERVICE)) {
+				try {
+					return _enrichClient.getNetworkOverlayAsCX(sqRes.getSourceTaskId(), "", networkUUID);
+				} catch (EnrichmentException ee) {
+					throw new SearchException("unable to get network: " + ee.getMessage());
+				}
+			} else if (sqRes.getSourceName().equals(SourceResult.KEYWORD_SERVICE)) {
+				try {
+					_logger.info("Returning network as stream: " + networkUUID);
+					return this._keywordclient.getNetworkAsCXStream(UUID.fromString(networkUUID));
+				} catch (IOException ee) {
+					throw new SearchException("unable to get network: " + ee.getMessage());
+				} catch (NdexException ne) {
+					throw new SearchException("unable to get network " + ne.getMessage());
+				}
+			} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_PPI_SERVICE)) {
+				return this._interactomeClient_ppi.getOverlaidNetworkStream(UUID.fromString(sqRes.getSourceTaskId()),
+						UUID.fromString(networkUUID));
+			} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
+				return this._interactomeClient_association.getOverlaidNetworkStream(UUID.fromString(sqRes.getSourceTaskId()),
+						UUID.fromString(networkUUID));
+			}
+			
+/*			for (SourceQueryResult sqr : sqRes.getResults()) {
 				if (sqr.getNetworkUUID() == null || !sqr.getNetworkUUID().equals(networkUUID)) {
 					continue;
 				}
 				if (sqRes.getSourceName().equals(SourceResult.ENRICHMENT_SERVICE)) {
 					try {
-						return _enrichClient.getNetworkOverlayAsCX(sqRes.getSourceUUID(), "", sqr.getNetworkUUID());
+						return _enrichClient.getNetworkOverlayAsCX(sqRes.getSourceTaskId(), "", sqr.getNetworkUUID());
 					} catch (EnrichmentException ee) {
 						throw new SearchException("unable to get network: " + ee.getMessage());
 					}
@@ -867,15 +912,18 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						throw new SearchException("unable to get network " + ne.getMessage());
 					}
 				} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_PPI_SERVICE)) {
-					return this._interactomeClient_ppi.getOverlayedNetworkStream(UUID.fromString(sqRes.getSourceUUID()),
+					return this._interactomeClient_ppi.getOverlaidNetworkStream(UUID.fromString(sqRes.getSourceTaskId()),
 							UUID.fromString(sqr.getNetworkUUID()));
 				} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
-					return this._interactomeClient_association.getOverlayedNetworkStream(UUID.fromString(sqRes.getSourceUUID()),
+					return this._interactomeClient_association.getOverlaidNetworkStream(UUID.fromString(sqRes.getSourceTaskId()),
 							UUID.fromString(sqr.getNetworkUUID()));
 				}
-			}
+			} */
 		}
 		return null;
 	}
+	
+	
+	
 
 }

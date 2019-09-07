@@ -6,6 +6,8 @@
 package org.ndexbio.ndexsearch.rest.model;
 
 import java.util.Arrays;
+import java.util.UUID;
+
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -27,6 +29,7 @@ public class TestSourceQueryResults {
         assertEquals(0L, sqrs.getWallTime());
         assertNull(sqrs.getSourceUUID());
         assertNull(sqrs.getStatus());
+        assertNull(sqrs.getSourceTaskId());
         
         SourceQueryResult sq = new SourceQueryResult();
         sq.setDescription("desc");
@@ -37,8 +40,9 @@ public class TestSourceQueryResults {
         sqrs.setSourceName("source");
         sqrs.setSourceRank(3);
         sqrs.setWallTime(4L);
-        sqrs.setSourceUUID("uuid");
+        sqrs.setSourceUUID(UUID.fromString("1857a397-3453-4ae4-8208-e33a283c85ec"));
         sqrs.setStatus("status");
+        sqrs.setSourceTaskId("abcde");
         
         assertEquals("message", sqrs.getMessage());
         assertEquals(1, sqrs.getNumberOfHits());
@@ -47,8 +51,9 @@ public class TestSourceQueryResults {
         assertEquals("source", sqrs.getSourceName());
         assertEquals(3, sqrs.getSourceRank());
         assertEquals(4L, sqrs.getWallTime());
-        assertEquals("uuid", sqrs.getSourceUUID());
+        assertEquals(UUID.fromString("1857a397-3453-4ae4-8208-e33a283c85ec"), sqrs.getSourceUUID());
         assertEquals("status", sqrs.getStatus());
+        assertEquals("abcde",sqrs.getSourceTaskId());
         
     }
 }
