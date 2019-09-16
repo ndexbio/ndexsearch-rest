@@ -54,13 +54,13 @@ javadocs: ## Generates javadoc documentation and launches browser
 
 installdependencies: ## For running on travis, checks out and builds dependencies
 	mkdir -p target/tmp
-	git clone --branch=v2.4.2 --depth=1 https://github.com/ndexbio/ndex-object-model target/tmp/ndex-object-model
+	git clone --branch=v2.4.3 --depth=1 https://github.com/ndexbio/ndex-object-model target/tmp/ndex-object-model
 	cd target/tmp/ndex-object-model ; mvn clean install -DskipTests=true -B
 	git clone --branch=master --depth=1 https://github.com/ndexbio/ndex-enrichment-rest-model target/tmp/ndex-enrichment-rest-model
 	cd target/tmp/ndex-enrichment-rest-model ; mvn clean install -DskipTests=true -B
-	git clone --branch=v2.4.2 --depth=1 https://github.com/ndexbio/ndex-java-client target/tmp/ndex-java-client
+	git clone --branch=v2.4.3 --depth=1 https://github.com/ndexbio/ndex-java-client target/tmp/ndex-java-client
 	cd target/tmp/ndex-java-client ; mvn clean install -DskipTests=true -B
-	git clone --branch=chris2.2 --depth=1 https://github.com/ndexbio/ndex-interactome-search target/tmp/ndex-interactome-search
+	git clone --branch=master --depth=1 https://github.com/ndexbio/ndex-interactome-search target/tmp/ndex-interactome-search
 	cd target/tmp/ndex-interactome-search ; mvn clean install -DskipTests=true -B
 	git clone --branch=master --depth=1 https://github.com/ndexbio/ndex-enrichment-rest-client target/tmp/ndex-enrichment-rest-client
 	cd target/tmp/ndex-enrichment-rest-client ; mvn clean install -DskipTests=true -B
