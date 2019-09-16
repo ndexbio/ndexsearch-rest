@@ -1,5 +1,7 @@
 package org.ndexbio.ndexsearch.rest.model;
 
+import java.util.UUID;
+
 /**
  * Represents the configuration of a source for the integrated search.
  * 
@@ -11,6 +13,7 @@ public class SourceConfiguration {
     private String _description;
     private String _name;
     private String _endPoint;
+    private UUID _uuid;
 
     /**
      * Gets description of source
@@ -59,5 +62,13 @@ public class SourceConfiguration {
     public void setEndPoint(String _endPoint) {
         this._endPoint = _endPoint;
     }
+
+	public UUID getUuid() {
+		return _uuid;
+	}
+
+	public void setUuid(String _uuid) {
+		this._uuid = UUID.fromString(_uuid);
+	}
 
 }

@@ -6,6 +6,7 @@
 package org.ndexbio.ndexsearch.rest.model;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  *
@@ -13,7 +14,7 @@ import java.util.List;
  */
 public class SourceQueryResults {
     
-    private String _sourceUUID;
+    private UUID _sourceUUID;
     private String _sourceName;
     private String _status;
     private String _message;
@@ -21,13 +22,14 @@ public class SourceQueryResults {
     private long _wallTime;
     private int _numberOfHits;
     private int _sourceRank;
+    private String _sourceTaskId;
     private List<SourceQueryResult> _results;
 
-    public String getSourceUUID() {
+    public UUID getSourceUUID() {
         return _sourceUUID;
     }
 
-    public void setSourceUUID(String _sourceUUID) {
+    public void setSourceUUID(UUID _sourceUUID) {
         this._sourceUUID = _sourceUUID;
     }
 
@@ -94,6 +96,14 @@ public class SourceQueryResults {
     public void setResults(List<SourceQueryResult> _results) {
         this._results = _results;
     }
+
+	public String getSourceTaskId() {
+		return _sourceTaskId;
+	}
+
+	public void setSourceTaskId(String _sourceTaskId) {
+		this._sourceTaskId = _sourceTaskId;
+	}
     
     
     

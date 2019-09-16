@@ -22,22 +22,6 @@ public class TestSourceQueryResultByRank {
         assertEquals(1, sorter.compare(null, new SourceQueryResult()));
     }
 
-    @Test
-    public void testClassCastException(){
-        SourceQueryResultByRank sorter = new SourceQueryResultByRank();
-        try {
-            sorter.compare(new Integer(4), new SourceQueryResult());
-            fail("Expected ClassCastException");
-        } catch(ClassCastException cce){
-            assertEquals("o1 is not of type SourceQueryResult", cce.getMessage());
-        }
-        try {
-            sorter.compare(new SourceQueryResult(), new Integer(5));
-            fail("Expected ClassCastException");
-        } catch(ClassCastException cce){
-            assertEquals("o2 is not of type SourceQueryResult", cce.getMessage());
-        }
-    }
     
     @Test
     public void testVariousRanks(){

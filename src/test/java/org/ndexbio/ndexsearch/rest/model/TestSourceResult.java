@@ -22,7 +22,7 @@ public class TestSourceResult {
         assertNull(sr.getDescription());
         assertNull(sr.getEndPoint());
         assertNull(sr.getName());
-        assertNull(sr.getNumberOfNetworks());
+        assertEquals(0, sr.getNumberOfNetworks());
         assertNull(sr.getStatus());
         assertNull(sr.getUuid());
         assertNull(sr.getVersion());
@@ -31,7 +31,7 @@ public class TestSourceResult {
         sr.setDescription("description");
         sr.setEndPoint("endpoint");
         sr.setName("name");
-        sr.setNumberOfNetworks("1");
+        sr.setNumberOfNetworks(1);
         sr.setStatus("status");
         sr.setUuid("uuid");
         sr.setVersion("version");
@@ -40,7 +40,7 @@ public class TestSourceResult {
         assertEquals("description", sr.getDescription());
         assertEquals("endpoint", sr.getEndPoint());
         assertEquals("name", sr.getName());
-        assertEquals("1", sr.getNumberOfNetworks());
+        assertEquals(1, sr.getNumberOfNetworks());
         assertEquals("status", sr.getStatus());
         assertEquals("uuid", sr.getUuid());
         assertEquals("version", sr.getVersion());

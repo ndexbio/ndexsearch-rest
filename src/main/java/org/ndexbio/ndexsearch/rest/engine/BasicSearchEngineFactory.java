@@ -50,20 +50,23 @@ public class BasicSearchEngineFactory {
      */
     public SearchEngine getSearchEngine() throws Exception {
         EnrichmentRestClient enrichClient = null;
-        InteractomeRestClient interactomeClient = null;
+        InteractomeRestClient interactomeClient_i = null;
+        InteractomeRestClient interactomeClient_a = null;
         
         for (SourceConfiguration sc : _sourceConfigurations.getSources()) {
         	
         	if (sc.getName().equals(SourceResult.ENRICHMENT_SERVICE)){
                 enrichClient = new EnrichmentRestClientImpl(sc.getEndPoint(), "");
-            }
-            if (sc.getName().equals(SourceResult.INTERACTOME_SERVICE)){
-            	interactomeClient = new InteractomeRestClient(sc.getEndPoint(), "");
-            }
+            } else if (sc.getName().equals(SourceResult.INTERACTOME_PPI_SERVICE)){
+            	interactomeClient_i = new InteractomeRestClient(sc.getEndPoint(), "");
+            } else if (sc.getName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)){
+            	interactomeClient_a = new InteractomeRestClient(sc.getEndPoint(), "");
+            } 
             
         }
         BasicSearchEngineImpl searcher = new BasicSearchEngineImpl(_dbDir,
-                _taskDir, _sourceConfigurations, _sourcePollingInterval, _keywordclient, enrichClient, interactomeClient);
+                _taskDir, _sourceConfigurations, _sourcePollingInterval, _keywordclient,
+                enrichClient, interactomeClient_i, interactomeClient_a);
         return searcher;
     }
        

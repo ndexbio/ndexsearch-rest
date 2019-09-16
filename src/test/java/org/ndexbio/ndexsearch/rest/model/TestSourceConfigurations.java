@@ -22,13 +22,19 @@ public class TestSourceConfigurations {
         SourceConfigurations sr = new SourceConfigurations();
         assertNull(sr.getSources());
        
+        assertNull(sr.getSourceConfigurationByName("foo"));
        
         SourceConfiguration sRes = new SourceConfiguration();
         sRes.setName("hi");
+        sRes.setDescription("desc");
         sr.setSources(Arrays.asList(sRes));
        
         assertEquals(1, sr.getSources().size());
         assertEquals("hi", sr.getSources().get(0).getName());
+        
+        assertNull(sr.getSourceConfigurationByName("foo"));
+        
+        assertEquals(sr.getSourceConfigurationByName("hi").getDescription(), "desc");
         
         
     }

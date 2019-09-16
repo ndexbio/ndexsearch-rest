@@ -1,6 +1,5 @@
 package org.ndexbio.ndexsearch.rest.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -36,5 +35,18 @@ public class SourceConfigurations {
     public void setSources(List<SourceConfiguration> _sources) {
         this._sources = _sources;
     }
+    
+    
+    public SourceConfiguration getSourceConfigurationByName (String name) {
+    	if ( _sources == null || name == null ) return null;
+    	
+		for ( SourceConfiguration conf : _sources) {
+			if (conf.getName().contentEquals(name) ) {
+				return conf;
+			}
+		}
+		
+		return null;
+	}
     
 }

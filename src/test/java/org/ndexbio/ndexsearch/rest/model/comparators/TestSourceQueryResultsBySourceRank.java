@@ -15,7 +15,8 @@ import org.ndexbio.ndexsearch.rest.model.SourceQueryResults;
  */
 public class TestSourceQueryResultsBySourceRank {
     
-    @Test
+   // commenting out these tests because these errors can be detected in compile time now. 
+/*	@Test
     public void testSortingWithNullParameters(){
         SourceQueryResultsBySourceRank sorter = new SourceQueryResultsBySourceRank();
         assertEquals(0, sorter.compare(null, null));
@@ -38,7 +39,7 @@ public class TestSourceQueryResultsBySourceRank {
         } catch(ClassCastException cce){
             assertEquals("o2 is not of type SourceQueryResults", cce.getMessage());
         }
-    }
+    } */
     
     @Test
     public void testVariousRanks(){
