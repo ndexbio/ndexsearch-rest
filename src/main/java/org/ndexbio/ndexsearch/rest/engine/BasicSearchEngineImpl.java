@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -261,8 +262,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
 
 	protected SourceQueryResults processEnrichment(final String sourceName, Query query) {
 		EnrichmentQuery equery = new EnrichmentQuery();
-		equery.setDatabaseList(getEnrichmentDatabaseList(sourceName));
-		equery.setGeneList(query.getGeneList());
+		equery.setDatabaseList(new TreeSet<String>(getEnrichmentDatabaseList(sourceName)));
+		equery.setGeneList(new TreeSet<String>(query.getGeneList()));
 		SourceQueryResults sqr = new SourceQueryResults();
 		sqr.setSourceName(sourceName);
 		try {
@@ -618,6 +619,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 					sqr.setRank(qRes.getRank());
 					sqr.setImageURL(qRes.getImageURL());
 					sqr.getDetails().put("PValue", Double.valueOf(qRes.getpValue()));
+					sqr.getDetails().put("similarity", Double.valueOf(qRes.getSimilarity()));
 					sqResults.add(sqr);
 				}
 			}
