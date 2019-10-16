@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.core.Response;
 import org.ndexbio.ndexsearch.rest.model.SourceResults;
+import org.ndexbio.enrichment.rest.model.DatabaseResult;
 import org.ndexbio.enrichment.rest.model.ErrorResponse;
 import org.ndexbio.ndexsearch.rest.engine.SearchEngine;
 
@@ -71,4 +72,39 @@ public class SearchSource {
             return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
     }
+    
+    /**
+     * Returns list of objects in the source specified by the given UUID
+     *//*
+    @GET
+    @Path(SOURCE_PATH + "/{uuid}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Gets list of objects in source specified by uuid",
+               description = "Result in JSON which is a list of databases and their associated networks",
+               responses = {
+            		   @ApiResponse(responseCode = "200", description = "Success",
+            				        content = @Content(mediaType = MediaType.APPLICATION_JSON,
+            				        schema = @Schema())),
+            		   @ApiResponse(responseCode = "500", description = "Server Error",
+                                    content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                                    schema = @Schema(implementation = ErrorResponse.class)))
+               })
+    public Response getSourceObjects() {
+    	ObjectMapper omappy = new ObjectMapper();
+    	try {
+    		SearchEngine searcher = Configuration.getInstance().getSearchEngine();
+    		if (searcher == null){
+                ErrorResponse er = new ErrorResponse();
+                er.setMessage("Configuration error");
+                er.setDescription("SearchEngine is null, which is most likely due to configuration error");
+                er.setErrorCode("searchsource1");
+                return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
+            }
+    		DatabaseResult dr = 
+    		
+    	} catch (Exception ex) {
+            ErrorResponse er = new ErrorResponse("Error querying for source information", ex);
+            return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
+    	}
+    }*/
 }
