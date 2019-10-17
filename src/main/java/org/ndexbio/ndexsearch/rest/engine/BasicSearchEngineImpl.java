@@ -925,6 +925,21 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		return null;
 	}
 	
+	@Override
+	public DatabaseResults getEnrichmentDatabases() throws EnrichmentException {
+		return _enrichClient.getDatabaseResults();
+	}
+	
+	@Override
+	public List<InteractomeRefNetworkEntry> getInteractomePpiDatabases() throws NdexException {
+		return _interactomeClient_ppi.getDatabase();
+	}
+	
+	@Override
+	public List<InteractomeRefNetworkEntry> getInteractomeGeneAssociationDatabases() throws NdexException {
+		return _interactomeClient_association.getDatabase();
+	} 
+	
 	
 	
 
