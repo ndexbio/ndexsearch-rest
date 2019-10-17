@@ -35,7 +35,8 @@ import org.ndexbio.ndexsearch.rest.model.QueryStatus;
  * @author churas
  */
 @org.jboss.resteasy.annotations.providers.jaxb.IgnoreMediaTypes("application/*+json")
-@Path(Configuration.REST_PATH)
+//@Path(Configuration.REST_PATH)
+@Path(Configuration.V_ONE_PATH)
 public class Search {
     
     static Logger logger = LoggerFactory.getLogger(Search.class);
@@ -88,7 +89,7 @@ public class Search {
             t.setId(id);
             return Response
             		.status(202)
-            		.location(new URI(Configuration.getInstance().getHostURL() + "/" + id))
+            		.location(new URI(Configuration.getInstance().getHostURL() + Configuration.V_ONE_PATH + "/" + id))
             		.type(MediaType.APPLICATION_JSON)
             		.entity(omappy.writeValueAsString(t))
             		.build();

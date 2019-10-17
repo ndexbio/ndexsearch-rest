@@ -23,7 +23,8 @@ import org.ndexbio.ndexsearch.rest.engine.SearchEngine;
  * Returns Sources that can be queried
  * @author churas
  */
-@Path(Configuration.REST_PATH)
+//@Path(Configuration.REST_PATH)
+@Path(Configuration.V_ONE_PATH)
 public class SearchSource {
     
     public static final String SOURCE_PATH = "/source";
