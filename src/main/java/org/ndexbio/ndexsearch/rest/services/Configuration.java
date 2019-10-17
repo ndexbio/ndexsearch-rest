@@ -38,6 +38,8 @@ public class Configuration {
     public static final String TASK_DIR = "search.task.dir";
     public static final String UNSET_IMAGE_URL = "search.unset.image.url";
     
+    public static final String HOST_URL = "search.host.url";
+    
     public static final String NDEX_USER = "ndex.user";
     public static final String NDEX_PASS = "ndex.password";
     public static final String NDEX_SERVER = "ndex.server";
@@ -57,6 +59,8 @@ public class Configuration {
     private static String _searchDatabaseDir;
     private static String _searchTaskDir;
     private static String _unsetImageURL;
+    
+    private static String _searchHostURL;
     
     private  String _sourceConfiguration;
     private static String _sourcePollingInterval;
@@ -83,6 +87,14 @@ public class Configuration {
         _searchTaskDir = props.getProperty(Configuration.TASK_DIR);
         _unsetImageURL = props.getProperty(Configuration.UNSET_IMAGE_URL,
                                            "http://ndexbio.org/images/new_landing_page_logo.06974471.png");
+        
+        _searchHostURL = props.getProperty(Configuration.HOST_URL, "");
+        if (_searchHostURL.trim().isEmpty()){
+            _searchHostURL = "";
+        } else if (!_searchHostURL.endsWith("/")){
+            _searchHostURL =_searchHostURL + "/";
+        }
+        
         _sourceConfiguration = props.getProperty(SOURCE_CONFIGURATIONS_JSON_FILE, "source.configurations.json");
         _sourcePollingInterval = props.getProperty(Configuration.SOURCE_POLLING_INTERVAL, Long.toString(DEFAULT_SOURCE_POLLING_INTERVAL));
         _client = getNDExClient(props);
@@ -107,6 +119,15 @@ public class Configuration {
      */
     public String getUnsetImageURL(){
         return _unsetImageURL;
+    }
+    
+    /**
+     * Gets alternate URL prefix for the host running this service.
+     * @return String containing alternate URL ending with / or empty
+     *         string if not is set
+     */
+    public String getHostURL(){
+        return _searchHostURL;
     }
     
     public String getSearchDatabaseDirectory(){

@@ -86,7 +86,12 @@ public class Search {
             }
             Task t = new Task();
             t.setId(id);
-            return Response.status(202).location(new URI("/" + id)).type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(t)).build();
+            return Response
+            		.status(202)
+            		.location(new URI(Configuration.getInstance().getHostURL() + "/" + id))
+            		.type(MediaType.APPLICATION_JSON)
+            		.entity(omappy.writeValueAsString(t))
+            		.build();
         } catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error requesting search", ex);
             return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
