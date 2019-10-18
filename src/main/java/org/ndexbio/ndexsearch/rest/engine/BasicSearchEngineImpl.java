@@ -538,14 +538,17 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						try {
 							DatabaseResults dbResults = this._enrichClient.getDatabaseResults();
 							sourceResult.setDatabases(dbResults.getResults());
+
 							sourceResult.setVersion("0.1.0");
+
 							//sourceResult.setUuid("eeb4af50-83c4-4e33-ac21-87142403589b");
 							sourceResult.setNumberOfNetworks(242);
+
 							sourceResult.setStatus("ok");
+
 						} catch (javax.ws.rs.ProcessingException e) {
-								sourceResult.setStatus("error");
-							}
-						 catch (EnrichmentException e) {
+							sourceResult.setStatus("error");
+						} catch (EnrichmentException e) {
 							sourceResult.setStatus("error");
 						}
 					} else if (SourceResult.INTERACTOME_PPI_SERVICE.equals(sourceName)) {

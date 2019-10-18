@@ -5,11 +5,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.List;
 import java.util.Properties;
 import javax.naming.InitialContext;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
 import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
+import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
+import org.ndexbio.ndexsearch.rest.model.SourceResult;
 import org.ndexbio.model.exceptions.NdexException;
 import org.ndexbio.rest.client.NdexRestClient;
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
@@ -147,7 +150,53 @@ public class Configuration {
         ObjectMapper mapper = new ObjectMapper();
         File dbres = getSourceConfigurationsFile();
         try {
-            return mapper.readValue(dbres, SourceConfigurations.class);
+        	SourceConfigurations sc = mapper.readValue(dbres, SourceConfigurations.class);
+        	if (sc != null) {
+	        	SourceConfiguration enrichConfig = sc.getSourceConfigurationByName(SourceResult.ENRICHMENT_SERVICE);
+	        	if (enrichConfig != null) {
+		        	String enrichEndPoint = enrichConfig.getEndPoint();
+		        	if (enrichEndPoint.substring(enrichEndPoint.length() - 1).equals("/")) {
+		        		enrichConfig.setEndPoint(enrichEndPoint.substring(0, enrichEndPoint.length() - 1));
+		        	}
+	        	}
+	        	
+	        	SourceConfiguration interactomePpiConfig = sc.getSourceConfigurationByName(SourceResult.INTERACTOME_PPI_SERVICE);
+	        	if (interactomePpiConfig != null) {
+	        		String interactomePpiEndPoint = interactomePpiConfig.getEndPoint();
+	        		if (!interactomePpiEndPoint.substring(interactomePpiEndPoint.length() - 1).equals("/")) {
+	        			interactomePpiConfig.setEndPoint(interactomePpiEndPoint + "/");
+	        		}
+	        	}
+	        	
+	        	SourceConfiguration interactomeAssociationConfig = sc.getSourceConfigurationByName(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE);
+	        	if (interactomeAssociationConfig != null) {
+	        		String interactomeAssociationEndPoint = interactomeAssociationConfig.getEndPoint();
+	        		if (!interactomeAssociationEndPoint.substring(interactomeAssociationEndPoint.length() - 1).equals("/")) {
+	        			interactomeAssociationConfig.setEndPoint(interactomeAssociationEndPoint + "/");
+	        		}
+	        	}
+        	}
+        	
+        	/*
+        	List<SourceConfiguration> sources = sc.getSources();
+        	/*
+        	for (SourceConfiguration source : sources) {
+        		//String sourceName = source.getName();
+        		
+        		if (source.getName().equals(SourceResult.ENRICHMENT_SERVICE)) {
+        			//String endPoint = source.getEndPoint();
+        			//if (endPoint.substring(endPoint.length() - 1).equals("/")) {
+        				//source.setEndPoint(endPoint.substring(0, endPoint.length() - 1));
+        			//}
+        		} else if (source.getName().equals(SourceResult.INTERACTOME_PPI_SERVICE) || 
+        				   source.getName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
+        			//String endPoint = source.getEndPoint();
+        			//if (!endPoint.substring(endPoint.length() - 1).equals("/")) {
+        				//source.setEndPoint(endPoint + "/");
+        			//}
+        		}
+        	}*/
+            return sc;
         }
         catch(IOException io){
             _logger.error("caught io exception trying to load " + dbres.getAbsolutePath(), io);
