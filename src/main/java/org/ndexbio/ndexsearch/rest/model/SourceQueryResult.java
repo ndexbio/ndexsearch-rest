@@ -17,13 +17,13 @@ public class SourceQueryResult {
     private String _networkUUID;
     private String _description;
     private String _imageURL;
+    private String _url;
     private int _percentOverlap;
     private int _nodes;
     private int _edges;
     private int _rank;
     private Set<String> _hitGenes;
     private Map<String,Object> _details;
-
 
     public SourceQueryResult() {
     	_details= new TreeMap<>();
@@ -53,6 +53,13 @@ public class SourceQueryResult {
         this._imageURL = _imageURL;
     }
 
+    public String getUrl() {
+    	return _url;
+    }
+    
+    public void setUrl(String _url) {
+    	this._url = _url;
+    }
 
     public int getPercentOverlap() {
         return _percentOverlap;

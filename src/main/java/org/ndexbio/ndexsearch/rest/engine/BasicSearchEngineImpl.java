@@ -621,8 +621,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
 					sqr.setPercentOverlap(qRes.getPercentOverlap());
 					sqr.setRank(qRes.getRank());
 					sqr.setImageURL(qRes.getImageURL());
+					sqr.setUrl(qRes.getUrl());
 					sqr.getDetails().put("PValue", Double.valueOf(qRes.getpValue()));
 					sqr.getDetails().put("similarity", Double.valueOf(qRes.getSimilarity()));
+					sqr.getDetails().put("totalNetworkCount", Integer.valueOf(qRes.getTotalNetworkCount()));
 					sqResults.add(sqr);
 				}
 			}
