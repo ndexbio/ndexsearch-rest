@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
-import org.ndexbio.enrichment.rest.model.DatabaseResult;
 import org.ndexbio.enrichment.rest.model.DatabaseResults;
 import org.ndexbio.enrichment.rest.model.EnrichmentQuery;
 import org.ndexbio.enrichment.rest.model.EnrichmentQueryResult;
@@ -31,6 +30,7 @@ import org.ndexbio.model.exceptions.NdexException;
 import org.ndexbio.model.object.NetworkSearchResult;
 import org.ndexbio.model.object.network.NetworkSummary;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
+import org.ndexbio.ndexsearch.rest.model.DatabaseResult;
 import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
 import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.ndexsearch.rest.model.Query;

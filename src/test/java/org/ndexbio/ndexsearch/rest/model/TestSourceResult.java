@@ -8,7 +8,6 @@ package org.ndexbio.ndexsearch.rest.model;
 import java.util.LinkedList;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.ndexbio.enrichment.rest.model.DatabaseResult;
 /**
  *
  * @author churas
