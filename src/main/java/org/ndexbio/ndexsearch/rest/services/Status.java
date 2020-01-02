@@ -23,7 +23,8 @@ import org.ndexbio.ndexsearch.rest.model.ServerStatus;
  * Returns status of Server
  * @author churas
  */
-@Path(Configuration.REST_PATH)
+//@Path(Configuration.REST_PATH)
+@Path(Configuration.V_ONE_PATH)
 public class Status {
     
     public static final String STATUS_PATH = "/status";
