@@ -5,11 +5,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.List;
 import java.util.Properties;
 import javax.naming.InitialContext;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
 import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
+import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
+import org.ndexbio.ndexsearch.rest.model.SourceResult;
 import org.ndexbio.model.exceptions.NdexException;
 import org.ndexbio.rest.client.NdexRestClient;
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
@@ -32,11 +35,14 @@ public class Configuration {
      * {@link org.ndexbio.ndexsearch.rest.services.SearchSource} classes
      */
     public static final String REST_PATH = "/";
+    public static final String V_ONE_PATH = "/v1";
     public static final String NDEX_SEARCH_CONFIG = "NDEX_SEARCH_CONFIG";
     
     public static final String DATABASE_DIR = "search.database.dir";
     public static final String TASK_DIR = "search.task.dir";
     public static final String UNSET_IMAGE_URL = "search.unset.image.url";
+    
+    public static final String HOST_URL = "search.host.url";
     
     public static final String NDEX_USER = "ndex.user";
     public static final String NDEX_PASS = "ndex.password";
@@ -57,6 +63,8 @@ public class Configuration {
     private static String _searchDatabaseDir;
     private static String _searchTaskDir;
     private static String _unsetImageURL;
+    
+    private static String _searchHostURL;
     
     private  String _sourceConfiguration;
     private static String _sourcePollingInterval;
@@ -83,6 +91,14 @@ public class Configuration {
         _searchTaskDir = props.getProperty(Configuration.TASK_DIR);
         _unsetImageURL = props.getProperty(Configuration.UNSET_IMAGE_URL,
                                            "http://ndexbio.org/images/new_landing_page_logo.06974471.png");
+        
+        _searchHostURL = props.getProperty(Configuration.HOST_URL, "");
+        if (_searchHostURL.trim().isEmpty()){
+            _searchHostURL = "";
+        } else if (!_searchHostURL.endsWith("/")){
+            _searchHostURL =_searchHostURL + "/";
+        }
+        
         _sourceConfiguration = props.getProperty(SOURCE_CONFIGURATIONS_JSON_FILE, "source.configurations.json");
         _sourcePollingInterval = props.getProperty(Configuration.SOURCE_POLLING_INTERVAL, Long.toString(DEFAULT_SOURCE_POLLING_INTERVAL));
         _client = getNDExClient(props);
@@ -109,6 +125,15 @@ public class Configuration {
         return _unsetImageURL;
     }
     
+    /**
+     * Gets alternate URL prefix for the host running this service.
+     * @return String containing alternate URL ending with / or empty
+     *         string if not is set
+     */
+    public String getHostURL(){
+        return _searchHostURL;
+    }
+    
     public String getSearchDatabaseDirectory(){
         return _searchDatabaseDir;
     }
@@ -125,7 +150,53 @@ public class Configuration {
         ObjectMapper mapper = new ObjectMapper();
         File dbres = getSourceConfigurationsFile();
         try {
-            return mapper.readValue(dbres, SourceConfigurations.class);
+        	SourceConfigurations sc = mapper.readValue(dbres, SourceConfigurations.class);
+        	if (sc != null) {
+	        	SourceConfiguration enrichConfig = sc.getSourceConfigurationByName(SourceResult.ENRICHMENT_SERVICE);
+	        	if (enrichConfig != null) {
+		        	String enrichEndPoint = enrichConfig.getEndPoint();
+		        	if (enrichEndPoint.substring(enrichEndPoint.length() - 1).equals("/")) {
+		        		enrichConfig.setEndPoint(enrichEndPoint.substring(0, enrichEndPoint.length() - 1));
+		        	}
+	        	}
+	        	
+	        	SourceConfiguration interactomePpiConfig = sc.getSourceConfigurationByName(SourceResult.INTERACTOME_PPI_SERVICE);
+	        	if (interactomePpiConfig != null) {
+	        		String interactomePpiEndPoint = interactomePpiConfig.getEndPoint();
+	        		if (!interactomePpiEndPoint.substring(interactomePpiEndPoint.length() - 1).equals("/")) {
+	        			interactomePpiConfig.setEndPoint(interactomePpiEndPoint + "/");
+	        		}
+	        	}
+	        	
+	        	SourceConfiguration interactomeAssociationConfig = sc.getSourceConfigurationByName(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE);
+	        	if (interactomeAssociationConfig != null) {
+	        		String interactomeAssociationEndPoint = interactomeAssociationConfig.getEndPoint();
+	        		if (!interactomeAssociationEndPoint.substring(interactomeAssociationEndPoint.length() - 1).equals("/")) {
+	        			interactomeAssociationConfig.setEndPoint(interactomeAssociationEndPoint + "/");
+	        		}
+	        	}
+        	}
+        	
+        	/*
+        	List<SourceConfiguration> sources = sc.getSources();
+        	/*
+        	for (SourceConfiguration source : sources) {
+        		//String sourceName = source.getName();
+        		
+        		if (source.getName().equals(SourceResult.ENRICHMENT_SERVICE)) {
+        			//String endPoint = source.getEndPoint();
+        			//if (endPoint.substring(endPoint.length() - 1).equals("/")) {
+        				//source.setEndPoint(endPoint.substring(0, endPoint.length() - 1));
+        			//}
+        		} else if (source.getName().equals(SourceResult.INTERACTOME_PPI_SERVICE) || 
+        				   source.getName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
+        			//String endPoint = source.getEndPoint();
+        			//if (!endPoint.substring(endPoint.length() - 1).equals("/")) {
+        				//source.setEndPoint(endPoint + "/");
+        			//}
+        		}
+        	}*/
+            return sc;
         }
         catch(IOException io){
             _logger.error("caught io exception trying to load " + dbres.getAbsolutePath(), io);

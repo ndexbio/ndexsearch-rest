@@ -138,7 +138,7 @@ public class App {
 		
 		
                 final int port = Integer.valueOf(props.getProperty(App.RUNSERVER_PORT, "8080"));
-                System.out.println("\nSpinning up server for status invoke: http://localhost:" + Integer.toString(port) + "/status\n\n");
+                System.out.println("\nSpinning up server for status invoke: http://localhost:" + Integer.toString(port) + Configuration.V_ONE_PATH + "/status\n\n");
                 System.out.flush();
                 
                 //We are creating a print stream based on our RolloverFileOutputStream
@@ -236,6 +236,9 @@ public class App {
         
         sb.append("\n# Sets Search task directory where results from queries are stored\n");
         sb.append(Configuration.TASK_DIR + " = /tmp/tasks\n");
+        
+        sb.append("# Sets HOST URL prefix (value is prefixed to Location header when query is invoked. Can be commented out)\n");
+        sb.append("# " + Configuration.HOST_URL + " = http://ndexbio.org\n");
         
         sb.append("\n# Run Service under embedded Jetty command line parameters\n");
         sb.append(App.RUNSERVER_CONTEXTPATH + " = /\n");

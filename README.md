@@ -39,7 +39,7 @@ NDEx Search REST Service build requirements:
 
 * [Java 8+][java] JDK
 * [Make][make] **(to build)**
-* [Maven][maven] 3.0 or higher **(to build)**
+* [Maven][maven] 3.3 or higher **(to build)** -- tested with 3.6
 
 
 Commands below build NDEx Search REST Service assuming machine has [Git][git] command line tools 
@@ -128,20 +128,25 @@ The **source.configurations.json** file will look like this:
   "sources" : [ {
     "name" : "enrichment",
     "description" : "This is a description of enrichment source",
-    "endPoint" : "http://localhost:8095/enrichment"
+    "endPoint" : "http://localhost:8095/enrichment",
+    "uuid" : null
   }, {
     "name" : "interactome",
     "description" : "This is a description of interactome service",
-    "endPoint" : "http://localhost:8096/interactome"
+    "endPoint" : "http://localhost:8096/interactome",
+    "uuid" : null
   }, {
     "name" : "keyword",
     "description" : "This is a description of keyword service",
-    "endPoint" : "http://localhost:8097/keyword"
+    "endPoint" : "http://localhost:8097/keyword",
+    "uuid" : null
   } ]
 }
 ```
 
-Each service under **results** has various fields needed to access that service
+Each service under **sources** has various fields needed to access that service.
+
+The **uuid** should be set to a unique value for each service.
 
 ### Step 4 Run the service
 

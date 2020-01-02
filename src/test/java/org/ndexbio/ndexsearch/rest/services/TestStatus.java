@@ -47,7 +47,7 @@ public class TestStatus {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Status());
 
-            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.REST_PATH + "/" + Status.STATUS_PATH));
+            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.V_ONE_PATH + "/" + Status.STATUS_PATH));
 
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);

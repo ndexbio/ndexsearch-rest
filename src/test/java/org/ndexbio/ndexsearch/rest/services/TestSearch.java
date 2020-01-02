@@ -63,7 +63,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.post(Configuration.REST_PATH);
+            MockHttpRequest request = MockHttpRequest.post(Configuration.V_ONE_PATH);
             
             Query query = new Query();
             query.setGeneList(Arrays.asList("hi"));
@@ -105,7 +105,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.post(Configuration.REST_PATH);
+            MockHttpRequest request = MockHttpRequest.post(Configuration.V_ONE_PATH);
             
             Query query = new Query();
             query.setGeneList(Arrays.asList("hi"));
@@ -147,7 +147,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.post(Configuration.REST_PATH);
+            MockHttpRequest request = MockHttpRequest.post(Configuration.V_ONE_PATH);
             
             Query query = new Query();
             query.setGeneList(Arrays.asList("hi"));
@@ -191,7 +191,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.post(Configuration.REST_PATH);
+            MockHttpRequest request = MockHttpRequest.post(Configuration.V_ONE_PATH);
             
             Query query = new Query();
             query.setGeneList(Arrays.asList("hi"));
@@ -207,7 +207,7 @@ public class TestSearch {
                     Task.class);
             assertEquals("12345", t.getId());
             MultivaluedMap<String, Object> resmap = response.getOutputHeaders();
-            assertEquals(new URI("/12345"), resmap.getFirst("Location"));
+            assertEquals(new URI(Configuration.V_ONE_PATH + "/12345"), resmap.getFirst("Location"));
             
             verify(mockEngine);
         } finally {
@@ -233,7 +233,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.get(Configuration.REST_PATH + "12345");
+            MockHttpRequest request = MockHttpRequest.get(Configuration.V_ONE_PATH + "/12345");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -268,7 +268,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.get(Configuration.REST_PATH + "12345?source=source&start=1&size=2");
+            MockHttpRequest request = MockHttpRequest.get(Configuration.V_ONE_PATH + "/12345?source=source&start=1&size=2");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -301,7 +301,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.get(Configuration.REST_PATH + "12345");
+            MockHttpRequest request = MockHttpRequest.get(Configuration.V_ONE_PATH + "/12345");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -342,7 +342,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.get(Configuration.REST_PATH + "12345");
+            MockHttpRequest request = MockHttpRequest.get(Configuration.V_ONE_PATH + "/12345");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -376,7 +376,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.get(Configuration.REST_PATH + "12345/status");
+            MockHttpRequest request = MockHttpRequest.get(Configuration.V_ONE_PATH + "/12345/status");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -411,7 +411,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.get(Configuration.REST_PATH + "12345/status");
+            MockHttpRequest request = MockHttpRequest.get(Configuration.V_ONE_PATH + "/12345/status");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -444,7 +444,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.get(Configuration.REST_PATH + "12345/status");
+            MockHttpRequest request = MockHttpRequest.get(Configuration.V_ONE_PATH + "/12345/status");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -485,7 +485,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.get(Configuration.REST_PATH + "12345/status");
+            MockHttpRequest request = MockHttpRequest.get(Configuration.V_ONE_PATH + "/12345/status");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -519,7 +519,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.delete(Configuration.REST_PATH + "12345");
+            MockHttpRequest request = MockHttpRequest.delete(Configuration.V_ONE_PATH + "/12345");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -555,7 +555,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.delete(Configuration.REST_PATH + "12345");
+            MockHttpRequest request = MockHttpRequest.delete(Configuration.V_ONE_PATH + "/12345");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -594,7 +594,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.delete(Configuration.REST_PATH + "12345");
+            MockHttpRequest request = MockHttpRequest.delete(Configuration.V_ONE_PATH + "/12345");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -624,7 +624,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.get(Configuration.REST_PATH + "12345/overlaynetwork");
+            MockHttpRequest request = MockHttpRequest.get(Configuration.V_ONE_PATH + "/12345/overlaynetwork");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -659,7 +659,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.get(Configuration.REST_PATH + "12345/overlaynetwork?sourceUUID=srcid&networkUUID=netid");
+            MockHttpRequest request = MockHttpRequest.get(Configuration.V_ONE_PATH + "/12345/overlaynetwork?sourceUUID=srcid&networkUUID=netid");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -692,7 +692,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.get(Configuration.REST_PATH + "12345/overlaynetwork?sourceUUID=srcid&networkUUID=netid");
+            MockHttpRequest request = MockHttpRequest.get(Configuration.V_ONE_PATH + "/12345/overlaynetwork?sourceUUID=srcid&networkUUID=netid");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -734,7 +734,7 @@ public class TestSearch {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new Search());
 
-            MockHttpRequest request = MockHttpRequest.get(Configuration.REST_PATH + "12345/overlaynetwork?sourceUUID=srcid&networkUUID=netid");
+            MockHttpRequest request = MockHttpRequest.get(Configuration.V_ONE_PATH + "/12345/overlaynetwork?sourceUUID=srcid&networkUUID=netid");
             
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);

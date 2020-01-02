@@ -53,7 +53,7 @@ public class TestSearchSource {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new SearchSource());
 
-            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.REST_PATH + "/" +
+            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.V_ONE_PATH + "/" +
                                                           SearchSource.SOURCE_PATH));
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -88,7 +88,7 @@ public class TestSearchSource {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new SearchSource());
 
-            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.REST_PATH + "/" +
+            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.V_ONE_PATH + "/" +
                                                           SearchSource.SOURCE_PATH));
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -125,7 +125,7 @@ public class TestSearchSource {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new SearchSource());
 
-            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.REST_PATH + "/" +
+            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.V_ONE_PATH + "/" +
                                                           SearchSource.SOURCE_PATH));
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
@@ -164,7 +164,7 @@ public class TestSearchSource {
             Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
             dispatcher.getRegistry().addSingletonResource(new SearchSource());
 
-            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.REST_PATH + "/" +
+            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.V_ONE_PATH + "/" +
                                                           SearchSource.SOURCE_PATH));
             MockHttpResponse response = new MockHttpResponse();
             dispatcher.invoke(request, response);
