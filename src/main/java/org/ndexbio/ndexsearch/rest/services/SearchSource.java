@@ -15,7 +15,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.core.Response;
 import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.ndexsearch.rest.model.SourceResult;
-import org.ndexbio.enrichment.rest.model.DatabaseResult;
 import org.ndexbio.enrichment.rest.model.ErrorResponse;
 import org.ndexbio.ndexsearch.rest.engine.SearchEngine;
 
