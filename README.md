@@ -90,6 +90,9 @@ search.unset.image.url = http://ndexbio.org/images/new_landing_page_logo.0697447
 # Sets Search task directory where results from queries are stored
 search.task.dir = /tmp/tasks
 
+# Sets HOST URL prefix (value is prefixed to Location header when query is invoked. Can be commented out)
+# search.host.url = http://ndexbio.org
+
 # Run Service under embedded Jetty command line parameters
 runserver.contextpath = /
 runserver.log.dir = /tmp/log
@@ -128,17 +131,17 @@ The **source.configurations.json** file will look like this:
   "sources" : [ {
     "name" : "enrichment",
     "description" : "This is a description of enrichment source",
-    "endPoint" : "http://localhost:8095/enrichment",
+    "endPoint" : "http://localhost:8095/enrichment/v1/",
     "uuid" : null
   }, {
-    "name" : "interactome",
-    "description" : "This is a description of interactome service",
-    "endPoint" : "http://localhost:8096/interactome",
+    "name" : "interactome-ppi",
+    "description" : "This is a description of interactome-ppi service",
+    "endPoint" : "http://localhost:8096/interactome/ppi/v1/",
     "uuid" : null
   }, {
-    "name" : "keyword",
-    "description" : "This is a description of keyword service",
-    "endPoint" : "http://localhost:8097/keyword",
+    "name" : "interactome-association",
+    "description" : "This is a description of interactome-association service",
+    "endPoint" : "http://localhost:8096/interactome/geneassociation/v1/",
     "uuid" : null
   } ]
 }
