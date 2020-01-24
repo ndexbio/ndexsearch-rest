@@ -198,19 +198,19 @@ public class App {
         SourceConfiguration scA = new SourceConfiguration();
         scA.setDescription("This is a description of enrichment source");
         scA.setName("enrichment");
-        scA.setEndPoint("http://localhost:8095/enrichment");
+        scA.setEndPoint("http://localhost:8095/enrichment/v1/");
      
         
         SourceConfiguration scB = new SourceConfiguration();
-        scB.setDescription("This is a description of interactome service");
-        scB.setName("interactome");
-        scB.setEndPoint("http://localhost:8096/interactome");
+        scB.setDescription("This is a description of interactome-ppi service");
+        scB.setName("interactome-ppi");
+        scB.setEndPoint("http://localhost:8096/interactome/ppi/v1/");
    
         
         SourceConfiguration scC = new SourceConfiguration();
-        scC.setDescription("This is a description of keyword service");
-        scC.setName("keyword");
-        scC.setEndPoint("http://localhost:8097/keyword");  
+        scC.setDescription("This is a description of interactome-association service");
+        scC.setName("interactome-association");
+        scC.setEndPoint("http://localhost:8096/interactome/geneassociation/v1/");  
         
         SourceConfigurations scs = new  SourceConfigurations();
         scs.setSources(Arrays.asList(scA, scB, scC));
