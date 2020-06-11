@@ -9,8 +9,8 @@
 NDEx Search REST Service
 ========================
 
-[![Build Status](https://travis-ci.org/ndexbio/ndexsearch-rest.svg?branch=master)](https://travis-ci.org/ndexbio/ndexsearch-rest) 
-[![Coverage Status](https://coveralls.io/repos/github/ndexbio/ndexsearch-rest/badge.svg?branch=master)](https://coveralls.io/github/ndexbio/ndexsearch-rest?branch=master)
+[![Build Status](https://travis-ci.org/cytoscape/ndexsearch-rest.svg?branch=master)](https://travis-ci.org/cytoscape/ndexsearch-rest) 
+[![Coverage Status](https://coveralls.io/repos/github/cytoscape/ndexsearch-rest/badge.svg?branch=master)](https://coveralls.io/github/cytoscape/ndexsearch-rest?branch=master)
 
 Provides integrated search REST service using NDEx as a backend.
 This service runs using an embedded [Jetty][jetty] server and is invoked
@@ -26,11 +26,11 @@ Requirements
 
 Special Java modules to install (cause we haven't put these into maven central)
 
-* [ndex-enrichment-rest-model](https://github.com/ndexbio/ndex-enrichment-rest-model) built and installed via `mvn install`
-* [ndex-enrichment-rest-client](https://github.com/ndexbio/ndex-enrichment-rest-client) built and installed via `mvn install`
+* [ndex-enrichment-rest-model](https://github.com/cytoscape/ndex-enrichment-rest-model) built and installed via `mvn install`
+* [ndex-enrichment-rest-client](https://github.com/cytoscape/ndex-enrichment-rest-client) built and installed via `mvn install`
 * [ndex-object-model](https://github.com/ndexbio/ndex-object-model) built and installed via `mvn install`
 * [ndex-java-client](https://github.com/ndexbio/ndex-java-client) built and installed via `mvn install`
-* [ndex-interactome-search](https://github.com/ndexbio/ndex-interactome-search) built and installed via `mvn install -DskipTests=true`
+* [ndex-interactome-search](https://github.com/cytoscape/ndex-interactome-search) built and installed via `mvn install -DskipTests=true`
 
 Building NDEx Search REST Service  
 =================================
@@ -47,7 +47,7 @@ installed and above Java modules have been installed:
 
 ```Bash
 # In lieu of git one can just download repo and unzip it
-git clone https://github.com/ndexbio/ndexsearch-rest.git
+git clone https://github.com/cytoscape/ndexsearch-rest.git
 
 cd ndexsearch-rest
 mvn clean test install

@@ -19,7 +19,7 @@
         <jetty.maven.plugin.version>9.4.14.v20181114</jetty.maven.plugin.version>
         <swagger.version>2.0.0</swagger.version>
         <jackson.version>2.9.9</jackson.version>
-        <jackson.databind.version>2.9.10.1</jackson.databind.version>
+        <jackson.databind.version>2.9.10.3</jackson.databind.version>
         <logback.version>1.2.3</logback.version>
         <commons-math3.version>3.6.1</commons-math3.version>
         <commons-io.version>2.6</commons-io.version>
@@ -32,6 +32,28 @@
     </properties>
     
     <repositories>
+        <repository>
+            <id>cytoscape_releases</id>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <name>Cytoscape Releases</name>
+            <url>http://nrnb-nexus.ucsd.edu/repository/cytoscape_releases/</url>
+        </repository>
+        <repository>
+            <id>cytoscape_snapshots</id>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <name>Cytoscape Snapshots</name>
+            <url>http://nrnb-nexus.ucsd.edu/repository/cytoscape_snapshots/</url>
+        </repository>
         <repository>
             <id>JBoss repository</id>
             <url>https://repository.jboss.org/nexus/content/groups/public-jboss/</url>
@@ -188,7 +210,7 @@
         </dependency>
     </dependencies>
     <scm>
-	  <connection>scm:git:https://github.com/ndexbio/ndexsearch-rest.git</connection>
+	  <connection>scm:git:https://github.com/cytoscape/ndexsearch-rest.git</connection>
     </scm>
     <build>
         <pluginManagement>
