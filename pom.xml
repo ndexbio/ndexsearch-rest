@@ -13,7 +13,7 @@
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <resteasy.version>3.1.4.Final</resteasy.version>
-        <junit.version>4.12</junit.version>
+        <junit.version>4.13.1</junit.version>
         <easymock.version>4.0.2</easymock.version>
         <jetty.version>9.4.18.v20190429</jetty.version>
         <jetty.maven.plugin.version>9.4.14.v20181114</jetty.maven.plugin.version>
