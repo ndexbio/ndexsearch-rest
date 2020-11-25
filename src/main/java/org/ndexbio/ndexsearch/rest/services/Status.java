@@ -64,8 +64,8 @@ public class Status {
             return Response.ok().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(sObj)).build();
         }
         catch(Exception ex){
-            ErrorResponse er = new ErrorResponse("Error querying for system information", ex);
-            return Response.serverError().type(MediaType.APPLICATION_JSON).encoding(er.asJson()).build();
+            ErrorResponse er = new ErrorResponse("Error querying for source information", ex);
+            return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
     }
 }
