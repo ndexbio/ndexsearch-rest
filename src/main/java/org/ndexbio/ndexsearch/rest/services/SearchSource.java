@@ -111,7 +111,7 @@ public class SearchSource {
     		if (service == null) {
     			ErrorResponse er = new ErrorResponse();
     			er.setMessage("Error querying for source information");
-    			er.setDescription("Uuid did not match a service");
+    			er.setDescription("UUID did not match a service");
                 return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
     		}    		
     		if (service.equals(SourceResult.ENRICHMENT_SERVICE)) {
