@@ -1,13 +1,11 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.ndexbio.ndexsearch.rest.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.FileWriter;
+import static org.easymock.EasyMock.createMock;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.replay;
 import org.jboss.resteasy.core.Dispatcher;
 import org.jboss.resteasy.mock.*;
 import static org.junit.Assert.assertEquals;
@@ -15,6 +13,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.ndexbio.enrichment.rest.model.ErrorResponse;
 import org.ndexbio.ndexsearch.App;
 
 import org.ndexbio.ndexsearch.rest.model.ServerStatus;
@@ -60,5 +59,34 @@ public class TestStatus {
             _folder.delete();
         }
     }
+    
+    @Test
+    public void testGetError() throws Exception {
+        File tempDir = _folder.newFolder();
+        try {
+            Configuration mockConfig = createMock(Configuration.class);
+            expect(mockConfig.getSearchTaskDirectory()).andReturn(null);
+            replay(mockConfig);
+            Configuration.setAlternateConfiguration(mockConfig);
+            
+            Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
+            dispatcher.getRegistry().addSingletonResource(new Status());
+
+            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.V_ONE_PATH + "/" + Status.STATUS_PATH));
+
+            MockHttpResponse response = new MockHttpResponse();
+            dispatcher.invoke(request, response);
+            assertEquals(500, response.getStatus());
+       
+            ObjectMapper mapper = new ObjectMapper();
+             ErrorResponse er = mapper.readValue(response.getOutput(),
+                    ErrorResponse.class);
+            assertEquals("Error querying for source information", er.getMessage());
+        } finally {
+            _folder.delete();
+        }
+    }
+    
+    
     
 }
