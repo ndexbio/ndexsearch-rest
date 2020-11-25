@@ -294,4 +294,13 @@ public class Configuration {
     public static void  setAlternateConfigurationFile(final String configFilePath) {
     	_alternateConfigurationFile = configFilePath;
     }
+    
+    /**
+     * Added for testing, lets one use an alternate configuration object. Smelly
+     * but it works
+     * @param config 
+     */
+    public static void setAlternateConfiguration(Configuration config){
+        INSTANCE = config;
+    }
 }
