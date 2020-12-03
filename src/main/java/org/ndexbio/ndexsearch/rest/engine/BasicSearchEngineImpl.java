@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TreeSet;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -21,17 +21,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
-import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
 import org.ndexbio.enrichment.rest.model.DatabaseResults;
-import org.ndexbio.enrichment.rest.model.EnrichmentQuery;
-import org.ndexbio.enrichment.rest.model.EnrichmentQueryResult;
-import org.ndexbio.enrichment.rest.model.EnrichmentQueryResults;
-import org.ndexbio.enrichment.rest.model.exceptions.EnrichmentException;
 import org.ndexbio.model.exceptions.NdexException;
-import org.ndexbio.model.object.NetworkSearchResult;
-import org.ndexbio.model.object.network.NetworkSummary;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
-import org.ndexbio.ndexsearch.rest.model.DatabaseResult;
 import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
 import org.ndexbio.ndexsearch.rest.model.SourceResults;
 import org.ndexbio.ndexsearch.rest.model.Query;
@@ -45,14 +37,9 @@ import org.ndexbio.ndexsearch.rest.model.SourceResult;
 import org.ndexbio.ndexsearch.rest.model.comparators.SourceQueryResultByRank;
 import org.ndexbio.ndexsearch.rest.model.comparators.SourceQueryResultsBySourceRank;
 
-import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.ndexbio.interactomesearch.client.InteractomeRestClient;
 import org.ndexbio.interactomesearch.object.InteractomeRefNetworkEntry;
-import org.ndexbio.interactomesearch.object.InteractomeSearchResult;
-import org.ndexbio.interactomesearch.object.SearchStatus;
-import org.ndexbio.ndexsearch.rest.services.Configuration;
 
 /**
  * Runs search
@@ -91,33 +78,27 @@ public class BasicSearchEngineImpl implements SearchEngine {
 
 	private AtomicReference<SourceConfigurations> _sourceConfigurations;
 	private AtomicReference<SourceResults> _sourceResults;
-	private NdexRestClientModelAccessLayer _keywordclient;
-	private EnrichmentRestClient _enrichClient;
-	private InteractomeRestClient _interactomeClient_ppi;
-	private InteractomeRestClient _interactomeClient_association;
-
 
 	private long _threadSleep = 10;
 	private SourceQueryResultsBySourceRank _sourceRankSorter;
 	private SourceQueryResultByRank _rankSorter;
+	private Map<String, SourceEngine> _sources;
 
 	/**
 	 * Constructor
 	 * 
 	 * @param dbDir             directory path containing networks in database
 	 * @param taskDir           directory path where tasks will be stored
-	 * @param sourceResults
-	 * @param keywordclient     REST client for keyword search
-	 * @param enrichClient      REST client for enrichment query
-	 * @param interactomeClient REST client for interactome query
+	 * @param sourceConfigurations Sources to query against
+	 * @param sourcePollingInterval Interval in ms to poll for updates on sources
+	 * @param sources Map of source name to SourceEngine
 	 */
-	public BasicSearchEngineImpl(final String dbDir, final String taskDir, SourceConfigurations sourceConfigurations, long sourcePollingInterval,
-			NdexRestClientModelAccessLayer keywordclient, EnrichmentRestClient enrichClient,
-			InteractomeRestClient interactomeClient_ppi, InteractomeRestClient interactomeClient_association) {
+	public BasicSearchEngineImpl(final String dbDir, final String taskDir,
+            SourceConfigurations sourceConfigurations, long sourcePollingInterval,
+			Map<String, SourceEngine> sources) throws SearchException {
 		_shutdown = false;
 		_dbDir = dbDir;
 		_taskDir = taskDir;
-		_keywordclient = keywordclient;
 		_queryTasks = new ConcurrentHashMap<>();
 		_queryResults = new ConcurrentHashMap<>();
 		_sourceConfigurations = new AtomicReference<>();
@@ -125,20 +106,30 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		_sourceResults = new AtomicReference<>();
 		_queryTaskIds = new ConcurrentLinkedQueue<>();
 		_sourceConfigurations.set(sourceConfigurations);
-		_enrichClient = enrichClient;
-		_interactomeClient_ppi = interactomeClient_ppi;
-		this._interactomeClient_association = interactomeClient_association;
 		_sourceRankSorter = new SourceQueryResultsBySourceRank();
 		_rankSorter = new SourceQueryResultByRank();
 		_servicePollExecutor = Executors.newSingleThreadScheduledExecutor();
+		if (sources == null){
+			throw new SearchException("Sources cannot be null");
+		}
+		_sources = sources;
 	}
 
+	/**
+	 * Sets SourceResults
+	 * @param sres 
+	 */
+	protected void setSourceResults(SourceResults sres){
+		_sourceResults.set(sres);
+	}
+	
 	/**
 	 * Sets milliseconds thread should sleep if no work needs to be done.
 	 * 
 	 * @param sleepTime
 	 */
 	public void updateThreadSleepTime(long sleepTime) {
+        _logger.debug("Thread sleep time updated to {} ms", sleepTime);
 		_threadSleep = sleepTime;
 	}
 
@@ -158,14 +149,19 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 * Processes any query tasks, looping until {@link #shutdown()} is invoked Note:
 	 * There is a delay in the loop which can be modified by
 	 * {@link #updateThreadSleepTime(long)
+	 * Before entering the loop, this method also starts up a separate thread that periodically checks for 
+	 * changes with sources
 	 */
 	@Override
 	public void run() {
+        _logger.debug("Starting service update polling task "
+                + "with update interval of {} ms", _sourcePollingInterval);
 		ScheduledFuture<?> servicePollFuture = _servicePollExecutor.scheduleWithFixedDelay(
 				() -> {
 					updateSourceResults();
 				}, 0, _sourcePollingInterval,TimeUnit.MILLISECONDS);
 		
+        _logger.info("Starting monitoring loop");
 		while (_shutdown == false) {
 			String id = _queryTaskIds.poll();
 			if (id == null) {
@@ -175,18 +171,14 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				processQuery(id, _queryTasks.remove(id));
 		}
 		
-		_logger.debug("Shutdown was invoked");
+		_logger.info("Stopping monitoring loop");
 		
 		servicePollFuture.cancel(true);
 		_servicePollExecutor.shutdown();
 		
-		if (this._enrichClient != null) {
-			try {
-				_enrichClient.shutdown();
-			} catch (EnrichmentException ee) {
-				_logger.error("Caught exception shutting down enrichment client", ee);
-			}
-		}
+		_sources.values().forEach((se) -> {
+			se.shutdown();
+		});
 	}
 
 	/**
@@ -195,11 +187,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 */
 	@Override
 	public void shutdown() {
+        _logger.info("Shutdown requested");
 		_shutdown = true;
-	}
-
-	public void setDatabaseResults(SourceConfigurations sc) {
-		_sourceConfigurations.set(sc);
 	}
 
 	protected String getQueryResultsFilePath(final String id) {
@@ -208,9 +197,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 
 	protected void saveQueryResultsToFilesystem(final String id) {
 		QueryResults eqr = getQueryResultsFromDb(id);
-		if (eqr == null) {
-			return;
-		}
+
 		File destFile = new File(getQueryResultsFilePath(id));
 		ObjectMapper mappy = new ObjectMapper();
 		try (FileOutputStream out = new FileOutputStream(destFile)) {
@@ -222,8 +209,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	}
 
 	/**
-	 * First tries to get EnrichmentQueryResults from _queryResults list and if that
-	 * fails method creates a new EnrichmentQueryResults setting current time in
+	 * First tries to get QueryResults from _queryResults list and if that
+	 * fails method creates a new QueryResults setting current time in
 	 * constructor.
 	 * 
 	 * @param id
@@ -237,6 +224,12 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		return qr;
 	}
 
+	/**
+	 * First tries to get QueryResults from _queryResults and if not found there
+	 * attempts to load it from the filesystem
+	 * @param id
+	 * @return 
+	 */
 	protected QueryResults getQueryResultsFromDbOrFilesystem(final String id) {
 		QueryResults qr = _queryResults.get(id);
 		if (qr != null) {
@@ -245,7 +238,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		ObjectMapper mappy = new ObjectMapper();
 		File qrFile = new File(getQueryResultsFilePath(id));
 		if (qrFile.isFile() == false) {
-			_logger.error(qrFile.getAbsolutePath() + " is not a file");
+			_logger.error("{} is not a file", qrFile.getAbsolutePath());
 			return null;
 		}
 		try {
@@ -256,184 +249,14 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		return null;
 	}
 
+	/**
+	 * Updates the database with updatedQueryResults passed in
+	 * @param id UUID of query results to update
+	 * @param updatedQueryResults data to update minus start time which keeps the value found
+	 *                            previously
+	 */
 	protected void updateQueryResultsInDb(final String id, QueryResults updatedQueryResults) {
 		_queryResults.merge(id, updatedQueryResults, (oldval, newval) -> newval.updateStartTime(oldval));
-	}
-
-	protected SourceQueryResults processEnrichment(final String sourceName, Query query) {
-		EnrichmentQuery equery = new EnrichmentQuery();
-		equery.setDatabaseList(new TreeSet<>(getEnrichmentDatabaseList(sourceName)));
-		equery.setGeneList(new TreeSet<>(query.getGeneList()));
-		SourceQueryResults sqr = new SourceQueryResults();
-		sqr.setSourceName(sourceName);
-		try {
-			String enrichTaskId = _enrichClient.query(equery);
-			if (enrichTaskId == null) {
-				_logger.error("Query failed");
-				sqr.setMessage("Enrichment failed for unknown reason");
-				sqr.setStatus(QueryResults.FAILED_STATUS);
-				sqr.setProgress(100);
-				return sqr;
-			}
-			sqr.setStatus(QueryResults.SUBMITTED_STATUS);
-			sqr.setSourceTaskId(enrichTaskId);
-			return sqr;
-		} catch (EnrichmentException ee) {
-			_logger.error("Caught exception running enrichment", ee);
-			sqr.setMessage("Enrichment failed: " + ee.getMessage());
-			sqr.setStatus(QueryResults.FAILED_STATUS);
-			sqr.setProgress(100);
-			return sqr;
-		}
-	}
-
-	protected SourceQueryResults processInteractome_PPI(final String sourceName, Query query) {
-
-		SourceQueryResults sqr = new SourceQueryResults();
-		sqr.setSourceName(sourceName);
-		try {
-			String interactomeTaskId = this._interactomeClient_ppi.search(query.getGeneList()).toString();
-			if (interactomeTaskId == null) {
-				_logger.error("Query failed");
-				sqr.setMessage("Interactome-ppi failed for unknown reason");
-				sqr.setStatus(QueryResults.FAILED_STATUS);
-				sqr.setProgress(100);
-				return sqr;
-			}
-			sqr.setStatus(QueryResults.SUBMITTED_STATUS);
-			sqr.setSourceTaskId(interactomeTaskId);
-			return sqr;
-		} catch (NdexException ee) {
-			_logger.error("Caught ndexexception running interactome-ppi", ee);
-			sqr.setMessage("Interactome failed: " + ee.getMessage());
-		} catch (Exception ex) {
-			_logger.error("Caught exception running interactome-ppi", ex);
-			sqr.setMessage("Interactome-ppi failed: " + ex.getMessage());
-		}
-		sqr.setStatus(QueryResults.FAILED_STATUS);
-		sqr.setProgress(100);
-		return sqr;
-	}
-
-	protected SourceQueryResults processInteractome_association(final String sourceName, Query query) {
-
-		SourceQueryResults sqr = new SourceQueryResults();
-		sqr.setSourceName(sourceName);
-		try {
-			String interactomeTaskId = this._interactomeClient_association.search(query.getGeneList()).toString();
-			if (interactomeTaskId == null) {
-				_logger.error("Query failed");
-				sqr.setMessage("Interactome-association failed for unknown reason");
-				sqr.setStatus(QueryResults.FAILED_STATUS);
-				sqr.setProgress(100);
-				return sqr;
-			}
-			sqr.setStatus(QueryResults.SUBMITTED_STATUS);
-			sqr.setSourceTaskId(interactomeTaskId);
-			return sqr;
-		} catch (NdexException ee) {
-			_logger.error("Caught ndexexception running interactome-association", ee);
-			sqr.setMessage("Interactome-association failed: " + ee.getMessage());
-		} catch (Exception ex) {
-			_logger.error("Caught exception running interactome-association", ex);
-			sqr.setMessage("Interactome-association failed: " + ex.getMessage());
-		}
-		sqr.setStatus(QueryResults.FAILED_STATUS);
-		sqr.setProgress(100);
-		return sqr;
-	}
-
-	
-	protected String getUUIDOfSourceByName(final String sourceName) {
-		if (sourceName == null) {
-			return null;
-		}
-		try {
-			SourceResults isr = getSourceResults();
-			for (SourceResult sr : isr.getResults()) {
-				if (sr.getName() == null) {
-					continue;
-				}
-				if (sr.getName().equals(sourceName)) {
-					return sr.getUuid();
-				}
-			}
-		} catch (SearchException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	protected List<String> getEnrichmentDatabaseList(final String sourceName) {
-		if (sourceName == null) {
-			return null;
-		}
-		List<String> dbList = new LinkedList<>();
-		try {
-			SourceResults isr = getSourceResults();
-			for (SourceResult sr : isr.getResults()) {
-				if (sr.getName() == null) {
-					continue;
-				}
-				if (sr.getName().equals(sourceName)) {
-					for (DatabaseResult dr : sr.getDatabases()) {
-						dbList.add(dr.getName());
-					}
-				}
-			}
-		} catch (SearchException e) {
-			e.printStackTrace();
-		}
-		return dbList;
-	}
-
-	protected SourceQueryResults processKeyword(final String sourceName, Query query) {
-
-		try {
-			SourceQueryResults sqr = new SourceQueryResults();
-			sqr.setSourceName(sourceName);
-			StringBuilder sb = new StringBuilder();
-			for (String gene : query.getGeneList()) {
-				if (gene.isEmpty() == false) {
-					sb.append(" ");
-				}
-				sb.append(gene);
-			}
-			_logger.info("Query being sent: " + sb.toString());
-			NetworkSearchResult nrs = _keywordclient.findNetworks(sb.toString(), null, 0, 100);
-			if (nrs == null) {
-				_logger.error("Query failed");
-				sqr.setMessage(sourceName + " failed for unknown reason");
-				sqr.setStatus(QueryResults.FAILED_STATUS);
-				sqr.setProgress(100);
-				return sqr;
-			}
-			int rankCounter = 0;
-			List<SourceQueryResult> sqrList = new LinkedList<>();
-			for (NetworkSummary ns : nrs.getNetworks()) {
-				SourceQueryResult sr = new SourceQueryResult();
-				sr.setDescription(ns.getName());
-				sr.setEdges(ns.getEdgeCount());
-				sr.setNodes(ns.getNodeCount());
-				sr.setNetworkUUID(ns.getExternalId().toString());
-				sr.setPercentOverlap(0);
-				sr.setRank(rankCounter++);
-				sr.setImageURL(Configuration.getInstance().getUnsetImageURL());
-				sqrList.add(sr);
-			}
-			sqr.setNumberOfHits(sqrList.size());
-			sqr.setProgress(100);
-			sqr.setStatus(QueryResults.COMPLETE_STATUS);
-			sqr.setSourceTaskId(getUUIDOfSourceByName(sourceName));
-			sqr.setResults(sqrList);
-			_logger.info("Returning sqr");
-			return sqr;
-		} catch (IOException io) {
-			_logger.error("caught ioexceptin ", io);
-		} catch (NdexException ne) {
-			_logger.error("caught", ne);
-		}
-		return null;
 	}
 
 	/**
@@ -449,10 +272,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		qr.setInputSourceList(query.getSourceList());
 		qr.setStatus(QueryResults.PROCESSING_STATUS);
 		File taskDir = new File(this._taskDir + File.separator + id);
-		_logger.info("Creating new task directory:" + taskDir.getAbsolutePath());
+		_logger.debug("Creating new task directory {}", taskDir.getAbsolutePath());
 
 		if (taskDir.mkdirs() == false) {
-			_logger.error("Unable to create task directory: " + taskDir.getAbsolutePath());
+			_logger.error("Unable to create task directory: {}", taskDir.getAbsolutePath());
 			qr.setStatus(QueryResults.FAILED_STATUS);
 			qr.setMessage("Internal error unable to create directory on filesystem");
 			qr.setProgress(100);
@@ -464,7 +287,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		qr.setSources(sqrList);
 		SourceQueryResults sqr = null;
 		for (String source : query.getSourceList()) {
-			_logger.info("Querying service: " + source);
+			_logger.debug("Querying service: {}", source);
 			
 			SourceConfiguration sourceConf = this._sourceConfigurations.get().getSourceConfigurationByName(source);
 			if ( sourceConf == null) {
@@ -475,25 +298,15 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				qr.setProgress(100);
 				updateQueryResultsInDb(id, qr);
 				return;
-			}	
-			
-			
-			if (source.equals(SourceResult.ENRICHMENT_SERVICE)) {
-				sqr = processEnrichment(source, query);
-				sqr.setSourceRank(0);
-			} else if (source.equals(SourceResult.KEYWORD_SERVICE)) {
-				sqr = processKeyword(source, query);
-				sqr.setSourceRank(1);
-			} else if (source.equals(SourceResult.INTERACTOME_PPI_SERVICE)) {
-				sqr = processInteractome_PPI(source, query);
-				sqr.setSourceRank(2);
-			} else if (source.equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
-				sqr = processInteractome_association(source, query);
-				sqr.setSourceRank(3);
+			}
+			if (_sources.containsKey(source)){
+				sqr = _sources.get(source).getSourceQueryResults(query);
+			} else {
+				_logger.error("Unknown source {} no query performed", source);
 			}
 
 			if (sqr != null) {
-				_logger.info("Adding SourceQueryResult for " + source);
+				_logger.debug("Adding SourceQueryResult for {}", source);
 				sqr.setSourceUUID(sourceConf.getUuid());
 				sqrList.add(sqr);
 				qr.setSources(sqrList);
@@ -509,7 +322,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		if (thequery.getSourceList() == null || thequery.getSourceList().isEmpty()) {
 			throw new SearchException("No databases selected");
 		}
-		_logger.debug("Received query request");
+		_logger.info("Received query request {}", thequery.toString());
 		// @TODO get Jing's uuid generator code that can be a poormans cache
 		String id = UUID.randomUUID().toString();
 		_queryTasks.put(id, thequery);
@@ -522,6 +335,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		return id;
 	}
 
+	/**
+	 * Queries source services to get updated configuration information about 
+	 * what data they contain
+	 */
 	private void updateSourceResults() {
 		SourceConfigurations sourceConfigurations = _sourceConfigurations.get();
 		final List<SourceResult> sourceResults = sourceConfigurations.getSources().stream()
@@ -533,182 +350,71 @@ public class BasicSearchEngineImpl implements SearchEngine {
 					sourceResult.setDescription(sourceConfiguration.getDescription());
 					sourceResult.setEndPoint(sourceConfiguration.getEndPoint());
 					String sourceName = sourceConfiguration.getName();
-
-					if (SourceResult.ENRICHMENT_SERVICE.equals(sourceName)) {
-						try {
-							DatabaseResults dbResults = this._enrichClient.getDatabaseResults();
-							sourceResult.setDatabases(dbResults.getResults());
-
-							sourceResult.setVersion("0.1.0");
-
-							//sourceResult.setUuid("eeb4af50-83c4-4e33-ac21-87142403589b");
-							sourceResult.setNumberOfNetworks(242);
-
-							sourceResult.setStatus("ok");
-
-						} catch (javax.ws.rs.ProcessingException e) {
-							sourceResult.setStatus("error");
-						} catch (EnrichmentException e) {
-							sourceResult.setStatus("error");
-						}
-					} else if (SourceResult.INTERACTOME_PPI_SERVICE.equals(sourceName)) {
-						try {
-							List<InteractomeRefNetworkEntry> dbResults = this._interactomeClient_ppi.getDatabase();
-							sourceResult.setVersion("0.1.1a1");
-							//sourceResult.setUuid("0857a397-3453-4ae4-8208-e33a283c85ec");
-							sourceResult.setNumberOfNetworks(dbResults.size());
-							sourceResult.setStatus("ok");
-						} catch (javax.ws.rs.ProcessingException e) {
-							sourceResult.setStatus("error");
-						}
-						catch (NdexException e) {
-							sourceResult.setStatus("error");
-						}
-					} else if (SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE.equals(sourceName)) {
-						try {
-							List<InteractomeRefNetworkEntry> dbResults = this._interactomeClient_association.getDatabase();
-							sourceResult.setVersion("0.2");
-							//sourceResult.setUuid("1857a397-3453-4ae4-8208-e33a283c85ec");
-							sourceResult.setNumberOfNetworks(dbResults.size());
-							sourceResult.setStatus("ok");
-						} catch (javax.ws.rs.ProcessingException e) {
-							sourceResult.setStatus("error");
-						}
-						catch (NdexException e) {
-							sourceResult.setStatus("error");
-						}
-					}  else if (sourceName == SourceResult.KEYWORD_SERVICE) {
+					_logger.debug("Updating source {}", sourceName);
+					if (_sources.containsKey(sourceName)){
+						_sources.get(sourceName).updateSourceResult(sourceResult);
+					} else {
+						_logger.error("Unknown source {} no update performed", sourceName);
+					}
+					/**
+					
+					}  else if (SourceResult.KEYWORD_SERVICE.equals(sourceName)) {
 						sourceResult.setVersion("0.2.0");
-						//sourceResult.setUuid("33b9c3ca-13e5-48b9-bcd2-09070203350a");
 						sourceResult.setNumberOfNetworks(2009);
 						sourceResult.setStatus("ok");
+					} else {
+						_logger.error("Unknown source {} no update performed", sourceName);
 					}
+					*/
 					return sourceResult;
 				}).collect(Collectors.toList());
 		InternalSourceResults internalSourceResults = new InternalSourceResults();
 		internalSourceResults.setResults(sourceResults);
-		_sourceResults.set(internalSourceResults);
+		setSourceResults(internalSourceResults);
 	}
 	
+	/**
+	 * Gets SourceResults
+	 * @return
+	 * @throws SearchException 
+	 */
 	@Override
 	public SourceResults getSourceResults() throws SearchException {
-		
+		_logger.debug("Request to get SourceResults");
 		return _sourceResults.get();
-	}
-
-	/**
-	 * 
-	 * @param sqRes
-	 * @return number of hits for this source
-	 */
-	protected int updateEnrichmentSourceQueryResults(SourceQueryResults sqRes) {
-		try {
-			EnrichmentQueryResults qr = this._enrichClient.getQueryResults(sqRes.getSourceTaskId(), 0, 0);
-			sqRes.setMessage(qr.getMessage());
-			sqRes.setProgress(qr.getProgress());
-			sqRes.setStatus(qr.getStatus());
-
-			sqRes.setWallTime(qr.getWallTime());
-			List<SourceQueryResult> sqResults = new LinkedList<>();
-			if (qr.getResults() != null) {
-				for (EnrichmentQueryResult qRes : qr.getResults()) {
-					SourceQueryResult sqr = new SourceQueryResult();
-					sqr.setDescription(qRes.getDatabaseName() + ": " + qRes.getDescription());
-					sqr.setEdges(qRes.getEdges());
-					sqr.setHitGenes(qRes.getHitGenes());
-					sqr.setNetworkUUID(qRes.getNetworkUUID());
-					sqr.setNodes(qRes.getNodes());
-					sqr.setPercentOverlap(qRes.getPercentOverlap());
-					sqr.setRank(qRes.getRank());
-					sqr.setImageURL(qRes.getImageURL());
-					sqr.setUrl(qRes.getUrl());
-					sqr.getDetails().put("PValue", Double.valueOf(qRes.getpValue()));
-					sqr.getDetails().put("similarity", Double.valueOf(qRes.getSimilarity()));
-					sqr.getDetails().put("totalNetworkCount", Integer.valueOf(qRes.getTotalNetworkCount()));
-					sqResults.add(sqr);
-				}
-			}
-			sqRes.setResults(sqResults);
-			sqRes.setNumberOfHits(sqResults.size());
-			return sqRes.getNumberOfHits();
-		} catch (EnrichmentException ee) {
-			_logger.error("caught exception", ee);
-		}
-		return 0;
-	}
-
-	// type should be either 'i' or 'a' which maps to interactom ppi and association. 
-	protected int updateInteractomeSourceQueryResults(SourceQueryResults sqRes, String type) {
-		
-		try {
-			InteractomeRestClient client = type.equals("i")? 
-					_interactomeClient_ppi : _interactomeClient_association;
-			
-			UUID interactomeTaskId = UUID.fromString(sqRes.getSourceTaskId());
-			List<InteractomeSearchResult> qr = client.getSearchResult(interactomeTaskId);
-			SearchStatus status = client.getSearchStatus(interactomeTaskId);
-			sqRes.setMessage(status.getMessage());
-			sqRes.setProgress(status.getProgress());
-			sqRes.setStatus(status.getStatus());
-
-			sqRes.setWallTime(status.getWallTime());
-			List<SourceQueryResult> sqResults = new LinkedList<>();
-			if (qr != null) {
-				for (InteractomeSearchResult qRes : qr) {
-					SourceQueryResult sqr = new SourceQueryResult();
-					sqr.setDescription(qRes.getDescription());
-					sqr.setEdges(qRes.getEdgeCount());
-					sqr.setHitGenes(qRes.getHitGenes());
-					sqr.setNetworkUUID(qRes.getNetworkUUID());
-					sqr.setNodes(qRes.getNodeCount());
-					sqr.setPercentOverlap(qRes.getPercentOverlap());
-					sqr.setImageURL(qRes.getImageURL());
-					sqr.setRank(qRes.getRank());
-					sqr.setDetails(qRes.getDetails());
-					sqResults.add(sqr);
-				}
-			}
-			sqRes.setResults(sqResults);
-			sqRes.setNumberOfHits(sqResults.size());
-			return sqRes.getNumberOfHits();
-		} catch (NdexException ee) {
-			_logger.error("caught exception", ee);
-		}
-		return 0;
 	}
 
 	protected void checkAndUpdateQueryResults(QueryResults qr) {
 		// if its complete just return
 		if (qr.getStatus().equals(QueryResults.COMPLETE_STATUS)) {
+			_logger.debug("Returning completed query");
 			return;
 		}
 		if (qr.getStatus().equals(QueryResults.FAILED_STATUS)) {
+			_logger.debug("Returning failed query");
 			return;
 		}
 		int hitCount = 0;
 		int numComplete = 0;
 		if (qr.getSources() != null) {
 			for (SourceQueryResults sqRes : qr.getSources()) {
-				_logger.info("Examining status of " + sqRes.getSourceName());
+				_logger.debug("Examining status of {}", sqRes.getSourceName());
 				if (sqRes.getProgress() == 100) {
+					_logger.debug("{} already completed processing",
+								sqRes.getSourceName());
 					hitCount += sqRes.getNumberOfHits();
 					numComplete++;
 					continue;
 				}
-				if (sqRes.getSourceName().equals(SourceResult.ENRICHMENT_SERVICE)) {
-					_logger.info("adding hits to hit count");
-					hitCount += updateEnrichmentSourceQueryResults(sqRes);
+				if (_sources.containsKey(sqRes.getSourceName())){
+					hitCount += _sources.get(sqRes.getSourceName()).updateSourceQueryResults(sqRes);
 					if (sqRes.getProgress() == 100) {
+						_logger.debug("{} completed processing",
+								sqRes.getSourceName());
 						numComplete++;
 					}
-				} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_PPI_SERVICE) || 
-						sqRes.getSourceName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
-					_logger.info("adding hits to hit count");
-					hitCount += updateInteractomeSourceQueryResults(sqRes,
-							(sqRes.getSourceName().equals(SourceResult.INTERACTOME_PPI_SERVICE)? "i": "a"));
-					if (sqRes.getProgress() == 100) {
-						numComplete++;
-					}
+				} else {
+					_logger.error("Unknown source {}", sqRes.getSourceName());
 				}
 			}
 			if (numComplete >= qr.getSources().size()) {
@@ -735,20 +441,21 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		List<SourceQueryResults> newSqrList = new LinkedList<>();
 		for (SourceQueryResults sqr : qr.getSources()) {
 			if (!sourceSet.contains(sqr.getSourceName())) {
-				_logger.debug(sqr.getSourceName() + " not in source list. Skipping.");
+				_logger.debug("{} not in source list. Skipping.", sqr.getSourceName());
 				continue;
 			}
 			newSqrList.add(sqr);
 		}
 		qr.setSources(newSqrList);
-		return;
 	}
 
 	protected void filterQueryResultsByStartAndSize(QueryResults qr, int start, int size) {
 		if (start == 0 && size == 0) {
+			_logger.debug("That is odd start of 0 and size of 0 requested");
 			return;
 		}
 		if (qr.getSources() == null || qr.getSources().isEmpty()) {
+			_logger.debug("No sources or source list is empty");
 			return;
 		}
 		int counter = 0;
@@ -799,9 +506,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	@Override
 	public QueryResults getQueryResults(final String id, final String source, int start, int size)
 			throws SearchException {
-		_logger.info("Got queryresults request: " + id);
+		_logger.debug("Got query results request: {}", id);
 		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
 		if (qr == null) {
+			_logger.debug("No results for id {} found", id);
 			return null;
 		}
 		if (start < 0) {
@@ -817,9 +525,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	}
 
 	@Override
-	public QueryStatus getQueryStatus(String id) throws SearchException {
+	public QueryStatus getQueryStatus(final String id) throws SearchException {
+		_logger.debug("Got query status request: {}", id);
 		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
 		if (qr == null) {
+			_logger.debug("No results for id {} found", id);
 			return null;
 		}
 		checkAndUpdateQueryResults(qr);
@@ -832,42 +542,44 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	}
 
 	@Override
-	public void delete(String id) throws SearchException {
+	public void delete(final String id) throws SearchException {
 		_logger.debug("Deleting task " + id);
 		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
 		if (qr == null) {
-			_logger.error("cant find " + id + " to delete");
+			_logger.error("Can not find task {} to delete", id);
 			return;
 		}
 		if (qr.getSources() == null) {
+			_logger.error("No sources found for task {}", id);
 			return;
 		}
 		for (SourceQueryResults sqr : qr.getSources()) {
-			if (sqr.getSourceName().equals(SourceResult.ENRICHMENT_SERVICE)) {
-				try {
-					_logger.debug("Calling enrichment DELETE on id: " + sqr.getSourceTaskId());
-					_enrichClient.delete(sqr.getSourceTaskId());
-				} catch (EnrichmentException ee) {
-					throw new SearchException("caught error trying to delete enrichment: " + ee.getMessage());
-				}
-			} else if ( sqr.getSourceName().equals(SourceResult.INTERACTOME_PPI_SERVICE) || 
-					    sqr.getSourceName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
-				// TODO handle this when a delete function is added to the interactome search.
+			if (_sources.containsKey(sqr.getSourceName())){
+				_sources.get(sqr.getSourceName()).delete(id);
+			} else {
+				throw new SearchException("No Source matching name "
+						+ sqr.getSourceName() + " found");
 			}
 		}
-		// TODO delete the local file system copy
+
+		//Delete local file system copy
 		File thisTaskDir = new File(this._taskDir + File.separator + id);
 		if (thisTaskDir.exists() == false) {
+			_logger.debug("{} directory does not exist. returning",
+					thisTaskDir.getAbsolutePath());
 			return;
 		}
-		_logger.debug("Attempting to delete task from filesystem: " + thisTaskDir.getAbsolutePath());
+		_logger.debug("Attempting to delete task from filesystem: {} ",
+				thisTaskDir.getAbsolutePath());
 		if (FileUtils.deleteQuietly(thisTaskDir) == false) {
-			_logger.error("There was a problem deleting the directory: " + thisTaskDir.getAbsolutePath());
+			_logger.error("There was a problem deleting the directory: {}",
+					thisTaskDir.getAbsolutePath());
 		}
 	}
 
 	@Override
-	public InputStream getNetworkOverlayAsCX(final String id, final String sourceUUID, String networkUUID)
+	public InputStream getNetworkOverlayAsCX(final String id, final String sourceUUID,
+			final String networkUUID)
 			throws SearchException, NdexException {
 		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
 		checkAndUpdateQueryResults(qr);
@@ -875,77 +587,44 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			if ( ! sqRes.getSourceUUID().equals(UUID.fromString(sourceUUID))) {
 				continue;
 			}
+			if (_sources.containsKey(sqRes.getSourceName())){
+				return _sources.get(sqRes.getSourceName()).getOverlaidNetworkAsCXStream(sqRes.getSourceTaskId(),
+						networkUUID);
 			
-			if (sqRes.getSourceName().equals(SourceResult.ENRICHMENT_SERVICE)) {
-				try {
-					return _enrichClient.getNetworkOverlayAsCX(sqRes.getSourceTaskId(), "", networkUUID);
-				} catch (EnrichmentException ee) {
-					throw new SearchException("unable to get network: " + ee.getMessage());
-				}
-			} else if (sqRes.getSourceName().equals(SourceResult.KEYWORD_SERVICE)) {
-				try {
-					_logger.info("Returning network as stream: " + networkUUID);
-					return this._keywordclient.getNetworkAsCXStream(UUID.fromString(networkUUID));
-				} catch (IOException ee) {
-					throw new SearchException("unable to get network: " + ee.getMessage());
-				} catch (NdexException ne) {
-					throw new SearchException("unable to get network " + ne.getMessage());
-				}
-			} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_PPI_SERVICE)) {
-				return this._interactomeClient_ppi.getOverlaidNetworkStream(UUID.fromString(sqRes.getSourceTaskId()),
-						UUID.fromString(networkUUID));
-			} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
-				return this._interactomeClient_association.getOverlaidNetworkStream(UUID.fromString(sqRes.getSourceTaskId()),
-						UUID.fromString(networkUUID));
+			} else {
+				throw new SearchException("No Source matching name "
+						+ sqRes.getSourceName() + " found");
 			}
-			
-/*			for (SourceQueryResult sqr : sqRes.getResults()) {
-				if (sqr.getNetworkUUID() == null || !sqr.getNetworkUUID().equals(networkUUID)) {
-					continue;
-				}
-				if (sqRes.getSourceName().equals(SourceResult.ENRICHMENT_SERVICE)) {
-					try {
-						return _enrichClient.getNetworkOverlayAsCX(sqRes.getSourceTaskId(), "", sqr.getNetworkUUID());
-					} catch (EnrichmentException ee) {
-						throw new SearchException("unable to get network: " + ee.getMessage());
-					}
-				} else if (sqRes.getSourceName().equals(SourceResult.KEYWORD_SERVICE)) {
-					try {
-						_logger.info("Returning network as stream: " + networkUUID);
-						return this._keywordclient.getNetworkAsCXStream(UUID.fromString(networkUUID));
-					} catch (IOException ee) {
-						throw new SearchException("unable to get network: " + ee.getMessage());
-					} catch (NdexException ne) {
-						throw new SearchException("unable to get network " + ne.getMessage());
-					}
-				} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_PPI_SERVICE)) {
-					return this._interactomeClient_ppi.getOverlaidNetworkStream(UUID.fromString(sqRes.getSourceTaskId()),
-							UUID.fromString(sqr.getNetworkUUID()));
-				} else if (sqRes.getSourceName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
-					return this._interactomeClient_association.getOverlaidNetworkStream(UUID.fromString(sqRes.getSourceTaskId()),
-							UUID.fromString(sqr.getNetworkUUID()));
-				}
-			} */
 		}
 		return null;
 	}
 	
 	@Override
-	public DatabaseResults getEnrichmentDatabases() throws EnrichmentException {
-		return _enrichClient.getDatabaseResults();
+	public DatabaseResults getEnrichmentDatabases() throws SearchException {
+		try {
+			return (DatabaseResults)_sources.get(SourceResult.ENRICHMENT_SERVICE).getDatabases();
+		} catch(NdexException ne){
+			throw new SearchException(ne.getMessage());
+		}
 	}
 	
 	@Override
 	public List<InteractomeRefNetworkEntry> getInteractomePpiDatabases() throws NdexException {
-		return _interactomeClient_ppi.getDatabase();
+		try {
+			return (List<InteractomeRefNetworkEntry>)_sources.get(SourceResult.INTERACTOME_PPI_SERVICE).getDatabases();
+		}
+		catch(SearchException se){
+				throw new NdexException(se.getMessage());
+		}
 	}
 	
 	@Override
 	public List<InteractomeRefNetworkEntry> getInteractomeGeneAssociationDatabases() throws NdexException {
-		return _interactomeClient_association.getDatabase();
+		try {
+			return (List<InteractomeRefNetworkEntry>)_sources.get(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE).getDatabases();
+		}
+		catch(SearchException se){
+				throw new NdexException(se.getMessage());
+		}
 	} 
-	
-	
-	
-
 }
