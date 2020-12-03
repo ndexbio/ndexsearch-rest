@@ -79,7 +79,7 @@ public interface SearchEngine extends Runnable {
      * @return
      * @throws EnrichmentException
      */
-	public DatabaseResults getEnrichmentDatabases() throws EnrichmentException;
+	public DatabaseResults getEnrichmentDatabases() throws SearchException;
 	
 	/**
 	 * Gets interactome-ppi databases
