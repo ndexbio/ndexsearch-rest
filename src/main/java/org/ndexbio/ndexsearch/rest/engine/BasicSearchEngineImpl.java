@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -154,6 +155,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 */
 	@Override
 	public void run() {
+		_logger.info("Performing initial update of sources");
+		updateSourceResults();
         _logger.debug("Starting service update polling task "
                 + "with update interval of {} ms", _sourcePollingInterval);
 		ScheduledFuture<?> servicePollFuture = _servicePollExecutor.scheduleWithFixedDelay(
@@ -260,10 +263,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	}
 
 	/**
-	 * 
+	 * Submits query to sources to process and saves QueryResults object to 
+	 * internal database
 	 * @param id task id
-	 * @param query
-	 * @throws NdexException 
+	 * @param query Query to run
 	 */
 	protected void processQuery(final String id, Query query) {
 
@@ -282,16 +285,19 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			updateQueryResultsInDb(id, qr);
 			return;
 		}
-
+		String message;
 		List<SourceQueryResults> sqrList = new LinkedList<>();
 		qr.setSources(sqrList);
-		SourceQueryResults sqr = null;
+		SourceQueryResults sqr;
 		for (String source : query.getSourceList()) {
 			_logger.debug("Querying service: {}", source);
 			
 			SourceConfiguration sourceConf = this._sourceConfigurations.get().getSourceConfigurationByName(source);
-			if ( sourceConf == null) {
-				String message = "Source " + source + " is not configured in this server."; 
+			
+             // If no configuration or source matches report as an error and 
+			// return cause this is a big configuration error
+			if ( sourceConf == null || !_sources.containsKey(source)) {
+				message = "Source " + source + " is not configured in this server"; 
 				_logger.error(message);
 				qr.setStatus(QueryResults.FAILED_STATUS);
 				qr.setMessage(message);
@@ -299,26 +305,38 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				updateQueryResultsInDb(id, qr);
 				return;
 			}
-			if (_sources.containsKey(source)){
-				sqr = _sources.get(source).getSourceQueryResults(query);
-			} else {
-				_logger.error("Unknown source {} no query performed", source);
-			}
 
-			if (sqr != null) {
-				_logger.debug("Adding SourceQueryResult for {}", source);
-				sqr.setSourceUUID(sourceConf.getUuid());
-				sqrList.add(sqr);
-				qr.setSources(sqrList);
-				updateQueryResultsInDb(id, qr);
+			sqr = _sources.get(source).getSourceQueryResults(query);
+			
+			// if sqr is null, create a SourceQueryResults (sqr) object
+			// denoting the error
+			if (sqr == null){
+				message = "Result from source " + source + " was null";
+				_logger.error(message);
+				sqr = new SourceQueryResults();
+				sqr.setMessage(message);
+				sqr.setProgress(100);
+				sqr.setStatus(QueryResults.FAILED_STATUS);
 			}
-			sqr = null;
+			_logger.debug("Adding SourceQueryResult for {}", source);
+			sqr.setSourceUUID(sourceConf.getUuid());
+			sqrList.add(sqr);
+			updateQueryResultsInDb(id, qr);
 		}
 		saveQueryResultsToFilesystem(id);
 	}
 
+	/**
+	 * Submits query to run as a task
+	 * @param thequery
+	 * @return id of new task
+	 * @throws SearchException if Query source list is null or empty
+	 */
 	@Override
 	public String query(Query thequery) throws SearchException {
+		if (thequery == null){
+			throw new SearchException("Query is null");
+		}
 		if (thequery.getSourceList() == null || thequery.getSourceList().isEmpty()) {
 			throw new SearchException("No databases selected");
 		}
@@ -356,16 +374,6 @@ public class BasicSearchEngineImpl implements SearchEngine {
 					} else {
 						_logger.error("Unknown source {} no update performed", sourceName);
 					}
-					/**
-					
-					}  else if (SourceResult.KEYWORD_SERVICE.equals(sourceName)) {
-						sourceResult.setVersion("0.2.0");
-						sourceResult.setNumberOfNetworks(2009);
-						sourceResult.setStatus("ok");
-					} else {
-						_logger.error("Unknown source {} no update performed", sourceName);
-					}
-					*/
 					return sourceResult;
 				}).collect(Collectors.toList());
 		InternalSourceResults internalSourceResults = new InternalSourceResults();
@@ -384,6 +392,19 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		return _sourceResults.get();
 	}
 
+	/**
+	 * Updates QueryResults object passed in with any updates from remote
+	 * services. 
+	 * If the QueryResult has complete or failed status, nothing is done.
+	 * Otherwise the method iterates tallies all completed/failed tasks and any
+	 * that are not complete are updated with call to SourceEngine.updateSourceQueryResults()
+	 * Once all tasks are complete the QueryResult is considered with progress set to 
+	 * 100 and status set to complete if all sources completed successfully otherwise
+	 * the status is set to failed and the message denotes the failed sources
+	 * 
+	 * 
+	 * @param qr QueryResults object that is updated in place with any updates
+	 */
 	protected void checkAndUpdateQueryResults(QueryResults qr) {
 		// if its complete just return
 		if (qr.getStatus().equals(QueryResults.COMPLETE_STATUS)) {
@@ -394,36 +415,69 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			_logger.debug("Returning failed query");
 			return;
 		}
+		Set<String> failedSet = new HashSet<>();
 		int hitCount = 0;
 		int numComplete = 0;
 		if (qr.getSources() != null) {
 			for (SourceQueryResults sqRes : qr.getSources()) {
 				_logger.debug("Examining status of {}", sqRes.getSourceName());
 				if (sqRes.getProgress() == 100) {
-					_logger.debug("{} already completed processing",
-								sqRes.getSourceName());
+					_logger.debug("{} already completed processing with status {}",
+								sqRes.getSourceName(), sqRes.getStatus());
+					if (sqRes.getStatus().equals(QueryResults.FAILED_STATUS)){
+						failedSet.add(sqRes.getSourceName());
+					}
 					hitCount += sqRes.getNumberOfHits();
 					numComplete++;
+					
 					continue;
 				}
 				if (_sources.containsKey(sqRes.getSourceName())){
-					hitCount += _sources.get(sqRes.getSourceName()).updateSourceQueryResults(sqRes);
+					_sources.get(sqRes.getSourceName()).updateSourceQueryResults(sqRes);
 					if (sqRes.getProgress() == 100) {
-						_logger.debug("{} completed processing",
-								sqRes.getSourceName());
+						_logger.debug("{} completed processing with status {}",
+								sqRes.getSourceName(), sqRes.getStatus());
+						if (sqRes.getStatus().equals(QueryResults.FAILED_STATUS)){
+							failedSet.add(sqRes.getSourceName());
+						}
+						hitCount += sqRes.getNumberOfHits();
 						numComplete++;
 					}
 				} else {
-					_logger.error("Unknown source {}", sqRes.getSourceName());
+					_logger.error("Unknown source {}. Failing this task",
+							sqRes.getSourceName());
+					sqRes.setMessage("Unknown source");
+					sqRes.setStatus(QueryResults.FAILED_STATUS);
+					sqRes.setNumberOfHits(0);
+					sqRes.setProgress(100);
+					if (sqRes.getStatus().equals(QueryResults.FAILED_STATUS)){
+						failedSet.add(sqRes.getSourceName());
+					}
+					hitCount += sqRes.getNumberOfHits();
+					numComplete++;
 				}
 			}
 			if (numComplete >= qr.getSources().size()) {
 				qr.setProgress(100);
-				qr.setStatus(QueryStatus.COMPLETE_STATUS);
+				if (failedSet.isEmpty() == false){
+					_logger.debug("{} sources failed so "
+							+ "fail the whole thing", failedSet.toString());
+					qr.setStatus(QueryStatus.FAILED_STATUS);
+					qr.setMessage(failedSet.toString() + " source(s) failed");
+				} else {
+					qr.setStatus(QueryStatus.COMPLETE_STATUS);
+				}
 			} else {
-				qr.setProgress(Math.round(((float) numComplete / (float) qr.getSources().size()) * 100));
+				int progress = Math.round(((float) numComplete / (float) qr.getSources().size()) * 100);
+				qr.setProgress(progress);
 			}
 			qr.setNumberOfHits(hitCount);
+		} else {
+			_logger.error("QueryResult has no sources");
+			qr.setNumberOfHits(0);
+			qr.setStatus(QueryResults.FAILED_STATUS);
+			qr.setMessage("No sources in result");
+			qr.setProgress(100);
 		}
 	}
 
@@ -450,10 +504,6 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	}
 
 	protected void filterQueryResultsByStartAndSize(QueryResults qr, int start, int size) {
-		if (start == 0 && size == 0) {
-			_logger.debug("That is odd start of 0 and size of 0 requested");
-			return;
-		}
 		if (qr.getSources() == null || qr.getSources().isEmpty()) {
 			_logger.debug("No sources or source list is empty");
 			return;
@@ -473,7 +523,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 					counter++;
 					continue;
 				}
-				if (counter >= size) {
+				if (size > 0 && counter >= size) {
 					break;
 				}
 				if (srcQueryRes == null) {
@@ -524,6 +574,12 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		return qr;
 	}
 
+	/**
+	 * Gets status of task with {@code id} passed in
+	 * @param id task id
+	 * @return Status of task
+	 * @throws SearchException 
+	 */
 	@Override
 	public QueryStatus getQueryStatus(final String id) throws SearchException {
 		_logger.debug("Got query status request: {}", id);
@@ -541,6 +597,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		return qr;
 	}
 
+	/**
+	 * Deletes task with {@code id} locally and on remote services
+	 * @param id
+	 * @throws SearchException 
+	 */
 	@Override
 	public void delete(final String id) throws SearchException {
 		_logger.debug("Deleting task " + id);
