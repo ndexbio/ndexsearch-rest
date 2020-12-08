@@ -15,6 +15,7 @@
         <resteasy.version>3.1.4.Final</resteasy.version>
         <junit.version>4.12</junit.version>
         <easymock.version>4.0.2</easymock.version>
+		<mockito.version>3.6.28</mockito.version>
         <jetty.version>9.4.34.v20201102</jetty.version>
         <jetty.maven.plugin.version>9.4.34.v20201102</jetty.maven.plugin.version>
         <swagger.version>2.0.0</swagger.version>
@@ -202,6 +203,11 @@
             <version>${easymock.version}</version>
             <scope>test</scope>
         </dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<version>${mockito.version}</version>
+		</dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
