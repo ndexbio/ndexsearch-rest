@@ -32,9 +32,6 @@ import org.ndexbio.ndexsearch.rest.CorsFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.ndexbio.ndexsearch.rest.model.SourceResult;
-import org.ndexbio.ndexsearch.rest.model.DatabaseResult;
-import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
 import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
