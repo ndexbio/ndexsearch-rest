@@ -8,7 +8,6 @@ import org.ndexbio.ndexsearch.rest.model.SourceResult;
 import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
-import org.ndexbio.rest.client.NdexRestClient;
 import org.ndexbio.rest.client.NdexRestClientModelAccessLayer;
 
 import org.slf4j.Logger;
@@ -25,15 +24,17 @@ public class BasicSearchEngineFactory {
     private String _dbDir;
     private String _taskDir;
     private NdexRestClientModelAccessLayer _keywordclient;
+	private String _unsetImageURL;
     private SourceConfigurations _sourceConfigurations;
     private long _sourcePollingInterval;
     
     /**
      * Temp directory where query results will temporarily be stored.
-     * @param tmpDir 
+     * @param config Contains needed configuration 
      */
     public BasicSearchEngineFactory(Configuration config){
         _keywordclient = config.getNDExClient();
+		_unsetImageURL = config.getUnsetImageURL();
         _dbDir = config.getSearchDatabaseDirectory();
         _taskDir = config.getSearchTaskDirectory();
         _sourceConfigurations = config.getSourceConfigurations();
@@ -52,6 +53,8 @@ public class BasicSearchEngineFactory {
 		rankMap.put(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE, 3);
 		
 		for (SourceConfiguration sc : _sourceConfigurations.getSources()) {
+			_logger.info("Found {} service with endpoint {}. Attempting to add",
+					sc.getName(), sc.getEndPoint());
 			if (sc.getName().equals(SourceResult.ENRICHMENT_SERVICE)){
 				sources.put(SourceResult.ENRICHMENT_SERVICE,
 						new EnrichmentSourceEngine(new EnrichmentRestClientImpl(sc.getEndPoint(),
@@ -59,12 +62,13 @@ public class BasicSearchEngineFactory {
              } else if (sc.getName().equals(SourceResult.INTERACTOME_PPI_SERVICE) || 
 					 sc.getName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)){
 				sources.put(sc.getName(), new InteractomeSourceEngine(sc.getName(),
-						new InteractomeRestClient(sc.getEndPoint(), ""), 2));
+						new InteractomeRestClient(sc.getEndPoint(), ""),
+						rankMap.get(sc.getName())));
 					
              } else if (sc.getName().equals(SourceResult.KEYWORD_SERVICE)) {
 				 sources.put(sc.getName(),
-						 new KeywordSourceEngine(new NdexRestClientModelAccessLayer(new NdexRestClient(sc.getEndPoint())),
-								 sc.getUuid().toString(), Configuration.getInstance().getUnsetImageURL()));
+						 new KeywordSourceEngine(_keywordclient,
+								 sc.getUuid().toString(), _unsetImageURL));
 			}
 			else {
 				 _logger.error("Unknown source {} skipping", sc.getName());
