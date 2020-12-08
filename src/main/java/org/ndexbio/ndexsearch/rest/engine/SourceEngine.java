@@ -17,7 +17,7 @@ public interface SourceEngine {
 	
 	public void updateSourceResult(SourceResult sRes);
 	
-	public int updateSourceQueryResults(SourceQueryResults sqRes);
+	public void updateSourceQueryResults(SourceQueryResults sqRes);
 	
 	public void delete(final String id) throws SearchException;
 	
