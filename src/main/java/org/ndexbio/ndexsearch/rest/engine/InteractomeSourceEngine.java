@@ -80,7 +80,7 @@ public class InteractomeSourceEngine implements SourceEngine {
 	}
 
 	@Override
-	public int updateSourceQueryResults(SourceQueryResults sqRes) {
+	public void updateSourceQueryResults(SourceQueryResults sqRes) {
 		try {
 			UUID interactomeTaskId = UUID.fromString(sqRes.getSourceTaskId());
 			List<InteractomeSearchResult> qr = _client.getSearchResult(interactomeTaskId);
@@ -108,7 +108,7 @@ public class InteractomeSourceEngine implements SourceEngine {
 			}
 			sqRes.setResults(sqResults);
 			sqRes.setNumberOfHits(sqResults.size());
-			return sqRes.getNumberOfHits();
+			return;
 		} catch (NdexException ee) {
             String errmsg = ee.getMessage();
             // fix for UD-1420 do not log an error if interactome 
@@ -120,7 +120,6 @@ public class InteractomeSourceEngine implements SourceEngine {
                 _logger.debug("caught exception", ee);
             }
 		}
-		return 0;
 	}
 
 	@Override
