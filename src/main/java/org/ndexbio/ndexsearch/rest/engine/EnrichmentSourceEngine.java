@@ -32,7 +32,7 @@ public class EnrichmentSourceEngine implements SourceEngine {
 	private TreeSet<String> _databaseNameSet = new TreeSet<>();
 	
 	public EnrichmentSourceEngine(EnrichmentRestClient enrichClient){
-		
+		_enrichClient = enrichClient;
 	}
 	
 	/**
@@ -86,7 +86,7 @@ public class EnrichmentSourceEngine implements SourceEngine {
 	@Override
 	public void updateSourceResult(SourceResult sRes) {
 		try {
-			DatabaseResults dbResults = this._enrichClient.getDatabaseResults();
+			DatabaseResults dbResults = _enrichClient.getDatabaseResults();
 			sRes.setDatabases(dbResults.getResults());
 			sRes.setVersion("0.1.0");
 
@@ -110,7 +110,7 @@ public class EnrichmentSourceEngine implements SourceEngine {
 	}
 
 	@Override
-	public int updateSourceQueryResults(SourceQueryResults sqRes) {
+	public void updateSourceQueryResults(SourceQueryResults sqRes) {
 		try {
 			EnrichmentQueryResults qr = this._enrichClient.getQueryResults(sqRes.getSourceTaskId(), 0, 0);
 			sqRes.setMessage(qr.getMessage());
@@ -139,11 +139,9 @@ public class EnrichmentSourceEngine implements SourceEngine {
 			}
 			sqRes.setResults(sqResults);
 			sqRes.setNumberOfHits(sqResults.size());
-			return sqRes.getNumberOfHits();
 		} catch (EnrichmentException ee) {
 			_logger.error("caught exception", ee);
 		}
-		return 0;
 	}
 	
 	@Override
