@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.ndexbio.model.exceptions.NdexException;
 import org.ndexbio.model.object.NdexStatus;
@@ -103,7 +104,12 @@ public class KeywordSourceEngine implements SourceEngine {
 			} else {
 				sRes.setStatus("error");
 			}
-			
+			Map<String, Object> props = status.getProperties();
+			if (props != null){
+				sRes.setVersion((String)props.getOrDefault("ServerVersion", "unknown"));
+			} else {
+				sRes.setVersion("unknown");
+			}
 		} catch(NdexException|IOException ie){
 			_logger.error("Caught exception trying to get status of server", ie);
 		}
@@ -115,8 +121,7 @@ public class KeywordSourceEngine implements SourceEngine {
 	 * @return 
 	 */
 	@Override
-	public int updateSourceQueryResults(final SourceQueryResults sqRes) {
-		return sqRes.getNumberOfHits();
+	public void updateSourceQueryResults(final SourceQueryResults sqRes) {
 	}
 
 	/**
