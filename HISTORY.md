@@ -9,3 +9,6 @@ History
 
 * Bumped jetty version to `9.4.34.v20201102` and jackson to `2.9.10` databind `2.9.10.6`
 
+* Fixed bug on getting results with source filter. If one passed a list of sources delimited
+  by a comma with no spaces between the terms, none of the sources would be returned.
+
