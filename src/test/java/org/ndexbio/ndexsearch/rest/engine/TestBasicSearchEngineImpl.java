@@ -6,8 +6,10 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.mockito.Mockito.*;
@@ -21,6 +23,7 @@ import org.ndexbio.ndexsearch.rest.model.Query;
 import org.ndexbio.ndexsearch.rest.model.QueryResults;
 import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
+import org.ndexbio.ndexsearch.rest.model.SourceQueryResult;
 import org.ndexbio.ndexsearch.rest.model.SourceQueryResults;
 import org.ndexbio.ndexsearch.rest.model.SourceResult;
 
@@ -586,6 +589,7 @@ public class TestBasicSearchEngineImpl {
 			SourceQueryResults theSQR = (SourceQueryResults)invocation.getArgument(0);
 			theSQR.setNumberOfHits(1);
 			theSQR.setProgress(100);
+			theSQR.setWallTime(10);
 			theSQR.setMessage("some error");
 			theSQR.setStatus(QueryResults.FAILED_STATUS);
 			return null;
@@ -606,12 +610,14 @@ public class TestBasicSearchEngineImpl {
 		psqres.setSourceName(SourceResult.INTERACTOME_PPI_SERVICE);
 		psqres.setStatus(QueryResults.FAILED_STATUS);
 		psqres.setNumberOfHits(10);
+		psqres.setWallTime(100);
 		psqres.setProgress(100);
 		
 		SourceQueryResults gsqres = new SourceQueryResults();
 		gsqres.setSourceName(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE);
 		gsqres.setStatus(QueryResults.COMPLETE_STATUS);
 		gsqres.setNumberOfHits(100);
+		gsqres.setWallTime(1000);
 		gsqres.setProgress(100);
 		
 		qr.setSources(Arrays.asList(esqres, psqres, gsqres));
@@ -623,6 +629,7 @@ public class TestBasicSearchEngineImpl {
 		assertEquals(100, qr.getProgress());
 		assertEquals(111, qr.getNumberOfHits());
 		assertEquals(QueryResults.FAILED_STATUS, qr.getStatus());
+		assertEquals(1000, qr.getWallTime());
 		assertTrue(qr.getMessage().contains("] source(s) failed"));
 		assertTrue(qr.getMessage().contains(SourceResult.ENRICHMENT_SERVICE));
 		assertTrue(qr.getMessage().contains(SourceResult.INTERACTOME_PPI_SERVICE));
@@ -645,6 +652,348 @@ public class TestBasicSearchEngineImpl {
 		SourceQueryResults gRes = resHash.get(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE);
 		assertEquals(100, gRes.getProgress());
 		assertEquals(QueryResults.COMPLETE_STATUS, gRes.getStatus());
+	}
+	
+	@Test
+	public void testfilterQueryResultsBySourceListNoSource() throws SearchException {
+		Map<String,SourceEngine> sourceEngines = new HashMap<>();
+		SourceConfigurations sc = new SourceConfigurations();
+		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
+					"/taskdir", sc, 0, sourceEngines);
+		
+		QueryResults qr = new QueryResults();
+		
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceName("foosource");
+		qr.setSources(Arrays.asList(sqr));
+		engine.filterQueryResultsBySourceList(qr, null);
+		engine.filterQueryResultsBySourceList(qr, "");
+		engine.filterQueryResultsBySourceList(qr, "  ");
+		
+		assertEquals("foosource", qr.getSources().get(0).getSourceName());
+	}
+	
+	@Test
+	public void testfilterQueryResultsBySourceListNoMatchingSingleSource() throws SearchException {
+		Map<String,SourceEngine> sourceEngines = new HashMap<>();
+		SourceConfigurations sc = new SourceConfigurations();
+		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
+					"/taskdir", sc, 0, sourceEngines);
+		
+		QueryResults qr = new QueryResults();
+		qr.setNumberOfHits(10);
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceName("foosource");
+		qr.setSources(Arrays.asList(sqr));
+		engine.filterQueryResultsBySourceList(qr, "blah");
+		assertEquals(0, qr.getSources().size());
+	}
+	
+	@Test
+	public void testfilterQueryResultsBySourceListMatchedSingleSource() throws SearchException {
+		Map<String,SourceEngine> sourceEngines = new HashMap<>();
+		SourceConfigurations sc = new SourceConfigurations();
+		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
+					"/taskdir", sc, 0, sourceEngines);
+		
+		QueryResults qr = new QueryResults();
+		qr.setNumberOfHits(10);
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceName("foosource");
+		qr.setSources(Arrays.asList(sqr));
+		engine.filterQueryResultsBySourceList(qr, "foosource");
+		assertEquals(1, qr.getSources().size());
+		assertEquals("foosource", qr.getSources().get(0).getSourceName());
+	}
+	
+	@Test
+	public void testfilterQueryResultsBySourceListMatchedMultipleCommaDelimSource() throws SearchException {
+		Map<String,SourceEngine> sourceEngines = new HashMap<>();
+		SourceConfigurations sc = new SourceConfigurations();
+		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
+					"/taskdir", sc, 0, sourceEngines);
+		
+		QueryResults qr = new QueryResults();
+		qr.setNumberOfHits(10);
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceName("foosource");
+		SourceQueryResults sqr2 = new SourceQueryResults();
+		sqr2.setSourceName("othersource");
+		SourceQueryResults sqr3 = new SourceQueryResults();
+		sqr3.setSourceName("blahsource");
+		
+		qr.setSources(Arrays.asList(sqr, sqr2, sqr3));
+		engine.filterQueryResultsBySourceList(qr, "foosource,blahsource");
+		assertEquals(2, qr.getSources().size());
+		Set<String> srcNames = new HashSet<>();
+		for (SourceQueryResults ss : qr.getSources()){;
+			srcNames.add(ss.getSourceName());
+		}
+		assertEquals(2, srcNames.size());
+		assertTrue(srcNames.contains("foosource"));
+		assertTrue(srcNames.contains("blahsource"));
+		
+	}
+	
+	@Test
+	public void testfilterQueryResultsBySourceListMatchedMultipleCommaDelimPlusSpaceSource() throws SearchException {
+		Map<String,SourceEngine> sourceEngines = new HashMap<>();
+		SourceConfigurations sc = new SourceConfigurations();
+		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
+					"/taskdir", sc, 0, sourceEngines);
+		
+		QueryResults qr = new QueryResults();
+		qr.setNumberOfHits(10);
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceName("foosource");
+		SourceQueryResults sqr2 = new SourceQueryResults();
+		sqr2.setSourceName("othersource");
+		SourceQueryResults sqr3 = new SourceQueryResults();
+		sqr3.setSourceName("blahsource");
+		
+		qr.setSources(Arrays.asList(sqr, sqr2, sqr3));
+		engine.filterQueryResultsBySourceList(qr, "foosource , blahsource");
+		assertEquals(2, qr.getSources().size());
+		Set<String> srcNames = new HashSet<>();
+		for (SourceQueryResults ss : qr.getSources()){;
+			srcNames.add(ss.getSourceName());
+		}
+		assertEquals(2, srcNames.size());
+		assertTrue(srcNames.contains("foosource"));
+		assertTrue(srcNames.contains("blahsource"));
+	}
+	
+	@Test
+	public void testfilterQueryResultsByStartAndSizeNoSources() throws SearchException {
+		Map<String,SourceEngine> sourceEngines = new HashMap<>();
+		SourceConfigurations sc = new SourceConfigurations();
+		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
+					"/taskdir", sc, 0, sourceEngines);
+		
+		QueryResults qr = new QueryResults();
+		engine.filterQueryResultsByStartAndSize(qr, 0, 0);
+		qr.setSources(new ArrayList<>());
+		engine.filterQueryResultsByStartAndSize(qr, 0, 0);
+	}
+	
+	@Test
+	public void testfilterQueryResultsByStartAndSizeAllNoResultsToSort() throws SearchException {
+		Map<String,SourceEngine> sourceEngines = new HashMap<>();
+		SourceConfigurations sc = new SourceConfigurations();
+		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
+					"/taskdir", sc, 0, sourceEngines);
+		
+		QueryResults qr = new QueryResults();
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceName("a_source");
+		sqr.setSourceRank(2);
+		SourceQueryResults sqr2 = new SourceQueryResults();
+		sqr2.setSourceName("b_source");
+		sqr2.setSourceRank(1);
+		SourceQueryResults sqr3 = new SourceQueryResults();
+		sqr3.setSourceName("c_source");
+		sqr3.setSourceRank(3);
+		
+		qr.setSources(Arrays.asList(sqr, sqr2, sqr3));
+		engine.filterQueryResultsByStartAndSize(qr, 0, 0);
+		assertEquals(0, qr.getSources().size());
+	}
+	
+	@Test
+	public void testfilterQueryResultsByStartAndSizeKeepAllResults() throws SearchException {
+		Map<String,SourceEngine> sourceEngines = new HashMap<>();
+		SourceConfigurations sc = new SourceConfigurations();
+		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
+					"/taskdir", sc, 0, sourceEngines);
+		
+		QueryResults qr = new QueryResults();
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceName("a_source");
+		sqr.setSourceRank(2);
+		SourceQueryResult res1 = new SourceQueryResult();
+		res1.setRank(5);
+		res1.setDescription("res1");
+		SourceQueryResult res2 = new SourceQueryResult();
+		res2.setRank(4);
+		res2.setDescription("res2");
+		sqr.setResults(Arrays.asList(res1, res2));
+		
+		SourceQueryResults sqr2 = new SourceQueryResults();
+		sqr2.setSourceName("b_source");
+		sqr2.setSourceRank(1);
+		SourceQueryResult res3 = new SourceQueryResult();
+		res3.setRank(0);
+		res3.setDescription("res3");
+		sqr2.setResults(Arrays.asList(res3));
+		
+		SourceQueryResults sqr3 = new SourceQueryResults();
+		sqr3.setSourceName("c_source");
+		sqr3.setSourceRank(3);
+		SourceQueryResult res4 = new SourceQueryResult();
+		res4.setRank(2);
+		res4.setDescription("res4");
+		sqr3.setResults(Arrays.asList(res4));
+		
+		qr.setSources(Arrays.asList(sqr, sqr2, sqr3));
+		engine.filterQueryResultsByStartAndSize(qr, 0, 0);
+		assertEquals(3, qr.getSources().size());
+		
+		assertEquals("b_source", qr.getSources().get(0).getSourceName());
+		assertEquals("a_source", qr.getSources().get(1).getSourceName());
+		assertEquals("c_source", qr.getSources().get(2).getSourceName());
+		
+		assertEquals(1, qr.getSources().get(0).getResults().size());
+		assertEquals("res3", qr.getSources().get(0).getResults().get(0).getDescription());
+		
+		assertEquals(2, qr.getSources().get(1).getResults().size());
+		assertEquals("res2", qr.getSources().get(1).getResults().get(0).getDescription());
+		assertEquals("res1", qr.getSources().get(1).getResults().get(1).getDescription());
+		
+		assertEquals(1, qr.getSources().get(2).getResults().size());
+		assertEquals("res4", qr.getSources().get(2).getResults().get(0).getDescription());
+	}
+	
+	@Test
+	public void testfilterQueryResultsByStartAndSizeWithFilter() throws SearchException {
+		Map<String,SourceEngine> sourceEngines = new HashMap<>();
+		SourceConfigurations sc = new SourceConfigurations();
+		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
+					"/taskdir", sc, 0, sourceEngines);
+		
+		QueryResults qr = new QueryResults();
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceName("a_source");
+		sqr.setSourceRank(2);
+		SourceQueryResult res1 = new SourceQueryResult();
+		res1.setRank(5);
+		res1.setDescription("res1");
+		SourceQueryResult res2 = new SourceQueryResult();
+		res2.setRank(4);
+		res2.setDescription("res2");
+		sqr.setResults(Arrays.asList(res1, res2));
+		
+		SourceQueryResults sqr2 = new SourceQueryResults();
+		sqr2.setSourceName("b_source");
+		sqr2.setSourceRank(1);
+		SourceQueryResult res3 = new SourceQueryResult();
+		res3.setRank(0);
+		res3.setDescription("res3");
+		sqr2.setResults(Arrays.asList(res3));
+		
+		SourceQueryResults sqr3 = new SourceQueryResults();
+		sqr3.setSourceName("c_source");
+		sqr3.setSourceRank(3);
+		SourceQueryResult res4 = new SourceQueryResult();
+		res4.setRank(2);
+		res4.setDescription("res4");
+		
+		sqr3.setResults(Arrays.asList(res4));
+		
+		qr.setSources(Arrays.asList(sqr, sqr2, sqr3));
+		engine.filterQueryResultsByStartAndSize(qr, 1, 2);
+		assertEquals(1, qr.getSources().size());
+		
+		assertEquals("a_source", qr.getSources().get(0).getSourceName());
+		
+		assertEquals(2, qr.getSources().get(0).getResults().size());
+		assertEquals("res2", qr.getSources().get(0).getResults().get(0).getDescription());
+		assertEquals("res1", qr.getSources().get(0).getResults().get(1).getDescription());
+	}
+	
+	@Test
+	public void testfilterQueryResultsByStartAndSizeNonZeroStartSizeOne() throws SearchException {
+		Map<String,SourceEngine> sourceEngines = new HashMap<>();
+		SourceConfigurations sc = new SourceConfigurations();
+		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
+					"/taskdir", sc, 0, sourceEngines);
+		
+		QueryResults qr = new QueryResults();
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceName("a_source");
+		sqr.setSourceRank(2);
+		SourceQueryResult res1 = new SourceQueryResult();
+		res1.setRank(5);
+		res1.setDescription("res1");
+		SourceQueryResult res2 = new SourceQueryResult();
+		res2.setRank(4);
+		res2.setDescription("res2");
+		sqr.setResults(Arrays.asList(res1, res2));
+		
+		SourceQueryResults sqr2 = new SourceQueryResults();
+		sqr2.setSourceName("b_source");
+		sqr2.setSourceRank(1);
+		SourceQueryResult res3 = new SourceQueryResult();
+		res3.setRank(0);
+		res3.setDescription("res3");
+		sqr2.setResults(Arrays.asList(res3));
+		
+		SourceQueryResults sqr3 = new SourceQueryResults();
+		sqr3.setSourceName("c_source");
+		sqr3.setSourceRank(3);
+		SourceQueryResult res4 = new SourceQueryResult();
+		res4.setRank(2);
+		res4.setDescription("res4");
+		
+		sqr3.setResults(Arrays.asList(res4));
+		
+		qr.setSources(Arrays.asList(sqr, sqr2, sqr3));
+		engine.filterQueryResultsByStartAndSize(qr, 1, 1);
+		assertEquals(1, qr.getSources().size());
+		
+		assertEquals("a_source", qr.getSources().get(0).getSourceName());
+		
+		assertEquals(1, qr.getSources().get(0).getResults().size());
+		assertEquals("res2", qr.getSources().get(0).getResults().get(0).getDescription());
+	}
+	
+	@Test
+	public void testfilterQueryResultsByStartAndSizeWithZeroStart() throws SearchException {
+		Map<String,SourceEngine> sourceEngines = new HashMap<>();
+		SourceConfigurations sc = new SourceConfigurations();
+		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
+					"/taskdir", sc, 0, sourceEngines);
+		
+		QueryResults qr = new QueryResults();
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceName("a_source");
+		sqr.setSourceRank(2);
+		SourceQueryResult res1 = new SourceQueryResult();
+		res1.setRank(5);
+		res1.setDescription("res1");
+		SourceQueryResult res2 = new SourceQueryResult();
+		res2.setRank(4);
+		res2.setDescription("res2");
+		sqr.setResults(Arrays.asList(res1, res2));
+		
+		SourceQueryResults sqr2 = new SourceQueryResults();
+		sqr2.setSourceName("b_source");
+		sqr2.setSourceRank(1);
+		SourceQueryResult res3 = new SourceQueryResult();
+		res3.setRank(0);
+		res3.setDescription("res3");
+		sqr2.setResults(Arrays.asList(res3));
+		
+		SourceQueryResults sqr3 = new SourceQueryResults();
+		sqr3.setSourceName("c_source");
+		sqr3.setSourceRank(3);
+		SourceQueryResult res4 = new SourceQueryResult();
+		res4.setRank(2);
+		res4.setDescription("res4");
+		
+		sqr3.setResults(Arrays.asList(res4));
+		
+		qr.setSources(Arrays.asList(sqr, sqr2, sqr3));
+		engine.filterQueryResultsByStartAndSize(qr, 0, 2);
+		assertEquals(2, qr.getSources().size());
+		
+		assertEquals("b_source", qr.getSources().get(0).getSourceName());
+		assertEquals("a_source", qr.getSources().get(1).getSourceName());
+
+		assertEquals(1, qr.getSources().get(0).getResults().size());
+		assertEquals("res3", qr.getSources().get(0).getResults().get(0).getDescription());
+		
+		assertEquals(1, qr.getSources().get(1).getResults().size());
+		assertEquals("res2", qr.getSources().get(1).getResults().get(0).getDescription());
 	}
 	
 	

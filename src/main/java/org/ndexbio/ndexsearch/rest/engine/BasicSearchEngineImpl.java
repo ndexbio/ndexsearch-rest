@@ -418,6 +418,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		Set<String> failedSet = new HashSet<>();
 		int hitCount = 0;
 		int numComplete = 0;
+		long wallTime = 0;
 		if (qr.getSources() != null) {
 			for (SourceQueryResults sqRes : qr.getSources()) {
 				_logger.debug("Examining status of {}", sqRes.getSourceName());
@@ -429,7 +430,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
 					}
 					hitCount += sqRes.getNumberOfHits();
 					numComplete++;
-					
+					if (sqRes.getWallTime() > wallTime){
+						wallTime = sqRes.getWallTime();
+					}
 					continue;
 				}
 				if (_sources.containsKey(sqRes.getSourceName())){
@@ -442,6 +445,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						}
 						hitCount += sqRes.getNumberOfHits();
 						numComplete++;
+						if (sqRes.getWallTime() > wallTime){
+							wallTime = sqRes.getWallTime();
+						}
 					}
 				} else {
 					_logger.error("Unknown source {}. Failing this task",
@@ -459,6 +465,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			}
 			if (numComplete >= qr.getSources().size()) {
 				qr.setProgress(100);
+				qr.setWallTime(wallTime);
 				if (failedSet.isEmpty() == false){
 					_logger.debug("{} sources failed so "
 							+ "fail the whole thing", failedSet.toString());
@@ -467,6 +474,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				} else {
 					qr.setStatus(QueryStatus.COMPLETE_STATUS);
 				}
+				_logger.info("Query completed in {} ms with status {}",
+						qr.getWallTime(), qr.getStatus());
 			} else {
 				int progress = Math.round(((float) numComplete / (float) qr.getSources().size()) * 100);
 				qr.setProgress(progress);
@@ -481,15 +490,25 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		}
 	}
 
+	/**
+	 * Filters QueryResults by keeping only SourceQueryResults that exist in source
+	 * list which can be a single source name or a comma delimited list
+	 * Note: No adjustment is made to number of hits in query result
+	 * 
+	 * @param qr QueryResults to filter in place
+	 * @param source Sources that are allowed. If null or empty string then QueryResults
+	 *        is not touched.
+	 */
 	protected void filterQueryResultsBySourceList(QueryResults qr, final String source) {
 		if (source == null || source.isEmpty() || source.trim().isEmpty()) {
 			_logger.debug("Source not defined leave all results in");
 			return;
 		}
 
-		String[] splitStr = source.split("\\s+,\\s+");
+		String[] splitStr = source.split("\\s*,\\s*");
 		HashSet<String> sourceSet = new HashSet<>();
 		for (String entry : splitStr) {
+			_logger.debug("Adding source to filter by {}", entry);
 			sourceSet.add(entry);
 		}
 		List<SourceQueryResults> newSqrList = new LinkedList<>();
@@ -503,17 +522,34 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		qr.setSources(newSqrList);
 	}
 
+	/**
+	 * Sorts Results within QueryResults by rank on both the Source level and 
+	 * result level and then only keeps those results starting from index specified
+	 * by 'start' and continuing until 'size' elements are found. Using 0 in both
+	 * returns all results. 
+	 * 
+	 * @param qr     QueryResults to filter
+	 * @param start  starting index to return from. Starting index is 0.
+	 * @param size   Number of results to return. If 0 means all from starting index
+	 *               so to get all set both {@code start} and {@code size} to 0.
+	 */
 	protected void filterQueryResultsByStartAndSize(QueryResults qr, int start, int size) {
 		if (qr.getSources() == null || qr.getSources().isEmpty()) {
 			_logger.debug("No sources or source list is empty");
 			return;
 		}
+		long startTime = System.currentTimeMillis();
 		int counter = 0;
-		List<SourceQueryResults> newSQRS = null;
+		List<SourceQueryResults> newSQRS = new LinkedList<>();
 		List<SourceQueryResult> srcQueryRes = null;
 		Collections.sort(qr.getSources(), _sourceRankSorter);
-		newSQRS = new LinkedList<>();
+		
 		for (SourceQueryResults sqr : qr.getSources()) {
+			if (sqr.getResults() == null){
+				_logger.debug("{} results was null. Skipping...",
+						sqr.getSourceName());
+				continue;
+			}
 			Collections.sort(sqr.getResults(), _rankSorter);
 
 			srcQueryRes = null;
@@ -523,8 +559,18 @@ public class BasicSearchEngineImpl implements SearchEngine {
 					counter++;
 					continue;
 				}
-				if (size > 0 && counter >= size) {
-					break;
+				// this is a little complicated but basically
+				// if there is a start offset 'counter' must be
+				// greater then size otherwise it needs to be
+				// equal or greater
+				if (size > 0){ 
+					if (start == 0) {
+						if (counter >= size){
+							break;
+						}
+					} else if (counter > size) {
+						break;
+					}
 				}
 				if (srcQueryRes == null) {
 					srcQueryRes = new LinkedList<>();
@@ -537,6 +583,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				newSQRS.add(sqr);
 			}
 		}
+		_logger.debug("Filtering results took {} ms",
+				System.currentTimeMillis() - startTime);
 		qr.setSources(newSQRS);
 	}
 
@@ -598,9 +646,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	}
 
 	/**
-	 * Deletes task with {@code id} locally and on remote services
+	 * Deletes task with {@code id} locally and on remote services. If there
+	 * are any problems an error is logged but
 	 * @param id
-	 * @throws SearchException 
 	 */
 	@Override
 	public void delete(final String id) throws SearchException {
@@ -614,13 +662,25 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			_logger.error("No sources found for task {}", id);
 			return;
 		}
+		List<SearchException> exceptionList = null;
 		for (SourceQueryResults sqr : qr.getSources()) {
 			if (_sources.containsKey(sqr.getSourceName())){
-				_sources.get(sqr.getSourceName()).delete(id);
-			} else {
-				throw new SearchException("No Source matching name "
-						+ sqr.getSourceName() + " found");
+				try {
+					_sources.get(sqr.getSourceName()).delete(id);
+				} catch(SearchException se){
+					_logger.info("Adding exception for task {} to "
+							+ "combine and throw later : {}",
+							id ,se.getMessage());
+					if (exceptionList == null){
+						exceptionList = new LinkedList<>();
+					}
+					exceptionList.add(se);
+				}
+				continue;
 			}
+			_logger.error("For task {} No source matching name {} was found. "
+						 + "Skipping...", id,
+						 sqr.getSourceName());
 		}
 
 		//Delete local file system copy
@@ -635,6 +695,31 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		if (FileUtils.deleteQuietly(thisTaskDir) == false) {
 			_logger.error("There was a problem deleting the directory: {}",
 					thisTaskDir.getAbsolutePath());
+		}
+		combineSearchExceptionsAndThrow(id, exceptionList);
+	}
+	
+	/**
+	 * If there are exceptions in list combine them and throw, if just one
+	 * re throw that exception
+	 * @param exceptionList
+	 * @throws SearchException 
+	 */
+	protected void combineSearchExceptionsAndThrow(final String id, List<SearchException> exceptionList) throws SearchException{
+		if (exceptionList != null){
+			if (exceptionList.size() == 1){
+				throw exceptionList.get(0);
+			}
+			StringBuilder sb = new StringBuilder();
+			sb.append(exceptionList.size());
+			sb.append(" exceptions raised while attempting to delete task");
+			sb.append(id);
+			
+			for (SearchException se : exceptionList){
+				sb.append(" : ");
+				sb.append(se.getMessage());
+			}
+			throw new SearchException(sb.toString());
 		}
 	}
 
