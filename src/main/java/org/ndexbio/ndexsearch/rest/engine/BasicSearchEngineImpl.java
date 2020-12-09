@@ -400,31 +400,35 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 * that are not complete are updated with call to SourceEngine.updateSourceQueryResults()
 	 * Once all tasks are complete the QueryResult is considered with progress set to 
 	 * 100 and status set to complete if all sources completed successfully otherwise
-	 * the status is set to failed and the message denotes the failed sources
+	 * the status is set to failed and the message denotes the failed sources.
+	 * 
+	 * If the QueryResult has completed it is saved to the file system so future
+	 * calls that load this QueryResult will return quickly
 	 * 
 	 * 
 	 * @param qr QueryResults object that is updated in place with any updates
 	 */
-	protected void checkAndUpdateQueryResults(QueryResults qr) {
+	protected void checkAndUpdateQueryResults(final String id, QueryResults qr) {
 		// if its complete just return
 		if (qr.getStatus().equals(QueryResults.COMPLETE_STATUS)) {
-			_logger.debug("Returning completed query");
+			_logger.debug("Returning completed query for task {}", id);
 			return;
 		}
 		if (qr.getStatus().equals(QueryResults.FAILED_STATUS)) {
-			_logger.debug("Returning failed query");
+			_logger.debug("Returning failed query for task {}", id);
 			return;
 		}
+		long startTime = System.currentTimeMillis();
 		Set<String> failedSet = new HashSet<>();
 		int hitCount = 0;
 		int numComplete = 0;
 		long wallTime = 0;
 		if (qr.getSources() != null) {
 			for (SourceQueryResults sqRes : qr.getSources()) {
-				_logger.debug("Examining status of {}", sqRes.getSourceName());
+				_logger.debug("For task {} Examining status of {}", id, sqRes.getSourceName());
 				if (sqRes.getProgress() == 100) {
-					_logger.debug("{} already completed processing with status {}",
-								sqRes.getSourceName(), sqRes.getStatus());
+					_logger.debug("For task {} {} already completed processing with status {}",
+								new Object[]{id, sqRes.getSourceName(), sqRes.getStatus()});
 					if (sqRes.getStatus().equals(QueryResults.FAILED_STATUS)){
 						failedSet.add(sqRes.getSourceName());
 					}
@@ -450,8 +454,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						}
 					}
 				} else {
-					_logger.error("Unknown source {}. Failing this task",
-							sqRes.getSourceName());
+					_logger.error("Unknown source {}. Failing this task {}",
+							sqRes.getSourceName(), id);
 					sqRes.setMessage("Unknown source");
 					sqRes.setStatus(QueryResults.FAILED_STATUS);
 					sqRes.setNumberOfHits(0);
@@ -467,27 +471,34 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				qr.setProgress(100);
 				qr.setWallTime(wallTime);
 				if (failedSet.isEmpty() == false){
-					_logger.debug("{} sources failed so "
-							+ "fail the whole thing", failedSet.toString());
+					_logger.debug("For task {} : {} sources failed so "
+							+ "fail the whole thing", id, failedSet.toString());
 					qr.setStatus(QueryStatus.FAILED_STATUS);
 					qr.setMessage(failedSet.toString() + " source(s) failed");
 				} else {
 					qr.setStatus(QueryStatus.COMPLETE_STATUS);
 				}
-				_logger.info("Query completed in {} ms with status {}",
-						qr.getWallTime(), qr.getStatus());
+				_logger.info("Query {} completed in {} ms with status {}",
+						new Object[]{id, qr.getWallTime(), qr.getStatus()});
+				qr.setNumberOfHits(hitCount);
+				updateQueryResultsInDb(id, qr);
+				saveQueryResultsToFilesystem(id);
 			} else {
 				int progress = Math.round(((float) numComplete / (float) qr.getSources().size()) * 100);
 				qr.setProgress(progress);
 			}
 			qr.setNumberOfHits(hitCount);
 		} else {
-			_logger.error("QueryResult has no sources");
+			_logger.error("For task {} QueryResult has no sources", id);
 			qr.setNumberOfHits(0);
 			qr.setStatus(QueryResults.FAILED_STATUS);
 			qr.setMessage("No sources in result");
 			qr.setProgress(100);
+			updateQueryResultsInDb(id, qr);
+			saveQueryResultsToFilesystem(id);
 		}
+		_logger.debug("For task {} checking for update took {} ms",
+				id, System.currentTimeMillis() - startTime);
 	}
 
 	/**
@@ -616,7 +627,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		if (size < 0) {
 			throw new SearchException("size parameter must be value of 0 or greater");
 		}
-		checkAndUpdateQueryResults(qr);
+		checkAndUpdateQueryResults(id, qr);
 		filterQueryResultsBySourceList(qr, source);
 		filterQueryResultsByStartAndSize(qr, start, size);
 		return qr;
@@ -636,7 +647,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			_logger.debug("No results for id {} found", id);
 			return null;
 		}
-		checkAndUpdateQueryResults(qr);
+		checkAndUpdateQueryResults(id, qr);
 		if (qr.getSources() != null) {
 			for (SourceQueryResults sqr : qr.getSources()) {
 				sqr.setResults(null);
@@ -658,77 +669,99 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			_logger.error("Can not find task {} to delete", id);
 			return;
 		}
-		if (qr.getSources() == null) {
-			_logger.error("No sources found for task {}", id);
-			return;
-		}
+		
 		List<SearchException> exceptionList = null;
-		for (SourceQueryResults sqr : qr.getSources()) {
-			if (_sources.containsKey(sqr.getSourceName())){
-				try {
-					_sources.get(sqr.getSourceName()).delete(id);
-				} catch(SearchException se){
-					_logger.info("Adding exception for task {} to "
-							+ "combine and throw later : {}",
-							id ,se.getMessage());
-					if (exceptionList == null){
-						exceptionList = new LinkedList<>();
+		if (qr.getSources() != null){
+			for (SourceQueryResults sqr : qr.getSources()) {
+				if (_sources.containsKey(sqr.getSourceName())){
+					try {
+						_sources.get(sqr.getSourceName()).delete(id);
+					} catch(SearchException se){
+						_logger.info("Adding exception for task {} to "
+								+ "combine and throw later : {}",
+								id ,se.getMessage());
+						if (exceptionList == null){
+							exceptionList = new LinkedList<>();
+						}
+						exceptionList.add(se);
 					}
-					exceptionList.add(se);
+					continue;
 				}
-				continue;
+				_logger.error("For task {} No source matching name {} was found. "
+							 + "Skipping...", id,
+							 sqr.getSourceName());
 			}
-			_logger.error("For task {} No source matching name {} was found. "
-						 + "Skipping...", id,
-						 sqr.getSourceName());
-		}
-
+			// if one or more sources failed to delete just 
+			// combine the exceptions and throw a new combined exception
+			combineSearchExceptionsAndThrow(id, exceptionList);
+		} 
+		
 		//Delete local file system copy
-		File thisTaskDir = new File(this._taskDir + File.separator + id);
-		if (thisTaskDir.exists() == false) {
-			_logger.debug("{} directory does not exist. returning",
+		File thisTaskDir = new File(_taskDir + File.separator + id);
+		if (thisTaskDir.exists() == true) {
+			_logger.debug("Attempting to delete task from filesystem: {} ",
 					thisTaskDir.getAbsolutePath());
+			if (FileUtils.deleteQuietly(thisTaskDir) == false) {
+				_logger.error("There was a problem deleting the directory: {}",
+						thisTaskDir.getAbsolutePath());
+			}
 			return;
 		}
-		_logger.debug("Attempting to delete task from filesystem: {} ",
-				thisTaskDir.getAbsolutePath());
-		if (FileUtils.deleteQuietly(thisTaskDir) == false) {
-			_logger.error("There was a problem deleting the directory: {}",
-					thisTaskDir.getAbsolutePath());
-		}
-		combineSearchExceptionsAndThrow(id, exceptionList);
+		
+		_logger.debug("{} directory does not exist",
+						thisTaskDir.getAbsolutePath());
 	}
 	
 	/**
 	 * If there are exceptions in list combine them and throw, if just one
 	 * re throw that exception
+	 * @param id The id of task
 	 * @param exceptionList
 	 * @throws SearchException 
 	 */
-	protected void combineSearchExceptionsAndThrow(final String id, List<SearchException> exceptionList) throws SearchException{
-		if (exceptionList != null){
-			if (exceptionList.size() == 1){
-				throw exceptionList.get(0);
-			}
-			StringBuilder sb = new StringBuilder();
-			sb.append(exceptionList.size());
-			sb.append(" exceptions raised while attempting to delete task");
-			sb.append(id);
-			
-			for (SearchException se : exceptionList){
-				sb.append(" : ");
-				sb.append(se.getMessage());
-			}
-			throw new SearchException(sb.toString());
+	protected void combineSearchExceptionsAndThrow(final String id,
+			List<SearchException> exceptionList) throws SearchException{
+		if (exceptionList == null){
+			return;
 		}
+
+		if (exceptionList.size() == 1){
+			throw exceptionList.get(0);
+		}
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append(exceptionList.size());
+		sb.append(" exceptions raised while attempting to delete task ");
+		sb.append(id);
+		int counter = 1;
+		for (SearchException se : exceptionList){
+			sb.append(" : (");
+			sb.append(counter);
+			sb.append(") ");
+			sb.append(se.getMessage());
+			counter++;
+		}
+		throw new SearchException(sb.toString());
 	}
 
 	@Override
 	public InputStream getNetworkOverlayAsCX(final String id, final String sourceUUID,
 			final String networkUUID)
 			throws SearchException, NdexException {
+		
+		if (sourceUUID == null){
+			throw new SearchException("sourceUUID cannot be null");
+		}
+		if (networkUUID == null){
+			throw new SearchException("networkUUID cannot be null");
+		}
+		
 		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
-		checkAndUpdateQueryResults(qr);
+		if (qr == null){
+			_logger.info("No task {} found", id);
+			return null;
+		}
+		checkAndUpdateQueryResults(id, qr);
 		for (SourceQueryResults sqRes : qr.getSources()) {
 			if ( ! sqRes.getSourceUUID().equals(UUID.fromString(sourceUUID))) {
 				continue;
@@ -738,10 +771,12 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						networkUUID);
 			
 			} else {
-				throw new SearchException("No Source matching name "
-						+ sqRes.getSourceName() + " found");
+				_logger.error("For task {} no source matching name {} found",
+						id, sqRes.getSourceName());
 			}
 		}
+		_logger.info("For task {} and source {} network {} not found",
+				new Object[]{id, sourceUUID, networkUUID});
 		return null;
 	}
 	
