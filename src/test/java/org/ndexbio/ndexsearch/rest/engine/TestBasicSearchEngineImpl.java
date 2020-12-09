@@ -3,6 +3,8 @@ package org.ndexbio.ndexsearch.rest.engine;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,9 +20,11 @@ import static org.junit.Assert.*;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.ndexbio.model.exceptions.NdexException;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
 import org.ndexbio.ndexsearch.rest.model.Query;
 import org.ndexbio.ndexsearch.rest.model.QueryResults;
+import org.ndexbio.ndexsearch.rest.model.QueryStatus;
 import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.ndexsearch.rest.model.SourceQueryResult;
@@ -383,7 +387,7 @@ public class TestBasicSearchEngineImpl {
 		QueryResults qr = new QueryResults();
 		qr.setStatus(QueryResults.COMPLETE_STATUS);
 		qr.setProgress(55);
-		engine.checkAndUpdateQueryResults(qr);
+		engine.checkAndUpdateQueryResults("uuid", qr);
 		assertEquals(55, qr.getProgress());
 		assertEquals(QueryResults.COMPLETE_STATUS, qr.getStatus());
 	}
@@ -397,7 +401,7 @@ public class TestBasicSearchEngineImpl {
 		QueryResults qr = new QueryResults();
 		qr.setStatus(QueryResults.FAILED_STATUS);
 		qr.setProgress(55);
-		engine.checkAndUpdateQueryResults(qr);
+		engine.checkAndUpdateQueryResults("uuid", qr);
 		assertEquals(55, qr.getProgress());
 		assertEquals(QueryResults.FAILED_STATUS, qr.getStatus());
 	}
@@ -411,7 +415,7 @@ public class TestBasicSearchEngineImpl {
 		QueryResults qr = new QueryResults();
 		qr.setStatus(QueryResults.PROCESSING_STATUS);
 		qr.setProgress(55);
-		engine.checkAndUpdateQueryResults(qr);
+		engine.checkAndUpdateQueryResults("uuid", qr);
 		assertEquals(100, qr.getProgress());
 		assertEquals(QueryResults.FAILED_STATUS, qr.getStatus());
 		assertEquals("No sources in result", qr.getMessage());
@@ -429,7 +433,7 @@ public class TestBasicSearchEngineImpl {
 		sqres.setSourceName("foo");
 		qr.setSources(Arrays.asList(sqres));
 		qr.setProgress(55);
-		engine.checkAndUpdateQueryResults(qr);
+		engine.checkAndUpdateQueryResults("uuid", qr);
 		
 		assertEquals(100, qr.getProgress());
 		assertEquals(QueryResults.FAILED_STATUS, qr.getStatus());
@@ -478,7 +482,7 @@ public class TestBasicSearchEngineImpl {
 		
 		qr.setSources(Arrays.asList(esqres, psqres, gsqres));
 		qr.setProgress(0);
-		engine.checkAndUpdateQueryResults(qr);
+		engine.checkAndUpdateQueryResults("uuid", qr);
 		
 		assertEquals(67, qr.getProgress());
 		assertEquals(QueryResults.PROCESSING_STATUS, qr.getStatus());
@@ -546,7 +550,7 @@ public class TestBasicSearchEngineImpl {
 		
 		qr.setSources(Arrays.asList(esqres, psqres, gsqres));
 		qr.setProgress(0);
-		engine.checkAndUpdateQueryResults(qr);
+		engine.checkAndUpdateQueryResults("uuid", qr);
 		
 		verify(emockSrcEngine, times(1)).updateSourceQueryResults(any(SourceQueryResults.class));
 		
@@ -622,7 +626,7 @@ public class TestBasicSearchEngineImpl {
 		
 		qr.setSources(Arrays.asList(esqres, psqres, gsqres));
 		qr.setProgress(0);
-		engine.checkAndUpdateQueryResults(qr);
+		engine.checkAndUpdateQueryResults("uuid", qr);
 		
 		verify(emockSrcEngine, times(1)).updateSourceQueryResults(any(SourceQueryResults.class));
 		
@@ -996,5 +1000,404 @@ public class TestBasicSearchEngineImpl {
 		assertEquals("res2", qr.getSources().get(1).getResults().get(0).getDescription());
 	}
 	
+	@Test
+	public void testGetQueryResultsNotFound() throws SearchException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			assertNull(engine.getQueryResults("nonexistantid", "foosource", 0, 0));
+		} finally {
+			_folder.delete();
+		}
+	}
+	
+	@Test
+	public void testGetQueryResultsNegativeStart() throws SearchException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			Query thequery = new Query();
+			thequery.setSourceList(Arrays.asList("foosource"));
+			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
+			String id = engine.query(thequery);
+			try {
+				engine.getQueryResults(id, "foosource", -1, 0);
+				fail("Expected SearchException");
+			} catch(SearchException se) {
+				assertTrue(se.getMessage().contains("start parameter must be value of 0 or"));
+			}
+		} finally {
+			_folder.delete();
+		}
+	}
+	
+	@Test
+	public void testGetQueryResultsNegativeSize() throws SearchException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			Query thequery = new Query();
+			thequery.setSourceList(Arrays.asList("foosource"));
+			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
+			String id = engine.query(thequery);
+			try {
+				engine.getQueryResults(id, "foosource", 0, -1);
+				fail("Expected SearchException");
+			} catch(SearchException se) {
+				assertTrue(se.getMessage().contains("size parameter must be value of 0 or"));
+			}
+		} finally {
+			_folder.delete();
+		}
+	}
+	
+	@Test
+	public void testGetQueryResultsSuccess() throws SearchException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			Query thequery = new Query();
+			thequery.setSourceList(Arrays.asList("foosource"));
+			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
+			String id = engine.query(thequery);
+			QueryResults qr = engine.getQueryResultsFromDb(id);
+			qr.setStatus(QueryResults.COMPLETE_STATUS);
+			qr.setMessage("myquery");
+			qr.setProgress(100);
+			
+			QueryResults res = engine.getQueryResults(id, null, 0, 0);
+			assertEquals("myquery", res.getMessage());
+		} finally {
+			_folder.delete();
+		}
+	}
+	
+	@Test
+	public void testGetQueryStatusNotFound() throws SearchException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			assertNull(engine.getQueryStatus("nonexistantid"));
+		} finally {
+			_folder.delete();
+		}
+	}
+	
+	@Test
+	public void testGetQueryStatusSuccessNullForSources() throws SearchException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			Query thequery = new Query();
+			thequery.setSourceList(Arrays.asList("foosource"));
+			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
+			String id = engine.query(thequery);
+			QueryResults qr = engine.getQueryResultsFromDb(id);
+			qr.setStatus(QueryResults.COMPLETE_STATUS);
+			qr.setMessage("myquery");
+			qr.setProgress(100);
+		
+			QueryStatus res = engine.getQueryStatus(id);
+			assertEquals("myquery", res.getMessage());
+		} finally {
+			_folder.delete();
+		}
+	}
+	
+	@Test
+	public void testGetQueryStatusSuccessWithSources() throws SearchException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			Query thequery = new Query();
+			thequery.setSourceList(Arrays.asList("foosource"));
+			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
+			String id = engine.query(thequery);
+			QueryResults qr = engine.getQueryResultsFromDb(id);
+			qr.setStatus(QueryResults.COMPLETE_STATUS);
+			SourceQueryResults sqr1 = new SourceQueryResults();
+			SourceQueryResults sqr2 = new SourceQueryResults();
+			
+			qr.setSources(Arrays.asList(sqr1, sqr2));
+			qr.setMessage("myquery");
+			qr.setProgress(100);
+			QueryStatus res = engine.getQueryStatus(id);
+			assertEquals("myquery", res.getMessage());
+		} finally {
+			_folder.delete();
+		}
+	}
+	
+	@Test
+	public void testcombineSearchExceptionsAndThrow() throws SearchException {
+		Map<String,SourceEngine> sourceEngines = new HashMap<>();
+		SourceConfigurations sc = new SourceConfigurations();
+		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
+					"/taskdir", sc, 0, sourceEngines);
+		
+		// try passing null
+		engine.combineSearchExceptionsAndThrow("someid", null);
+		
+		// pass in single search exception
+		try {
+			engine.combineSearchExceptionsAndThrow("someid",
+					Arrays.asList(new SearchException("some error")));
+		} catch(SearchException se){
+			assertEquals("some error", se.getMessage());
+		}
+		
+		// pass in two search exceptions
+		try {
+			engine.combineSearchExceptionsAndThrow("someid",
+					Arrays.asList(new SearchException("some error"),
+							new SearchException("another error")));
+		} catch(SearchException se){
+			assertEquals("2 exceptions raised while attempting to delete task someid : (1) some error : (2) another error", se.getMessage());
+		}
+	}
+	
+	@Test
+	public void testDeleteNotFound() throws SearchException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			engine.delete("someid");
+		} finally {
+			_folder.delete();
+		}
+		
+	}
+	
+	@Test
+	public void testDeleteNoSourcesTaskNotOnFileSystem() throws SearchException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			Query thequery = new Query();
+			thequery.setSourceList(Arrays.asList("foosource"));
+			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
+			String id = engine.query(thequery);
+			engine.delete(id);
+		} finally {
+			_folder.delete();
+		}
+	}
+	
+	@Test
+	public void testDeleteNoSourcesOnFileSystem() throws SearchException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			Query thequery = new Query();
+			thequery.setSourceList(Arrays.asList("foosource"));
+			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
+			String id = engine.query(thequery);
+			File taskDir = new File(tempDir.getAbsolutePath() + File.separator + id);
+			assertTrue(taskDir.mkdirs());
+			engine.saveQueryResultsToFilesystem(id);
+			engine.delete(id);
+		} finally {
+			_folder.delete();
+		}
+	}
+	
+	@Test
+	public void testDeleteMultipleSources() throws SearchException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceEngine mockEnrichEngine = mock(SourceEngine.class);
+			doThrow(new SearchException("enrich")).when(mockEnrichEngine).delete(any(String.class));
+			
+			SourceEngine mockPPIEngine = mock(SourceEngine.class);
+			SourceEngine mockGeneEngine = mock(SourceEngine.class);
+			doThrow(new SearchException("gene")).when(mockGeneEngine).delete(any(String.class));
+			
+			sourceEngines.put(SourceResult.ENRICHMENT_SERVICE, mockEnrichEngine);
+			sourceEngines.put(SourceResult.INTERACTOME_PPI_SERVICE, mockPPIEngine);
+			sourceEngines.put(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE, mockGeneEngine);
+
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			Query thequery = new Query();
+			thequery.setSourceList(Arrays.asList("foosource"));
+			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
+			
+			
+			String id = engine.query(thequery);
+			QueryResults qr = engine.getQueryResultsFromDb(id);
+			SourceQueryResults sqr1 = new SourceQueryResults();
+			sqr1.setSourceName("invalidsource");
+			
+			SourceQueryResults sqr2 = new SourceQueryResults();
+			sqr2.setSourceName(SourceResult.ENRICHMENT_SERVICE);
+			
+			SourceQueryResults sqr3 = new SourceQueryResults();
+			sqr3.setSourceName(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE);
+
+			SourceQueryResults sqr4 = new SourceQueryResults();
+			sqr4.setSourceName(SourceResult.INTERACTOME_PPI_SERVICE);
+
+			qr.setSources(Arrays.asList(sqr1, sqr2, sqr3, sqr4));
+			engine.updateQueryResultsInDb(id, qr);
+			
+			try {
+				engine.delete(id);
+				fail("Expected SearchException");
+			} catch(SearchException se){
+				assertTrue(se.getMessage().contains("2 exceptions raised while "
+						+ "attempting to delete task " + id + " : (1) "));
+				assertTrue(se.getMessage().contains("enrich"));
+				assertTrue(se.getMessage().contains("gene"));				
+			}
+		} finally {
+			_folder.delete();
+		}
+	}
+	
+	@Test
+	public void testgetNetworkOverlayAsCXNullSourceNetwork() throws SearchException,
+			NdexException, IOException {
+		
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/db", "/task",
+						sc, 0, sourceEngines);
+			try {
+				engine.getNetworkOverlayAsCX("nonexistantid", null, null);
+			} catch(SearchException se){
+				assertEquals("sourceUUID cannot be null", se.getMessage());
+			}
+			
+			try {
+				engine.getNetworkOverlayAsCX("nonexistantid", "sourceuuid", null);
+			} catch(SearchException se){
+				assertEquals("networkUUID cannot be null", se.getMessage());
+			}
+	}
+	
+	@Test
+	public void testgetNetworkOverlayAsCXNoTaskFound() throws SearchException,
+			NdexException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			assertNull(engine.getNetworkOverlayAsCX("nonexistantid", "srcuuid", "netuuid"));
+		} finally {
+			_folder.delete();
+		}
+	}
+	
+	@Test
+	public void testgetNetworkOverlayAsCXNoMatchingSourceUUID() throws SearchException,
+			NdexException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			
+			Query thequery = new Query();
+			thequery.setSourceList(Arrays.asList("foosource"));
+			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
+			
+			String id = engine.query(thequery);
+			QueryResults qr = engine.getQueryResultsFromDb(id);
+			
+			SourceQueryResults sqr2 = new SourceQueryResults();
+			UUID uuid2 = UUID.randomUUID();
+			sqr2.setSourceUUID(uuid2);
+			sqr2.setSourceName(SourceResult.ENRICHMENT_SERVICE);
+			
+			
+			SourceQueryResults sqr3 = new SourceQueryResults();
+			UUID uuid3 = UUID.randomUUID();
+			sqr3.setSourceUUID(uuid3);
+			sqr3.setSourceName(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE);
+
+			SourceQueryResults sqr4 = new SourceQueryResults();
+			UUID uuid4 = UUID.randomUUID();
+			sqr4.setSourceUUID(uuid4);
+			sqr4.setSourceName(SourceResult.INTERACTOME_PPI_SERVICE);
+
+			qr.setSources(Arrays.asList(sqr2, sqr3, sqr4));
+			engine.updateQueryResultsInDb(id, qr);
+			assertNull(engine.getNetworkOverlayAsCX(id, uuid3.toString(), "netuuid"));
+		} finally {
+			_folder.delete();
+		}
+	}
+	
+	@Test
+	public void testgetNetworkOverlayAsCXSuccess() throws SearchException,
+			NdexException, IOException {
+		File tempDir = _folder.newFolder();
+		try {
+			Map<String,SourceEngine> sourceEngines = new HashMap<>();
+			SourceEngine mockSrcEngine = mock(SourceEngine.class);
+			UUID uuid3 = UUID.randomUUID();
+			InputStream mockStream = mock(InputStream.class);
+
+			when(mockSrcEngine.getOverlaidNetworkAsCXStream("srctaskid", "netuuid")).thenReturn(mockStream);
+			sourceEngines.put(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE, mockSrcEngine);
+			SourceConfigurations sc = new SourceConfigurations();
+			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+			
+			Query thequery = new Query();
+			thequery.setSourceList(Arrays.asList("foosource"));
+			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
+			
+			String id = engine.query(thequery);
+			QueryResults qr = engine.getQueryResultsFromDb(id);
+			
+			SourceQueryResults sqr3 = new SourceQueryResults();
+			sqr3.setSourceUUID(uuid3);
+			sqr3.setSourceTaskId("srctaskid");
+			sqr3.setSourceName(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE);
+
+			qr.setSources(Arrays.asList(sqr3));
+			engine.updateQueryResultsInDb(id, qr);
+			InputStream stream = engine.getNetworkOverlayAsCX(id, uuid3.toString(), "netuuid");
+			assertEquals(mockStream, stream);
+		} finally {
+			_folder.delete();
+		}
+	}
 	
 }
