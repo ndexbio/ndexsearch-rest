@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.ndexbio.ndexsearch.rest.services;
 
 import java.io.IOException;
@@ -36,7 +31,7 @@ public class SearchHttpServletDispatcher extends HttpServletDispatcher {
         createAndStartSearchEngine();
     }
     
-    protected void createAndStartSearchEngine() {
+    private void createAndStartSearchEngine() {
         BasicSearchEngineFactory fac = new BasicSearchEngineFactory(Configuration.getInstance());
         try {
             _logger.debug("Creating Search Engine from factory");
@@ -44,7 +39,8 @@ public class SearchHttpServletDispatcher extends HttpServletDispatcher {
             _logger.debug("Starting Search Engine thread");
             _searchEngineThread = new Thread(_searchEngine);
             _searchEngineThread.start();
-            _logger.debug("Enrichment Engine thread running id => " + Long.toString(_searchEngineThread.getId()));
+            _logger.debug("Search Engine thread running id => {}",
+					Long.toString(_searchEngineThread.getId()));
             Configuration.getInstance().setSearchEngine(_searchEngine);
         }
         catch(Exception ex){
