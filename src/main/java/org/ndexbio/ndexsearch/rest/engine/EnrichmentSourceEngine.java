@@ -36,7 +36,7 @@ public class EnrichmentSourceEngine implements SourceEngine {
 	}
 	
 	/**
-	 * Gets list of database names for enrichment
+	 * update database names for enrichment with data from sourceResult
 	 * @return 
 	 */
 	private void updateDatabaseNameSet(final SourceResult sourceResult) {
@@ -83,6 +83,30 @@ public class EnrichmentSourceEngine implements SourceEngine {
 		}
 	}
 	
+	/**
+	 * Attempts to convert {@link org.ndexbio.ndexsearch.rest.model.DatabaseResult.getNumberOfNetworks()}
+	 * to int. 
+	 * @param dr
+	 * @return value of number of networks as int. If value is null or not convertible to int
+	 *         then 0 is returned
+	 */
+	private int getNumberOfNetworks(DatabaseResult dr){
+		if (dr.getNumberOfNetworks() == null){
+			_logger.error("Number of networks was null for Database {}. Setting to 0", 
+					dr.getName());
+			return 0;
+		}
+		try {
+			return Integer.parseInt(dr.getNumberOfNetworks());
+		} catch(NumberFormatException nfe){
+			_logger.error("Setting number for networks to 0 for database {}. "
+					+ "Error converting {} to int : {}",
+					new Object[]{dr.getName(), dr.getNumberOfNetworks(),
+						nfe.getMessage()});
+		}
+		return 0;
+	}
+	
 	@Override
 	public void updateSourceResult(SourceResult sRes) {
 		try {
@@ -93,7 +117,7 @@ public class EnrichmentSourceEngine implements SourceEngine {
 			if (dbResults.getResults() != null){
 				int totalNetworks = 0;
 				for (DatabaseResult dr : dbResults.getResults()){
-					totalNetworks += Integer.parseInt(dr.getNumberOfNetworks());
+					totalNetworks += getNumberOfNetworks(dr);
 				}
 				sRes.setNumberOfNetworks(totalNetworks);
 			} else {
@@ -103,8 +127,9 @@ public class EnrichmentSourceEngine implements SourceEngine {
 			sRes.setStatus("ok");
 
 		} catch (javax.ws.rs.ProcessingException|EnrichmentException e) {
-			_logger.error("Exception while querying sources", e);
-			sRes.setStatus("error");
+			_logger.error("Exception while querying sources. "
+					+ "Not changing current database name set", e);
+			return;
 		} 
 		updateDatabaseNameSet(sRes);
 	}
