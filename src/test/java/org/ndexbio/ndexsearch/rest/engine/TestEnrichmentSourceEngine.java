@@ -4,6 +4,9 @@ package org.ndexbio.ndexsearch.rest.engine;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
+import org.checkerframework.checker.units.qual.s;
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
 
@@ -13,11 +16,14 @@ import org.junit.rules.TemporaryFolder;
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClient;
 import org.ndexbio.enrichment.rest.model.DatabaseResults;
 import org.ndexbio.enrichment.rest.model.EnrichmentQuery;
+import org.ndexbio.enrichment.rest.model.EnrichmentQueryResult;
+import org.ndexbio.enrichment.rest.model.EnrichmentQueryResults;
 import org.ndexbio.enrichment.rest.model.exceptions.EnrichmentException;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
 import org.ndexbio.ndexsearch.rest.model.DatabaseResult;
 import org.ndexbio.ndexsearch.rest.model.Query;
 import org.ndexbio.ndexsearch.rest.model.QueryResults;
+import org.ndexbio.ndexsearch.rest.model.SourceQueryResult;
 import org.ndexbio.ndexsearch.rest.model.SourceQueryResults;
 import org.ndexbio.ndexsearch.rest.model.SourceResult;
 
@@ -269,5 +275,85 @@ public class TestEnrichmentSourceEngine {
 		
 		verify(mockClient).getNetworkOverlayAsCX("id", "", "netid");
 	}
+	
+	@Test
+	public void testUpdateSourceQueryResultsWhereResultsIsNull() throws EnrichmentException, SearchException {
+		EnrichmentRestClient mockClient = mock(EnrichmentRestClient.class);
+		EnrichmentQueryResults eqr = new EnrichmentQueryResults();
+		eqr.setMessage("message");
+		eqr.setProgress(50);
+		eqr.setStatus("status");
+		eqr.setWallTime(1);
 		
+		when(mockClient.getQueryResults(any(String.class), eq(0), eq(0))).thenReturn(eqr);
+		EnrichmentSourceEngine engine = new EnrichmentSourceEngine(mockClient);
+		
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceTaskId("id");
+		
+		engine.updateSourceQueryResults(sqr);
+		assertEquals(eqr.getMessage(), sqr.getMessage());
+		assertEquals(eqr.getProgress(), sqr.getProgress());
+		assertEquals(eqr.getStatus(), sqr.getStatus());
+		assertEquals(0, sqr.getNumberOfHits());
+		assertNotNull(sqr.getResults());
+		verify(mockClient).getQueryResults("id", 0, 0);
+	}
+	
+	@Test
+	public void testUpdateSourceQueryResultsSuccess() throws EnrichmentException, SearchException {
+		EnrichmentRestClient mockClient = mock(EnrichmentRestClient.class);
+		EnrichmentQueryResults eqr = new EnrichmentQueryResults();
+		eqr.setMessage("message");
+		eqr.setProgress(50);
+		eqr.setStatus("status");
+		eqr.setWallTime(1);
+		EnrichmentQueryResult eOne = new EnrichmentQueryResult();
+		eOne.setDatabaseName("dbname");
+		eOne.setDescription("description");
+		eOne.setEdges(1);
+		Set<String> geneSet = new TreeSet<>();
+		geneSet.add("gene1");
+		eOne.setHitGenes(geneSet);
+		eOne.setNodes(2);
+		eOne.setPercentOverlap(3);
+		eOne.setRank(4);
+		eOne.setNetworkUUID("netid");
+		eOne.setImageURL("image");
+		eOne.setpValue(5.0);
+		eOne.setSimilarity(6.0);
+		eOne.setTotalNetworkCount(7);
+		eOne.setUrl("url");
+		
+		eqr.setResults(Arrays.asList(eOne));
+		
+		when(mockClient.getQueryResults(any(String.class), eq(0), eq(0))).thenReturn(eqr);
+		EnrichmentSourceEngine engine = new EnrichmentSourceEngine(mockClient);
+		
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceTaskId("id");
+		
+		engine.updateSourceQueryResults(sqr);
+		assertEquals(eqr.getMessage(), sqr.getMessage());
+		assertEquals(eqr.getProgress(), sqr.getProgress());
+		assertEquals(eqr.getStatus(), sqr.getStatus());
+		assertEquals(1, sqr.getNumberOfHits());
+		assertNotNull(sqr.getResults());
+		SourceQueryResult sRes = sqr.getResults().get(0);
+		assertEquals("dbname: description", sRes.getDescription());
+		assertEquals(1, sRes.getEdges());
+		assertEquals(1, sRes.getHitGenes().size());
+		assertTrue(sRes.getHitGenes().contains("gene1"));
+		assertEquals("netid", sRes.getNetworkUUID());
+		assertEquals(eOne.getNodes(), sRes.getNodes());
+		assertEquals(eOne.getPercentOverlap(), sRes.getPercentOverlap());
+		assertEquals(eOne.getRank(), sRes.getRank());
+		assertEquals(eOne.getImageURL(), sRes.getImageURL());
+		assertEquals(eOne.getUrl(), sRes.getUrl());
+		assertEquals(eOne.getpValue(), sRes.getDetails().get("PValue"));
+		assertEquals(eOne.getSimilarity(), sRes.getDetails().get("similarity"));
+		assertEquals(eOne.getTotalNetworkCount(), sRes.getDetails().get("totalNetworkCount"));
+		
+		verify(mockClient).getQueryResults("id", 0, 0);
+	}
 }
