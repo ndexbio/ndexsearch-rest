@@ -21,7 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Wrapper around NDEx REST client to provide a clean consistent
+ * interface to keyword search query
  * @author churas
  */
 public class KeywordSourceEngine implements SourceEngine {
@@ -31,20 +32,42 @@ public class KeywordSourceEngine implements SourceEngine {
 	private NdexRestClientModelAccessLayer _keywordclient;
 	private final String _sourceTaskId;
 	private final String _unsetImageURL;
+	private int _rank;
 	
 	public KeywordSourceEngine(NdexRestClientModelAccessLayer keywordclient,
-			final String sourceTaskId, final String unsetImageURL){
+			final String sourceTaskId, final String unsetImageURL,
+			int rank){
 		_keywordclient = keywordclient;
 		_sourceTaskId = sourceTaskId;
 		_unsetImageURL = unsetImageURL;
+		_rank = rank;
 	}
 	
+	List<SourceQueryResult> getSourceQueryResultListFromNetworkSearchResult(NetworkSearchResult nrs){
+		int rankCounter = 0;
+		List<SourceQueryResult> sqrList = new LinkedList<>();
+		if (nrs.getNetworks() == null){
+			return sqrList;
+		}
+		for (NetworkSummary ns : nrs.getNetworks()) {
+			SourceQueryResult sr = new SourceQueryResult();
+			sr.setDescription(ns.getName());
+			sr.setEdges(ns.getEdgeCount());
+			sr.setNodes(ns.getNodeCount());
+			sr.setNetworkUUID(ns.getExternalId().toString());
+			sr.setPercentOverlap(0);
+			sr.setRank(rankCounter++);
+			sr.setImageURL(_unsetImageURL);
+			sqrList.add(sr);
+		}
+		return sqrList;
+	}
 	@Override
 	public SourceQueryResults getSourceQueryResults(final Query query) {
+		SourceQueryResults sqr = new SourceQueryResults();
+		sqr.setSourceName(SourceResult.KEYWORD_SERVICE);
+		sqr.setSourceRank(_rank);
 		try {
-			SourceQueryResults sqr = new SourceQueryResults();
-			sqr.setSourceName(SourceResult.KEYWORD_SERVICE);
-			sqr.setSourceRank(1);
 			StringBuilder sb = new StringBuilder();
 			for (String gene : query.getGeneList()) {
 				if (gene.isEmpty() == false) {
@@ -61,19 +84,7 @@ public class KeywordSourceEngine implements SourceEngine {
 				sqr.setProgress(100);
 				return sqr;
 			}
-			int rankCounter = 0;
-			List<SourceQueryResult> sqrList = new LinkedList<>();
-			for (NetworkSummary ns : nrs.getNetworks()) {
-				SourceQueryResult sr = new SourceQueryResult();
-				sr.setDescription(ns.getName());
-				sr.setEdges(ns.getEdgeCount());
-				sr.setNodes(ns.getNodeCount());
-				sr.setNetworkUUID(ns.getExternalId().toString());
-				sr.setPercentOverlap(0);
-				sr.setRank(rankCounter++);
-				sr.setImageURL(_unsetImageURL);
-				sqrList.add(sr);
-			}
+			List<SourceQueryResult> sqrList = getSourceQueryResultListFromNetworkSearchResult(nrs);
 			sqr.setNumberOfHits(sqrList.size());
 			sqr.setProgress(100);
 			sqr.setStatus(QueryResults.COMPLETE_STATUS);
@@ -81,12 +92,14 @@ public class KeywordSourceEngine implements SourceEngine {
 			sqr.setResults(sqrList);
 			_logger.debug("Returning result from keyword query");
 			return sqr;
-		} catch (IOException io) {
-			_logger.error("caught ioexceptin ", io);
-		} catch (NdexException ne) {
-			_logger.error("caught", ne);
+		} catch (NdexException|IOException io) {
+			_logger.error("caught ioexception ", io);
+			sqr.setMessage(SourceResult.KEYWORD_SERVICE + " failed : " + 
+					io.getMessage());
 		}
-		return null;
+		sqr.setStatus(QueryResults.FAILED_STATUS);
+		sqr.setProgress(100);
+		return sqr;
 	}
 
 	/**
