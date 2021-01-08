@@ -125,6 +125,14 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	}
 	
 	/**
+	 * Gets the sources in this object
+	 * @return 
+	 */
+	protected Map<String, SourceEngine> getSources(){
+		return _sources;
+	}
+	
+	/**
 	 * Sets milliseconds thread should sleep if no work needs to be done.
 	 * 
 	 * @param sleepTime
