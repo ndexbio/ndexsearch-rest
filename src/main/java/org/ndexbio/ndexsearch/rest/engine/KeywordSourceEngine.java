@@ -34,6 +34,14 @@ public class KeywordSourceEngine implements SourceEngine {
 	private final String _unsetImageURL;
 	private int _rank;
 	
+	/**
+	 * Constructor
+	 * 
+	 * @param keywordclient client to connect to NDEx REST service
+	 * @param sourceTaskId id of this source
+	 * @param unsetImageURL URL to an image to use if network lacks an image
+	 * @param rank Rank of result when compared to other sources
+	 */
 	public KeywordSourceEngine(NdexRestClientModelAccessLayer keywordclient,
 			final String sourceTaskId, final String unsetImageURL,
 			int rank){
@@ -43,7 +51,15 @@ public class KeywordSourceEngine implements SourceEngine {
 		_rank = rank;
 	}
 	
-	List<SourceQueryResult> getSourceQueryResultListFromNetworkSearchResult(NetworkSearchResult nrs){
+	/**
+	 * Given a result this method iterates through the networks creating matching
+	 * SourceQueryResult objects that are returned by this method. If no networks
+	 * are found then an empty list is returned
+	 * 
+	 * @param nrs
+	 * @return 
+	 */
+	private List<SourceQueryResult> getSourceQueryResultListFromNetworkSearchResult(NetworkSearchResult nrs){
 		int rankCounter = 0;
 		List<SourceQueryResult> sqrList = new LinkedList<>();
 		if (nrs.getNetworks() == null){
@@ -62,6 +78,15 @@ public class KeywordSourceEngine implements SourceEngine {
 		}
 		return sqrList;
 	}
+	
+	/**
+	 * Runs query passed in and returns results. The query is submitted to NDEx REST
+	 * service via client passed into the constructor and is always complete or failed
+	 * 
+	 * @param query the query to run. In this implementation the gene list is passed
+	 *              to NDEx REST service to find any matching networks
+	 * @return 
+	 */
 	@Override
 	public SourceQueryResults getSourceQueryResults(final Query query) {
 		SourceQueryResults sqr = new SourceQueryResults();
@@ -103,14 +128,14 @@ public class KeywordSourceEngine implements SourceEngine {
 	}
 
 	/**
-	 * The keyword call is run locally so there is nothing to refresh
+	 * Queries the server status updating network count and
+	 * status field otherwise l
 	 * @param sRes 
 	 */
 	@Override
 	public void updateSourceResult(final SourceResult sRes) {
 		try {
 			NdexStatus status = _keywordclient.getServerStatus();
-			
 			sRes.setNumberOfNetworks(status.getNetworkCount());
 			if (status.getMessage() != null && status.getMessage().equalsIgnoreCase("online")){
 				sRes.setStatus("ok");
@@ -125,11 +150,12 @@ public class KeywordSourceEngine implements SourceEngine {
 			}
 		} catch(NdexException|IOException ie){
 			_logger.error("Caught exception trying to get status of server", ie);
+			sRes.setStatus("error");
 		}
 	}
 
 	/**
-	 * Just returns number of hits from sqRes since get call fully runs query
+	 * Does nothing
 	 * @param sqRes
 	 * @return 
 	 */
@@ -146,12 +172,19 @@ public class KeywordSourceEngine implements SourceEngine {
 	public void delete(String id) throws SearchException {
 	}
 
+	/**
+	 * Returns network specified by networkId as CX stream
+	 * @param id this is ignored
+	 * @param networkId NDEx UUID of network to retrieve
+	 * @return
+	 * @throws SearchException if there was any problem
+	 */
 	@Override
 	public InputStream getOverlaidNetworkAsCXStream(final String id, 
 			final String networkId) throws SearchException {
 		try {
 			return _keywordclient.getNetworkAsCXStream(UUID.fromString(networkId));
-		} catch(NdexException|IOException ee){
+		} catch(Exception ee){
 			throw new SearchException("Unable to get network: " + ee.getMessage());
 		}
 	}
