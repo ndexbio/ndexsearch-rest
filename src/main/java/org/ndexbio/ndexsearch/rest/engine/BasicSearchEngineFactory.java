@@ -51,6 +51,7 @@ public class BasicSearchEngineFactory {
         Map<String, Integer> rankMap = new HashMap<>();
 		rankMap.put(SourceResult.INTERACTOME_PPI_SERVICE, 2);
 		rankMap.put(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE, 3);
+		rankMap.put(SourceResult.KEYWORD_SERVICE, 1);
 		
 		for (SourceConfiguration sc : _sourceConfigurations.getSources()) {
 			_logger.info("Found {} service with endpoint {}. Attempting to add",
@@ -68,7 +69,8 @@ public class BasicSearchEngineFactory {
              } else if (sc.getName().equals(SourceResult.KEYWORD_SERVICE)) {
 				 sources.put(sc.getName(),
 						 new KeywordSourceEngine(_keywordclient,
-								 sc.getUuid().toString(), _unsetImageURL));
+								 sc.getUuid().toString(), _unsetImageURL,
+						 rankMap.get(sc.getName())));
 			}
 			else {
 				 _logger.error("Unknown source {} skipping", sc.getName());
