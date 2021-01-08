@@ -19,7 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Wrapper around InteractomeRestClient to provide a clean consistent
+ * interface to interactome service
+ * 
  * @author churas
  */
 public class InteractomeSourceEngine implements SourceEngine {
@@ -30,6 +32,13 @@ public class InteractomeSourceEngine implements SourceEngine {
 	private InteractomeRestClient _client;
 	private int _rank;
 
+	/**
+	 * Constructor 
+	 *
+	 * @param sourceName Name of source
+	 * @param client Client used to connect to interactome service
+	 * @param rank denotes rank of results
+	 */
 	public InteractomeSourceEngine(final String sourceName, InteractomeRestClient client,
 			int rank){
 		_sourceName = sourceName;
@@ -37,13 +46,19 @@ public class InteractomeSourceEngine implements SourceEngine {
 		_rank = rank;
 	}
 	
+	/**
+	 * Runs query passed in and returns result object with status
+	 * of processing or failure if task failed
+	 * @param query
+	 * @return 
+	 */
 	@Override
 	public SourceQueryResults getSourceQueryResults(Query query) {
 		SourceQueryResults sqr = new SourceQueryResults();
 		sqr.setSourceName(_sourceName);
 		sqr.setSourceRank(_rank);
-		try {
-			String interactomeTaskId = _client.search(query.getGeneList()).toString();
+		try { 
+			UUID interactomeTaskId = _client.search(query.getGeneList());
 			if (interactomeTaskId == null) {
 				_logger.error("Query failed");
 				sqr.setMessage(_sourceName + " failed for unknown reason");
@@ -52,11 +67,8 @@ public class InteractomeSourceEngine implements SourceEngine {
 				return sqr;
 			}
 			sqr.setStatus(QueryResults.SUBMITTED_STATUS);
-			sqr.setSourceTaskId(interactomeTaskId);
+			sqr.setSourceTaskId(interactomeTaskId.toString());
 			return sqr;
-		} catch (NdexException ee) {
-			_logger.error("Caught ndexexception running " + _sourceName, ee);
-			sqr.setMessage(_sourceName + " failed : " + ee.getMessage());
 		} catch (Exception ex) {
 			_logger.error("Caught exception running " + _sourceName, ex);
 			sqr.setMessage(_sourceName + " failed : " + ex.getMessage());
@@ -66,55 +78,100 @@ public class InteractomeSourceEngine implements SourceEngine {
 		return sqr;
 	}
 
+	/**
+	 * Updates sRes in place by querying client
+	 * @param sRes 
+	 */
 	@Override
 	public void updateSourceResult(SourceResult sRes) {
 		try {
 			List<InteractomeRefNetworkEntry> dbResults = _client.getDatabase();
 			sRes.setVersion("1.0");
+			if (dbResults == null){
+				_logger.error("For {} source no "
+						+ "results found when querying "
+						+ "for sources", this._sourceName);
+				sRes.setNumberOfNetworks(0);
+				sRes.setStatus("error");
+				return;
+			}
 			sRes.setNumberOfNetworks(dbResults.size());
 			sRes.setStatus("ok");
-		} catch (javax.ws.rs.ProcessingException|NdexException e) {
-			_logger.error("Exception while querying sources", e);
+		} catch (Exception e) {
+			_logger.error("For " + this._sourceName
+					+ " Exception while querying sources", e);
 			sRes.setStatus("error");
 		}
 	}
 
+	/**
+	 * Gets the result from a completed search. Now if search is not complete
+	 * this will raise an exception
+	 * @param interactomeTaskid
+	 * @return
+	 * @throws NdexException if search is missing, failed, or incomplete
+	 */
+	private List<SourceQueryResult> getSearchResults(final UUID interactomeTaskid) throws NdexException {
+		List<SourceQueryResult> sqResults = new LinkedList<>();
+		List<InteractomeSearchResult> qr = _client.getSearchResult(interactomeTaskid);
+		if (qr != null) {
+			_logger.debug("For {} source task {} had {} results",
+					new Object[]{_sourceName,
+						interactomeTaskid.toString(),
+						qr.size()});
+			for (InteractomeSearchResult qRes : qr) {
+				SourceQueryResult sqr = new SourceQueryResult();
+				sqr.setDescription(qRes.getDescription());
+				sqr.setEdges(qRes.getEdgeCount());
+				sqr.setHitGenes(qRes.getHitGenes());
+				sqr.setNetworkUUID(qRes.getNetworkUUID());
+				sqr.setNodes(qRes.getNodeCount());
+				sqr.setPercentOverlap(qRes.getPercentOverlap());
+				sqr.setImageURL(qRes.getImageURL());
+				sqr.setRank(qRes.getRank());
+				sqr.setDetails(qRes.getDetails());
+				sqResults.add(sqr);
+			}
+		}
+		return sqResults;
+	}
+	
+	/**
+	 * Queries for status of task associated with sqRes and updates sqRes
+	 * with progress, message and if progress of task is 100 the results are
+	 * also updated, otherwise results are an empty list
+	 * 
+	 * @param sqRes 
+	 */
 	@Override
 	public void updateSourceQueryResults(SourceQueryResults sqRes) {
 		try {
 			UUID interactomeTaskId = UUID.fromString(sqRes.getSourceTaskId());
-			List<InteractomeSearchResult> qr = _client.getSearchResult(interactomeTaskId);
+			
 			SearchStatus status = _client.getSearchStatus(interactomeTaskId);
 			sqRes.setMessage(status.getMessage());
 			sqRes.setProgress(status.getProgress());
 			sqRes.setStatus(status.getStatus());
 
 			sqRes.setWallTime(status.getWallTime());
-			List<SourceQueryResult> sqResults = new LinkedList<>();
-			if (qr != null) {
-				for (InteractomeSearchResult qRes : qr) {
-					SourceQueryResult sqr = new SourceQueryResult();
-					sqr.setDescription(qRes.getDescription());
-					sqr.setEdges(qRes.getEdgeCount());
-					sqr.setHitGenes(qRes.getHitGenes());
-					sqr.setNetworkUUID(qRes.getNetworkUUID());
-					sqr.setNodes(qRes.getNodeCount());
-					sqr.setPercentOverlap(qRes.getPercentOverlap());
-					sqr.setImageURL(qRes.getImageURL());
-					sqr.setRank(qRes.getRank());
-					sqr.setDetails(qRes.getDetails());
-					sqResults.add(sqr);
-				}
+			List<SourceQueryResult> sqResults = null;
+			if (status.getProgress() == 100){
+				_logger.debug("For source {} task {} progress is 100", 
+						_sourceName, interactomeTaskId.toString());
+				sqResults = this.getSearchResults(interactomeTaskId);
+			} else {
+				sqResults = new LinkedList<>();
 			}
 			sqRes.setResults(sqResults);
 			sqRes.setNumberOfHits(sqResults.size());
-			return;
 		} catch (NdexException ee) {
             String errmsg = ee.getMessage();
-            // fix for UD-1420 do not log an error if interactome 
+            // This may no longer occur now that code has been refactored, but
+		   // this is a fix for UD-1420 to not log an error if interactome 
             // raises an exception cause the task is still processing
             if (errmsg == null || 
-                    !errmsg.contains("This search has no result ready. Search status: processing")){
+                    !errmsg.contains("This search has no result ready. "
+							+ "Search status: processing")){
                 _logger.error("caught exception", ee);
             } else {
                 _logger.debug("caught exception", ee);
@@ -122,10 +179,23 @@ public class InteractomeSourceEngine implements SourceEngine {
 		}
 	}
 
+	/**
+	 * Does nothing
+	 * @param id
+	 * @throws SearchException 
+	 */
 	@Override
 	public void delete(final String id) throws SearchException {
 	}
 
+	/**
+	 * Gets the network as CX stream from client
+	 * @param id
+	 * @param networkId
+	 * @return
+	 * @throws SearchException
+	 * @throws NdexException 
+	 */
 	@Override
 	public InputStream getOverlaidNetworkAsCXStream(final String id,
 			final String networkId) throws SearchException, NdexException {
@@ -133,11 +203,20 @@ public class InteractomeSourceEngine implements SourceEngine {
 					UUID.fromString(networkId));
 	}
 
+	/**
+	 * Gets databases from client
+	 * @return
+	 * @throws SearchException
+	 * @throws NdexException 
+	 */
 	@Override
 	public Object getDatabases() throws SearchException, NdexException {
 		return _client.getDatabase();
 	}
 
+	/**
+	 * Does nothing
+	 */
 	@Override
 	public void shutdown() {
 	}
