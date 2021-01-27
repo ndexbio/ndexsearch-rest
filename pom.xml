@@ -4,7 +4,7 @@
 
     <groupId>org.ndexbio</groupId>
     <artifactId>ndexsearch-rest</artifactId>
-    <version>0.3.5-SNAPSHOT</version>
+    <version>0.3.5</version>
     <packaging>war</packaging>
 
     <name>NDEx Integrated Search REST service</name>
@@ -24,7 +24,7 @@
         <logback.version>1.2.3</logback.version>
         <commons-math3.version>3.6.1</commons-math3.version>
         <commons-io.version>2.6</commons-io.version>
-        <ndex-enrichment-rest-client.version>0.3.0-SNAPSHOT</ndex-enrichment-rest-client.version>
+        <ndex-enrichment-rest-client.version>0.3.0</ndex-enrichment-rest-client.version>
         <ndex-java-client.version>2.4.5</ndex-java-client.version>
 	<ndex-object-model.version>2.5.1-20201217.180835-1</ndex-object-model.version>
         <jopt-simple.version>5.0.4</jopt-simple.version>
