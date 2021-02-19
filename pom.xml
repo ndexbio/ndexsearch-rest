@@ -4,7 +4,7 @@
 
     <groupId>org.ndexbio</groupId>
     <artifactId>ndexsearch-rest</artifactId>
-    <version>0.3.5</version>
+    <version>0.3.6-SNAPSHOT</version>
     <packaging>war</packaging>
 
     <name>NDEx Integrated Search REST service</name>

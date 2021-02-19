@@ -800,7 +800,7 @@ public class TestBasicSearchEngineImpl {
 		
 		qr.setSources(Arrays.asList(sqr, sqr2, sqr3));
 		engine.filterQueryResultsByStartAndSize(qr, 0, 0);
-		assertEquals(0, qr.getSources().size());
+		assertEquals(3, qr.getSources().size());
 	}
 	
 	@Test
@@ -895,13 +895,12 @@ public class TestBasicSearchEngineImpl {
 		
 		qr.setSources(Arrays.asList(sqr, sqr2, sqr3));
 		engine.filterQueryResultsByStartAndSize(qr, 1, 2);
-		assertEquals(1, qr.getSources().size());
+		assertEquals(3, qr.getSources().size());
+		assertEquals("a_source", qr.getSources().get(1).getSourceName());
 		
-		assertEquals("a_source", qr.getSources().get(0).getSourceName());
-		
-		assertEquals(2, qr.getSources().get(0).getResults().size());
-		assertEquals("res2", qr.getSources().get(0).getResults().get(0).getDescription());
-		assertEquals("res1", qr.getSources().get(0).getResults().get(1).getDescription());
+		assertEquals(2, qr.getSources().get(1).getResults().size());
+		assertEquals("res2", qr.getSources().get(1).getResults().get(0).getDescription());
+		assertEquals("res1", qr.getSources().get(1).getResults().get(1).getDescription());
 	}
 	
 	@Test
@@ -942,12 +941,12 @@ public class TestBasicSearchEngineImpl {
 		
 		qr.setSources(Arrays.asList(sqr, sqr2, sqr3));
 		engine.filterQueryResultsByStartAndSize(qr, 1, 1);
-		assertEquals(1, qr.getSources().size());
+		assertEquals(3, qr.getSources().size());
 		
-		assertEquals("a_source", qr.getSources().get(0).getSourceName());
+		assertEquals("a_source", qr.getSources().get(1).getSourceName());
 		
-		assertEquals(1, qr.getSources().get(0).getResults().size());
-		assertEquals("res2", qr.getSources().get(0).getResults().get(0).getDescription());
+		assertEquals(1, qr.getSources().get(1).getResults().size());
+		assertEquals("res2", qr.getSources().get(1).getResults().get(0).getDescription());
 	}
 	
 	@Test
@@ -988,7 +987,7 @@ public class TestBasicSearchEngineImpl {
 		
 		qr.setSources(Arrays.asList(sqr, sqr2, sqr3));
 		engine.filterQueryResultsByStartAndSize(qr, 0, 2);
-		assertEquals(2, qr.getSources().size());
+		assertEquals(3, qr.getSources().size());
 		
 		assertEquals("b_source", qr.getSources().get(0).getSourceName());
 		assertEquals("a_source", qr.getSources().get(1).getSourceName());

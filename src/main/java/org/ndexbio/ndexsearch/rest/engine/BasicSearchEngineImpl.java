@@ -559,7 +559,6 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		}
 		long startTime = System.currentTimeMillis();
 		int counter = 0;
-		List<SourceQueryResults> newSQRS = new LinkedList<>();
 		List<SourceQueryResult> srcQueryRes = null;
 		Collections.sort(qr.getSources(), _sourceRankSorter);
 		
@@ -599,12 +598,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			}
 			if (srcQueryRes != null) {
 				sqr.setResults(srcQueryRes);
-				newSQRS.add(sqr);
 			}
 		}
 		_logger.debug("Filtering results took {} ms",
 				System.currentTimeMillis() - startTime);
-		qr.setSources(newSQRS);
 	}
 
 	/**
