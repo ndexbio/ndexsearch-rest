@@ -1,6 +1,12 @@
 History
 ========
 
+0.3.6 (2021-02-22)
+------------------
+
+* Fixed a bug where if a query had no results the source would be omitted from
+  the returned JSON which did not adhere to the expected behavior of web UI. UD-1591
+
 0.3.5 (2020-11-24)
 ------------------
 

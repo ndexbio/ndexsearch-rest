@@ -24,13 +24,13 @@ Requirements
 * [Make][make] **(to build)**
 * [Maven][maven] 3.3 or higher **(to build)** -- tested with 3.6
 
-Special Java modules to install (cause we haven't put these into maven central)
+Dependencies (Deployed on NRNB Nexus)
 
-* [ndex-enrichment-rest-model](https://github.com/cytoscape/ndex-enrichment-rest-model) built and installed via `mvn install`
-* [ndex-enrichment-rest-client](https://github.com/cytoscape/ndex-enrichment-rest-client) built and installed via `mvn install`
-* [ndex-object-model](https://github.com/ndexbio/ndex-object-model) built and installed via `mvn install`
-* [ndex-java-client](https://github.com/ndexbio/ndex-java-client) built and installed via `mvn install`
-* [ndex-interactome-search](https://github.com/cytoscape/ndex-interactome-search) built and installed via `mvn install -DskipTests=true`
+* [ndex-enrichment-rest-model](https://github.com/cytoscape/ndex-enrichment-rest-model)
+* [ndex-enrichment-rest-client](https://github.com/cytoscape/ndex-enrichment-rest-client) 
+* [ndex-object-model](https://github.com/ndexbio/ndex-object-model)
+* [ndex-java-client](https://github.com/ndexbio/ndex-java-client)
+* [ndex-interactome-search](https://github.com/cytoscape/ndex-interactome-search)
 
 Building NDEx Search REST Service  
 =================================
