@@ -30,9 +30,17 @@ public class EnrichmentSourceEngine implements SourceEngine {
 
 	private EnrichmentRestClient _enrichClient;
 	private TreeSet<String> _databaseNameSet = new TreeSet<>();
+	private String _sourceName;
 	
 	public EnrichmentSourceEngine(EnrichmentRestClient enrichClient){
 		_enrichClient = enrichClient;
+		_sourceName = SourceResult.ENRICHMENT_SERVICE;
+	}
+	
+	public EnrichmentSourceEngine(EnrichmentRestClient enrichClient,
+			final String sourceName){
+		_enrichClient = enrichClient;
+		_sourceName = sourceName;
 	}
 	
 	/**
@@ -60,7 +68,7 @@ public class EnrichmentSourceEngine implements SourceEngine {
 		equery.setDatabaseList(_databaseNameSet);
 		equery.setGeneList(new TreeSet<>(query.getGeneList()));
 		SourceQueryResults sqr = new SourceQueryResults();
-		sqr.setSourceName(SourceResult.ENRICHMENT_SERVICE);
+		sqr.setSourceName(_sourceName);
 		sqr.setSourceRank(0);
 		try {
 			String enrichTaskId = _enrichClient.query(equery);
