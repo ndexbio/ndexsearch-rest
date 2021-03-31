@@ -29,7 +29,7 @@
 	<ndex-object-model.version>2.5.1-20201217.180835-1</ndex-object-model.version>
         <jopt-simple.version>5.0.4</jopt-simple.version>
         <hamcrest.version>2.1</hamcrest.version>
-        <guava.version>27.0.1-jre</guava.version>
+        <guava.version>29.0-jre</guava.version>
         <javax.servlet.version>4.0.1</javax.servlet.version>
     </properties>
     
