@@ -7,6 +7,9 @@ package org.ndexbio.ndexsearch;
 
 
 import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.core.OutputStreamAppender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Properties;
 import java.io.File;
@@ -28,6 +31,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.ndexbio.ndexsearch.rest.CorsFilter;
+import org.ndexbio.ndexsearch.rest.RequestLoggingFilter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,7 +136,29 @@ public class App {
                 rootLog.setLevel(Level.toLevel(props.getProperty(App.RUNSERVER_LOGLEVEL, "INFO")));
                 String logDir = props.getProperty(App.RUNSERVER_LOGDIR, ".");
                 RolloverFileOutputStream os = new RolloverFileOutputStream(logDir + File.separator + "ndexsearch_yyyy_mm_dd.log", true);
-		
+			  
+			
+				LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
+
+				PatternLayoutEncoder logEncoder = new PatternLayoutEncoder();
+				logEncoder.setContext(lc);
+				logEncoder.setPattern("[%date]\t%msg%n");
+				logEncoder.start();
+               
+				
+                RolloverFileOutputStream requestOS = new RolloverFileOutputStream(logDir + File.separator + "requests_yyyy_mm_dd.log", true);
+				
+				OutputStreamAppender osa = new OutputStreamAppender();
+				osa.setOutputStream(requestOS);
+				osa.setContext(lc);
+				osa.setEncoder(logEncoder);
+				osa.setName(RequestLoggingFilter.REQUEST_LOGGER_NAME + "appender");
+				osa.start();
+				ch.qos.logback.classic.Logger requestLog = 
+					  (ch.qos.logback.classic.Logger) lc.getLogger(RequestLoggingFilter.REQUEST_LOGGER_NAME);
+                requestLog.setLevel(Level.toLevel("INFO"));
+				requestLog.setAdditive(false);
+				requestLog.addAppender(osa);
 		
                 final int port = Integer.valueOf(props.getProperty(App.RUNSERVER_PORT, "8080"));
                 System.out.println("\nSpinning up server for status invoke: http://localhost:" + Integer.toString(port) + Configuration.V_ONE_PATH + "/status\n\n");
@@ -159,6 +185,7 @@ public class App {
                 restEasyServlet.setInitParameters(initMap);
                 webappContext.addServlet(restEasyServlet, "/*");
                 webappContext.addFilter(CorsFilter.class, "/*", null);
+				webappContext.addFilter(RequestLoggingFilter.class, "/*", null);
                 ContextHandlerCollection contexts = new ContextHandlerCollection();
                 contexts.setHandlers(new Handler[] { webappContext });
  
