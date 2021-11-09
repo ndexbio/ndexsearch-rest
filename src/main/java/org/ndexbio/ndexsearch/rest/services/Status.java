@@ -1,6 +1,5 @@
 package org.ndexbio.ndexsearch.rest.services; // Note your package will be {{ groupId }}.rest
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.lang.management.ManagementFactory;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
