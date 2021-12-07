@@ -263,6 +263,9 @@ public class App {
         
         sb.append("# Sets HOST URL prefix (value is prefixed to Location header when query is invoked. Can be commented out)\n");
         sb.append("# " + Configuration.HOST_URL + " = http://ndexbio.org\n");
+		
+		sb.append("\n# Sets Web App URL prefix that is returned from a query (if unset, null is returned in Task)\n");
+		sb.append("# " + Configuration.WEB_URL + " = https://ndexbio.org/iquery\n");
         
         sb.append("\n# Run Service under embedded Jetty command line parameters\n");
         sb.append(App.RUNSERVER_CONTEXTPATH + " = /\n");
