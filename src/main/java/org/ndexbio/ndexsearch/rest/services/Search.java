@@ -87,6 +87,12 @@ public class Search {
             }
             Task t = new Task();
             t.setId(id);
+			String webURL = Configuration.getInstance().getWebURL();
+			if (webURL == null || webURL.equals("")){
+				t.setWebUrl(null);
+			} else {
+				t.setWebUrl(webURL + id);
+			}
             return Response
             		.status(202)
             		.location(new URI(Configuration.getInstance().getHostURL() + Configuration.V_ONE_PATH + "/" + id))

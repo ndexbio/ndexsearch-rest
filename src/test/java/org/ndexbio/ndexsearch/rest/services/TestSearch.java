@@ -166,7 +166,7 @@ public class TestSearch {
     }
     
     @Test
-    public void testRequestQuerySuccess() throws Exception {
+    public void testRequestQuerySuccessWebURLUnset() throws Exception {
         File tempDir = _folder.newFolder();
         try {
             File confFile = new File(tempDir.getAbsolutePath() + File.separator + "my.conf");
@@ -201,6 +201,7 @@ public class TestSearch {
             Task t = mapper.readValue(response.getOutput(),
                     Task.class);
             assertEquals("12345", t.getId());
+			assertEquals(null, t.getWebUrl());
             MultivaluedMap<String, Object> resmap = response.getOutputHeaders();
             assertEquals(new URI(Configuration.V_ONE_PATH + "/12345"), resmap.getFirst("Location"));
             

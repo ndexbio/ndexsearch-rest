@@ -43,6 +43,8 @@ public class Configuration {
     public static final String UNSET_IMAGE_URL = "search.unset.image.url";
     
     public static final String HOST_URL = "search.host.url";
+	
+	public static final String WEB_URL = "search.web.url";
     
     public static final String NDEX_USER = "ndex.user";
     public static final String NDEX_PASS = "ndex.password";
@@ -65,6 +67,7 @@ public class Configuration {
     private static String _unsetImageURL;
     
     private static String _searchHostURL;
+	private static String _searchWebURL;
     
     private  String _sourceConfiguration;
     private static String _sourcePollingInterval;
@@ -99,6 +102,13 @@ public class Configuration {
             _searchHostURL =_searchHostURL + "/";
         }
         
+		_searchWebURL = props.getProperty(Configuration.WEB_URL, "");
+		if (_searchWebURL.trim().isEmpty()){
+			_searchWebURL = "";
+		} else if (!_searchWebURL.endsWith("/")){
+			_searchWebURL = _searchWebURL + "/";
+		}
+		
         _sourceConfiguration = props.getProperty(SOURCE_CONFIGURATIONS_JSON_FILE, "source.configurations.json");
         _sourcePollingInterval = props.getProperty(Configuration.SOURCE_POLLING_INTERVAL, Long.toString(DEFAULT_SOURCE_POLLING_INTERVAL));
         _client = getNDExClient(props);
@@ -133,6 +143,15 @@ public class Configuration {
     public String getHostURL(){
         return _searchHostURL;
     }
+	
+	/**
+	 * Gets web URL prefix for web application utilizing this service
+	 * 
+	 * @return 
+	 */
+	public String getWebURL(){
+		return _searchWebURL;
+	}
     
     public String getSearchDatabaseDirectory(){
         return _searchDatabaseDir;
