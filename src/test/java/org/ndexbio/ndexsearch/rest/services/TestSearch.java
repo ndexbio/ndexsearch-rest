@@ -201,7 +201,7 @@ public class TestSearch {
             Task t = mapper.readValue(response.getOutput(),
                     Task.class);
             assertEquals("12345", t.getId());
-			assertEquals(null, t.getWebUrl());
+			assertEquals(null, t.getWebURL());
             MultivaluedMap<String, Object> resmap = response.getOutputHeaders();
             assertEquals(new URI(Configuration.V_ONE_PATH + "/12345"), resmap.getFirst("Location"));
             
