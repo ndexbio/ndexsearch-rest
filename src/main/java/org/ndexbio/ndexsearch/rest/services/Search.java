@@ -89,9 +89,9 @@ public class Search {
             t.setId(id);
 			String webURL = Configuration.getInstance().getWebURL();
 			if (webURL == null || webURL.equals("")){
-				t.setWebUrl(null);
+				t.setWebURL(null);
 			} else {
-				t.setWebUrl(webURL + id);
+				t.setWebURL(webURL + id);
 			}
             return Response
             		.status(202)
