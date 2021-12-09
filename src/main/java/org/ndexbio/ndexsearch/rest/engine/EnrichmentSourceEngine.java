@@ -167,6 +167,7 @@ public class EnrichmentSourceEngine implements SourceEngine {
 					sqr.getDetails().put("PValue", Double.valueOf(qRes.getpValue()));
 					sqr.getDetails().put("similarity", Double.valueOf(qRes.getSimilarity()));
 					sqr.getDetails().put("totalNetworkCount", Integer.valueOf(qRes.getTotalNetworkCount()));
+					sqr.setTotalGeneCount(qRes.getTotalGeneCount());
 					sqResults.add(sqr);
 				}
 			}
