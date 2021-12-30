@@ -67,6 +67,7 @@ public class EnrichmentSourceEngine implements SourceEngine {
 		EnrichmentQuery equery = new EnrichmentQuery();
 		equery.setDatabaseList(_databaseNameSet);
 		equery.setGeneList(new TreeSet<>(query.getGeneList()));
+		equery.setGeneAnnotationServices(query.getGeneAnnotationServices());
 		SourceQueryResults sqr = new SourceQueryResults();
 		sqr.setSourceName(_sourceName);
 		sqr.setSourceRank(0);
