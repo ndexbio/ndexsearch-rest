@@ -22,6 +22,6 @@ public class TestSearchApplication {
         assertEquals(0, objSet.size());
         
         Set<Class<?>> classSet = sa.getClasses();
-        assertEquals(5, classSet.size());
+        assertEquals(6, classSet.size());
     }
 }
