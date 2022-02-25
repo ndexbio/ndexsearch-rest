@@ -71,6 +71,7 @@ public class SearchSource {
         }
         catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error querying for source information", ex);
+			logger.error("Caught exception getting source results: " + er.asJson(), ex);
             return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
     }
