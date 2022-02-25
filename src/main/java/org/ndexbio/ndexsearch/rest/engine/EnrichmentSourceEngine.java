@@ -146,6 +146,10 @@ public class EnrichmentSourceEngine implements SourceEngine {
 	@Override
 	public void updateSourceQueryResults(SourceQueryResults sqRes) {
 		try {
+			if (sqRes.getProgress() == 100){
+				// nothing needs to be done since progress is 100
+				return;
+			}
 			EnrichmentQueryResults qr = this._enrichClient.getQueryResults(sqRes.getSourceTaskId(), 0, 0);
 			sqRes.setMessage(qr.getMessage());
 			sqRes.setProgress(qr.getProgress());
