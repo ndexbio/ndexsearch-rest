@@ -101,6 +101,7 @@ public class Search {
             		.build();
         } catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error requesting search", ex);
+			logger.error("Caught exception running query: " + er.asJson(), ex);
             return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
     }
@@ -147,6 +148,7 @@ public class Search {
         }
         catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error querying for results", ex);
+			logger.error("Caught exception getting query results: " + er.asJson(), ex);
             return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
     }
@@ -186,7 +188,9 @@ public class Search {
             return Response.ok().type(MediaType.APPLICATION_JSON).entity(omappy.writeValueAsString(eqs)).build();
         }
         catch(Exception ex){
+			
             ErrorResponse er = new ErrorResponse("Error querying for results", ex);
+			logger.error("Caught exception getting query status: " + er.asJson(), ex);
             return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
     }
@@ -219,9 +223,11 @@ public class Search {
             return Response.status(200).build();
         }
         catch(Exception ex){
+			
             ObjectMapper omappy = new ObjectMapper();
             ErrorResponse er = new ErrorResponse("Error deleting search result", ex);
-            return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
+            logger.error("Caught exception deleting result: " + er.asJson(), ex);
+			return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
     }
     
@@ -259,6 +265,7 @@ public class Search {
         }
         catch(Exception ex){
             ErrorResponse er = new ErrorResponse("Error querying for overlay network", ex);
+			logger.error("Caught exception trying to get overlay network: " + er.asJson(), ex);
             return Response.serverError().type(MediaType.APPLICATION_JSON).entity(er.asJson()).build();
         }
         /**
