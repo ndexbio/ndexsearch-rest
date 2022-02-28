@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -279,59 +280,61 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	protected void processQuery(final String id, Query query) {
 
 		QueryResults qr = getQueryResultsFromDb(id);
-		qr.setQuery(query.getGeneList());
-		qr.setInputSourceList(query.getSourceList());
-		qr.setStatus(QueryResults.PROCESSING_STATUS);
-		File taskDir = new File(this._taskDir + File.separator + id);
-		_logger.debug("Creating new task directory {}", taskDir.getAbsolutePath());
+		synchronized(qr){
+			qr.setQuery(query.getGeneList());
+			qr.setInputSourceList(query.getSourceList());
+			qr.setStatus(QueryResults.PROCESSING_STATUS);
+			File taskDir = new File(this._taskDir + File.separator + id);
+			_logger.debug("Creating new task directory {}", taskDir.getAbsolutePath());
 
-		if (taskDir.mkdirs() == false) {
-			_logger.error("Unable to create task directory: {}", taskDir.getAbsolutePath());
-			qr.setStatus(QueryResults.FAILED_STATUS);
-			qr.setMessage("Internal error unable to create directory on filesystem");
-			qr.setProgress(100);
-			updateQueryResultsInDb(id, qr);
-			return;
-		}
-		String message;
-		List<SourceQueryResults> sqrList = new LinkedList<>();
-		qr.setSources(sqrList);
-		SourceQueryResults sqr;
-		for (String source : query.getSourceList()) {
-			_logger.debug("Querying service: {}", source);
-			
-			SourceConfiguration sourceConf = this._sourceConfigurations.get().getSourceConfigurationByName(source);
-			
-             // If no configuration or source matches report as an error and 
-			// return cause this is a big configuration error
-			if ( sourceConf == null || !_sources.containsKey(source)) {
-				message = "Source " + source + " is not configured in this server"; 
-				_logger.error(message);
+			if (taskDir.mkdirs() == false) {
+				_logger.error("Unable to create task directory: {}", taskDir.getAbsolutePath());
 				qr.setStatus(QueryResults.FAILED_STATUS);
-				qr.setMessage(message);
+				qr.setMessage("Internal error unable to create directory on filesystem");
 				qr.setProgress(100);
 				updateQueryResultsInDb(id, qr);
 				return;
 			}
+			String message;
+			List<SourceQueryResults> sqrList = new LinkedList<>();
+			qr.setSources(sqrList);
+			SourceQueryResults sqr;
+			for (String source : query.getSourceList()) {
+				_logger.debug("Querying service: {}", source);
 
-			sqr = _sources.get(source).getSourceQueryResults(query);
-			
-			// if sqr is null, create a SourceQueryResults (sqr) object
-			// denoting the error
-			if (sqr == null){
-				message = "Result from source " + source + " was null";
-				_logger.error(message);
-				sqr = new SourceQueryResults();
-				sqr.setMessage(message);
-				sqr.setProgress(100);
-				sqr.setStatus(QueryResults.FAILED_STATUS);
+				SourceConfiguration sourceConf = this._sourceConfigurations.get().getSourceConfigurationByName(source);
+
+				 // If no configuration or source matches report as an error and 
+				// return cause this is a big configuration error
+				if ( sourceConf == null || !_sources.containsKey(source)) {
+					message = "Source " + source + " is not configured in this server"; 
+					_logger.error(message);
+					qr.setStatus(QueryResults.FAILED_STATUS);
+					qr.setMessage(message);
+					qr.setProgress(100);
+					updateQueryResultsInDb(id, qr);
+					return;
+				}
+
+				sqr = _sources.get(source).getSourceQueryResults(query);
+
+				// if sqr is null, create a SourceQueryResults (sqr) object
+				// denoting the error
+				if (sqr == null){
+					message = "Result from source " + source + " was null";
+					_logger.error(message);
+					sqr = new SourceQueryResults();
+					sqr.setMessage(message);
+					sqr.setProgress(100);
+					sqr.setStatus(QueryResults.FAILED_STATUS);
+				}
+				_logger.debug("Adding SourceQueryResult for {}", source);
+				sqr.setSourceUUID(sourceConf.getUuid());
+				sqrList.add(sqr);
+				updateQueryResultsInDb(id, qr);
 			}
-			_logger.debug("Adding SourceQueryResult for {}", source);
-			sqr.setSourceUUID(sourceConf.getUuid());
-			sqrList.add(sqr);
-			updateQueryResultsInDb(id, qr);
+			saveQueryResultsToFilesystem(id);
 		}
-		saveQueryResultsToFilesystem(id);
 	}
 
 	/**
@@ -417,41 +420,29 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 * @param qr QueryResults object that is updated in place with any updates
 	 */
 	protected void checkAndUpdateQueryResults(final String id, QueryResults qr) {
-		// if its complete just return
-		if (qr.getStatus().equals(QueryResults.COMPLETE_STATUS)) {
-			_logger.debug("Returning completed query for task {}", id);
-			return;
-		}
-		if (qr.getStatus().equals(QueryResults.FAILED_STATUS)) {
-			_logger.debug("Returning failed query for task {}", id);
-			return;
-		}
-		long startTime = System.currentTimeMillis();
-		Set<String> failedSet = new HashSet<>();
-		int hitCount = 0;
-		int numComplete = 0;
-		long wallTime = 0;
-		if (qr.getSources() != null) {
-			for (SourceQueryResults sqRes : qr.getSources()) {
-				_logger.debug("For task {} Examining status of {}", id, sqRes.getSourceName());
-				if (sqRes.getProgress() == 100) {
-					_logger.debug("For task {} {} already completed processing with status {}",
-								new Object[]{id, sqRes.getSourceName(), sqRes.getStatus()});
-					if (sqRes.getStatus().equals(QueryResults.FAILED_STATUS)){
-						failedSet.add(sqRes.getSourceName());
-					}
-					hitCount += sqRes.getNumberOfHits();
-					numComplete++;
-					if (sqRes.getWallTime() > wallTime){
-						wallTime = sqRes.getWallTime();
-					}
-					continue;
-				}
-				if (_sources.containsKey(sqRes.getSourceName())){
-					_sources.get(sqRes.getSourceName()).updateSourceQueryResults(sqRes);
+		synchronized(qr){
+			// if its complete just return
+			if (qr.getStatus().equals(QueryResults.COMPLETE_STATUS)) {
+				_logger.debug("Returning completed query for task {}", id);
+				return;
+			}
+			if (qr.getStatus().equals(QueryResults.FAILED_STATUS)) {
+				_logger.debug("Returning failed query for task {}", id);
+				return;
+			}
+			long startTime = System.currentTimeMillis();
+			Set<String> failedSet = new HashSet<>();
+			int hitCount = 0;
+			int numComplete = 0;
+			long wallTime = 0;
+			if (qr.getSources() != null) {
+				Iterator<SourceQueryResults> sIterator = qr.getSources().iterator();
+				while (sIterator.hasNext()) {
+					SourceQueryResults sqRes = sIterator.next();
+					_logger.debug("For task {} Examining status of {}", id, sqRes.getSourceName());
 					if (sqRes.getProgress() == 100) {
-						_logger.debug("{} completed processing with status {}",
-								sqRes.getSourceName(), sqRes.getStatus());
+						_logger.debug("For task {} {} already completed processing with status {}",
+									new Object[]{id, sqRes.getSourceName(), sqRes.getStatus()});
 						if (sqRes.getStatus().equals(QueryResults.FAILED_STATUS)){
 							failedSet.add(sqRes.getSourceName());
 						}
@@ -460,53 +451,69 @@ public class BasicSearchEngineImpl implements SearchEngine {
 						if (sqRes.getWallTime() > wallTime){
 							wallTime = sqRes.getWallTime();
 						}
+						continue;
 					}
-				} else {
-					_logger.error("Unknown source {}. Failing this task {}",
-							sqRes.getSourceName(), id);
-					sqRes.setMessage("Unknown source");
-					sqRes.setStatus(QueryResults.FAILED_STATUS);
-					sqRes.setNumberOfHits(0);
-					sqRes.setProgress(100);
-					if (sqRes.getStatus().equals(QueryResults.FAILED_STATUS)){
-						failedSet.add(sqRes.getSourceName());
+					if (_sources.containsKey(sqRes.getSourceName())){
+						_sources.get(sqRes.getSourceName()).updateSourceQueryResults(sqRes);
+						if (sqRes.getProgress() == 100) {
+							_logger.debug("{} completed processing with status {}",
+									sqRes.getSourceName(), sqRes.getStatus());
+							if (sqRes.getStatus().equals(QueryResults.FAILED_STATUS)){
+								failedSet.add(sqRes.getSourceName());
+							}
+							hitCount += sqRes.getNumberOfHits();
+							numComplete++;
+							if (sqRes.getWallTime() > wallTime){
+								wallTime = sqRes.getWallTime();
+							}
+						}
+					} else {
+						_logger.error("Unknown source {}. Failing this task {}",
+								sqRes.getSourceName(), id);
+						sqRes.setMessage("Unknown source");
+						sqRes.setStatus(QueryResults.FAILED_STATUS);
+						sqRes.setNumberOfHits(0);
+						sqRes.setProgress(100);
+						if (sqRes.getStatus().equals(QueryResults.FAILED_STATUS)){
+							failedSet.add(sqRes.getSourceName());
+						}
+						hitCount += sqRes.getNumberOfHits();
+						numComplete++;
 					}
-					hitCount += sqRes.getNumberOfHits();
-					numComplete++;
 				}
-			}
-			if (numComplete >= qr.getSources().size()) {
-				qr.setProgress(100);
-				qr.setWallTime(wallTime);
-				if (failedSet.isEmpty() == false){
-					_logger.debug("For task {} : {} sources failed so "
-							+ "fail the whole thing", id, failedSet.toString());
-					qr.setStatus(QueryStatus.FAILED_STATUS);
-					qr.setMessage(failedSet.toString() + " source(s) failed");
+				if (numComplete >= qr.getSources().size()) {
+					qr.setProgress(100);
+					qr.setWallTime(wallTime);
+					if (failedSet.isEmpty() == false){
+						_logger.debug("For task {} : {} sources failed so "
+								+ "fail the whole thing", id, failedSet.toString());
+						qr.setStatus(QueryStatus.FAILED_STATUS);
+						qr.setMessage(failedSet.toString() + " source(s) failed");
+					} else {
+						qr.setStatus(QueryStatus.COMPLETE_STATUS);
+					}
+					_logger.info("Query {} completed in {} ms with status {}",
+							new Object[]{id, qr.getWallTime(), qr.getStatus()});
+					qr.setNumberOfHits(hitCount);
+					updateQueryResultsInDb(id, qr);
+					saveQueryResultsToFilesystem(id);
 				} else {
-					qr.setStatus(QueryStatus.COMPLETE_STATUS);
+					int progress = Math.round(((float) numComplete / (float) qr.getSources().size()) * 100);
+					qr.setProgress(progress);
 				}
-				_logger.info("Query {} completed in {} ms with status {}",
-						new Object[]{id, qr.getWallTime(), qr.getStatus()});
 				qr.setNumberOfHits(hitCount);
+			} else {
+				_logger.error("For task {} QueryResult has no sources", id);
+				qr.setNumberOfHits(0);
+				qr.setStatus(QueryResults.FAILED_STATUS);
+				qr.setMessage("No sources in result");
+				qr.setProgress(100);
 				updateQueryResultsInDb(id, qr);
 				saveQueryResultsToFilesystem(id);
-			} else {
-				int progress = Math.round(((float) numComplete / (float) qr.getSources().size()) * 100);
-				qr.setProgress(progress);
 			}
-			qr.setNumberOfHits(hitCount);
-		} else {
-			_logger.error("For task {} QueryResult has no sources", id);
-			qr.setNumberOfHits(0);
-			qr.setStatus(QueryResults.FAILED_STATUS);
-			qr.setMessage("No sources in result");
-			qr.setProgress(100);
-			updateQueryResultsInDb(id, qr);
-			saveQueryResultsToFilesystem(id);
+			_logger.debug("For task {} checking for update took {} ms",
+					id, System.currentTimeMillis() - startTime);
 		}
-		_logger.debug("For task {} checking for update took {} ms",
-				id, System.currentTimeMillis() - startTime);
 	}
 
 	/**
@@ -633,8 +640,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			throw new SearchException("size parameter must be value of 0 or greater");
 		}
 		checkAndUpdateQueryResults(id, qr);
-		filterQueryResultsBySourceList(qr, source);
-		filterQueryResultsByStartAndSize(qr, start, size);
+		synchronized(qr){
+			filterQueryResultsBySourceList(qr, source);
+			filterQueryResultsByStartAndSize(qr, start, size);
+		}
 		return qr;
 	}
 
@@ -767,17 +776,19 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			return null;
 		}
 		checkAndUpdateQueryResults(id, qr);
-		for (SourceQueryResults sqRes : qr.getSources()) {
-			if ( ! sqRes.getSourceUUID().equals(UUID.fromString(sourceUUID))) {
-				continue;
-			}
-			if (_sources.containsKey(sqRes.getSourceName())){
-				return _sources.get(sqRes.getSourceName()).getOverlaidNetworkAsCXStream(sqRes.getSourceTaskId(),
-						networkUUID);
-			
-			} else {
-				_logger.error("For task {} no source matching name {} found",
-						id, sqRes.getSourceName());
+		synchronized(qr){
+			for (SourceQueryResults sqRes : qr.getSources()) {
+				if ( ! sqRes.getSourceUUID().equals(UUID.fromString(sourceUUID))) {
+					continue;
+				}
+				if (_sources.containsKey(sqRes.getSourceName())){
+					return _sources.get(sqRes.getSourceName()).getOverlaidNetworkAsCXStream(sqRes.getSourceTaskId(),
+							networkUUID);
+
+				} else {
+					_logger.error("For task {} no source matching name {} found",
+							id, sqRes.getSourceName());
+				}
 			}
 		}
 		_logger.info("For task {} and source {} network {} not found",
