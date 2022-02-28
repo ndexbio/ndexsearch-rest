@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import javax.ws.rs.ProcessingException;
 import org.ndexbio.interactomesearch.client.InteractomeRestClient;
 import org.ndexbio.interactomesearch.object.InteractomeRefNetworkEntry;
 import org.ndexbio.interactomesearch.object.InteractomeSearchResult;
@@ -31,6 +32,8 @@ public class InteractomeSourceEngine implements SourceEngine {
 	private final String _sourceName;
 	private InteractomeRestClient _client;
 	private int _rank;
+	private int _searchStatusMaxRetries;
+	private long _searchStatusRetryWaitMillis;
 
 	/**
 	 * Constructor 
@@ -44,6 +47,8 @@ public class InteractomeSourceEngine implements SourceEngine {
 		_sourceName = sourceName;
 		_client = client;
 		_rank = rank;
+		_searchStatusMaxRetries = 3;
+		_searchStatusRetryWaitMillis = 500;
 	}
 	
 	/**
@@ -136,6 +141,39 @@ public class InteractomeSourceEngine implements SourceEngine {
 		return sqResults;
 	}
 	
+	private SearchStatus getSearchStatus(final UUID interactomeTaskId) throws NdexException {
+		int count = 1;
+		
+		Exception lastException = null;
+		while (count <= _searchStatusMaxRetries){
+			try {
+				return _client.getSearchStatus(interactomeTaskId);
+			} catch(ProcessingException pe){
+				_logger.info("On try " + Integer.toString(count)
+						+ " of "
+						+ Integer.toString(this._searchStatusMaxRetries) 
+						+ " caught exception: " + pe.getMessage(), pe);
+				lastException = pe;
+			} catch(NdexException ne){
+				_logger.info("On try " + Integer.toString(count)
+						+ " of "
+						+ Integer.toString(this._searchStatusMaxRetries) 
+						+ " caught exception: " + ne.getMessage(), ne);
+				lastException = ne;
+			}
+			try {
+				Thread.sleep(_searchStatusRetryWaitMillis);
+			} catch(InterruptedException ie){
+				
+			}
+			count++;
+		}
+		if (lastException != null){
+			throw new NdexException(lastException.getMessage(), lastException);
+		}
+		throw new NdexException("Exceeded retry count");
+	}
+	
 	/**
 	 * Queries for status of task associated with sqRes and updates sqRes
 	 * with progress, message and if progress of task is 100 the results are
@@ -146,9 +184,12 @@ public class InteractomeSourceEngine implements SourceEngine {
 	@Override
 	public void updateSourceQueryResults(SourceQueryResults sqRes) {
 		try {
+			if (sqRes.getProgress() == 100){
+				// nothing needs to be updated cause it is already 100
+			}
 			UUID interactomeTaskId = UUID.fromString(sqRes.getSourceTaskId());
 			
-			SearchStatus status = _client.getSearchStatus(interactomeTaskId);
+			SearchStatus status = getSearchStatus(interactomeTaskId);
 			sqRes.setMessage(status.getMessage());
 			sqRes.setProgress(status.getProgress());
 			sqRes.setStatus(status.getStatus());
@@ -174,7 +215,7 @@ public class InteractomeSourceEngine implements SourceEngine {
 							+ "Search status: processing")){
                 _logger.error("caught exception", ee);
             } else {
-                _logger.debug("caught exception", ee);
+                _logger.warn("caught exception querying for search status", ee);
             }
 		}
 	}
@@ -199,8 +240,19 @@ public class InteractomeSourceEngine implements SourceEngine {
 	@Override
 	public InputStream getOverlaidNetworkAsCXStream(final String id,
 			final String networkId) throws SearchException, NdexException {
-		return _client.getOverlaidNetworkStream(UUID.fromString(id),
-					UUID.fromString(networkId));
+		try {
+			return _client.getOverlaidNetworkStream(UUID.fromString(id),
+						UUID.fromString(networkId));
+		} catch(NdexException ne){
+			_logger.error("Caught Ndex exception trying to get network:  " + networkId + " for task: " + id, ne);
+			try {
+				Thread.sleep(200);
+			} catch(InterruptedException ie){
+				
+			}
+			return _client.getOverlaidNetworkStream(UUID.fromString(id),
+						UUID.fromString(networkId));
+		}
 	}
 
 	/**
