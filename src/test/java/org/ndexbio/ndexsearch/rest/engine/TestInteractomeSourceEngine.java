@@ -170,7 +170,7 @@ public class TestInteractomeSourceEngine {
 		assertEquals(0, sqRes.getNumberOfHits());
 		assertEquals(null, sqRes.getResults());
 		assertEquals(0, sqRes.getWallTime());
-		verify(mockClient).getSearchStatus(taskUUID);
+		verify(mockClient, times(3)).getSearchStatus(taskUUID);
 	}
 	
 	@Test
