@@ -20,26 +20,18 @@ Requirements
 ============
 
 * Centos 7+, Ubuntu 12+, and most other linux distributions should work
-* [Java][java] 8+ **(jdk to build)**
+* [Java][java] 11+ **(jdk to build)**
 * [Make][make] **(to build)**
-* [Maven][maven] 3.3 or higher **(to build)** -- tested with 3.6
+* [Maven][maven] 3.6 or higher **(to build)**
 
 Dependencies (Deployed on NRNB Nexus)
 
-* [ndex-enrichment-rest-model](https://github.com/cytoscape/ndex-enrichment-rest-model)
-* [ndex-enrichment-rest-client](https://github.com/cytoscape/ndex-enrichment-rest-client) 
-* [ndex-object-model](https://github.com/ndexbio/ndex-object-model)
+* [ndex-enrichment-rest](https://github.com/cytoscape/ndex-enrichment-rest)
 * [ndex-java-client](https://github.com/ndexbio/ndex-java-client)
 * [ndex-interactome-search](https://github.com/cytoscape/ndex-interactome-search)
 
 Building NDEx Search REST Service  
 =================================
-
-NDEx Search REST Service build requirements:
-
-* [Java 8+][java] JDK
-* [Make][make] **(to build)**
-* [Maven][maven] 3.3 or higher **(to build)** -- tested with 3.6
 
 
 Commands below build NDEx Search REST Service assuming machine has [Git][git] command line tools 
@@ -106,7 +98,7 @@ source.configurations = source.configurations.json
 ndex.user = bob
 ndex.password = somepassword
 ndex.server = public.ndexbio.org
-ndex.useragent = NDExSearch/1.0
+ndex.useragent = NDExSearch/0.8.0
 
 ```
 
