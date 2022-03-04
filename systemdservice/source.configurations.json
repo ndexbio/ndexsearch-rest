@@ -1,0 +1,22 @@
+{
+  "sources" : [
+  {
+    "description" : "This is a Description of enrichment source",
+    "endPoint" : "http://dev.ndexbio.org/enrichmentsearch/enrichment/v1",
+    "name" : "enrichment",
+    "uuid": "eeb4af50-83c4-4e33-ac21-87142403589b"
+  },
+  {
+    "description" : "This is a description of interactome-ppi source",
+    "endPoint" : "http://dev.ndexbio.org/interactomesearch/interactome/ppi/v1/",
+    "name" : "interactome-ppi",
+    "uuid": "0857a397-3453-4ae4-8208-e33a283c85ec"
+  }, {
+    "description" : "This is a description of interactome-geneassociation service",
+    "endPoint" : "http://dev.ndexbio.org/interactomesearch/interactome/geneassociation/v1/",
+    "name" : "interactome-association",
+    "uuid" : "1857a397-3453-4ae4-8208-e33a283c85ec"
+  }
+   ]
+}
+
