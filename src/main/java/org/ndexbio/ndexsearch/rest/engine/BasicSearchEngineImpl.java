@@ -338,6 +338,25 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	}
 
 	/**
+	 * To help with tracking how IQuery is used, this method outputs
+	 * the source list and gene list associated with query to the logger
+	 * @param id Id of task
+	 * @param thequery The query being run
+	 */
+	private void logQuery(final String id, final Query thequery){
+		String geneList = "";
+		String srcList = "";
+		if (thequery.getGeneList() != null){
+			geneList = thequery.getGeneList().toString();
+		}
+		if (thequery.getSourceList() != null){
+			srcList = thequery.getSourceList().toString();
+		}
+		_logger.info("Query (" + id + ") to be processed sources=" + srcList);
+		_logger.info("Query (" + id + ") to be processed genes=" + geneList);
+	}
+	
+	/**
 	 * Submits query to run as a task
 	 * @param thequery
 	 * @return id of new task
@@ -356,6 +375,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		String id = UUID.randomUUID().toString();
 		_queryTasks.put(id, thequery);
 		_queryTaskIds.add(id);
+		logQuery(id, thequery);
 		QueryResults qr = new QueryResults(System.currentTimeMillis());
 		qr.setInputSourceList(thequery.getSourceList());
 		qr.setQuery(thequery.getGeneList());
