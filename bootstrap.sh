@@ -1,7 +1,20 @@
 #!/usr/bin/env bash
 
 # install needed packages (maven is needed to build REST service)
-dnf install -y java-11-openjdk java-11-openjdk-devel
+dnf install -y java-11-openjdk java-11-openjdk-devel wget
+
+# install maven
+pushd /usr/local/
+wget https://downloads.apache.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
+tar -xvf apache-maven-3.6.3-bin.tar.gz
+mv apache-maven-3.6.3 maven
+rm -f apache-maven-3.6.3-bin.tar.gz
+popd
+pushd /etc/profile.d
+echo "# Configuration of Apache Maven Environment Variables" > maven.sh
+echo "export M2_HOME=/usr/local/maven" >> maven.sh
+echo "export PATH=\${M2_HOME}/bin:\$PATH" >> maven.sh
+source /etc/profile.d/maven.sh
 
 # create ndex user
 adduser ndex
@@ -17,18 +30,13 @@ chown -R ndex.ndex /opt/ndex
 
 # copy REST jar
 pushd /vagrant/
+mvn install -Dmaven.test.skip=true
 JAR_PATH=`/bin/ls target/ndexsearch*with*dependencies.jar`
 JAR_FILE=`basename $JAR_PATH`
 cp $JAR_PATH /opt/ndex/services/ndexsearch-rest/.
 
 if [ $? != 0 ] ; then
-	echo "ERROR: You must run mvn install on the host computer to build the jar"
-    echo "       before running vagrant up"
-    echo "       Run the following:"
-    echo ""
-    echo "       vagrant destroy"
-    echo "       mvn install"
-    echo "       vagrant up"
+	echo "ERROR: Something messed up building the jar"
     echo ""
     exit 1
 fi
