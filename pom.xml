@@ -24,9 +24,9 @@
 		<logback.version>1.2.3</logback.version>
 		<commons-math3.version>3.6.1</commons-math3.version>
 		<commons-io.version>2.7</commons-io.version>
-		<ndex-enrichment-rest.version>0.8.0-SNAPSHOT</ndex-enrichment-rest.version>
+		<ndex-enrichment-rest.version>0.8.0</ndex-enrichment-rest.version>
 		<ndex-java-client.version>2.5.3-SNAPSHOT</ndex-java-client.version>
-		<ndex-interactome-search.version>0.8.0-SNAPSHOT</ndex-interactome-search.version>
+		<ndex-interactome-search.version>0.8.0</ndex-interactome-search.version>
 		<jopt-simple.version>5.0.4</jopt-simple.version>
 		<hamcrest.version>2.1</hamcrest.version>
 		<guava.version>27.0.1-jre</guava.version>
