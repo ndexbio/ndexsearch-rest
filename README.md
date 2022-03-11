@@ -9,8 +9,7 @@
 NDEx Search REST Service
 ========================
 
-[![Build Status](https://travis-ci.org/cytoscape/ndexsearch-rest.svg?branch=master)](https://travis-ci.org/cytoscape/ndexsearch-rest) 
-[![Coverage Status](https://coveralls.io/repos/github/cytoscape/ndexsearch-rest/badge.svg?branch=master)](https://coveralls.io/github/cytoscape/ndexsearch-rest?branch=master)
+[![Build Status](https://app.travis-ci.com/cytoscape/ndexsearch-rest.svg?branch=master)](https://app.travis-ci.com/cytoscape/ndexsearch-rest)
 
 Provides integrated search REST service using NDEx as a backend.
 This service runs using an embedded [Jetty][jetty] server and is invoked
@@ -24,7 +23,7 @@ Requirements
 * [Make][make] **(to build)**
 * [Maven][maven] 3.6 or higher **(to build)**
 
-Dependencies (Deployed on NRNB Nexus)
+Dependencies deployed on [NRNB Nexus](https://nrnb-nexus.ucsd.edu/)
 
 * [ndex-enrichment-rest](https://github.com/cytoscape/ndex-enrichment-rest)
 * [ndex-java-client](https://github.com/ndexbio/ndex-java-client)
