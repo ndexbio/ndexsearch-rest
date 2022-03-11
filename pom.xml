@@ -29,7 +29,7 @@
 		<ndex-interactome-search.version>0.8.0</ndex-interactome-search.version>
 		<jopt-simple.version>5.0.4</jopt-simple.version>
 		<hamcrest.version>2.1</hamcrest.version>
-		<guava.version>27.0.1-jre</guava.version>
+		<guava.version>29.0-jre</guava.version>
 		<javax.servlet.version>4.0.1</javax.servlet.version>
 		<maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
 	</properties>
