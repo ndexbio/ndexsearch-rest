@@ -11,6 +11,7 @@ import org.ndexbio.enrichment.rest.model.EnrichmentQueryResult;
 import org.ndexbio.enrichment.rest.model.EnrichmentQueryResults;
 import org.ndexbio.enrichment.rest.model.exceptions.EnrichmentException;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
+import org.ndexbio.ndexsearch.rest.model.AlterationData;
 import org.ndexbio.ndexsearch.rest.model.DatabaseResult;
 import org.ndexbio.ndexsearch.rest.model.Query;
 import org.ndexbio.ndexsearch.rest.model.QueryResults;
@@ -68,6 +69,7 @@ public class EnrichmentSourceEngine implements SourceEngine {
 		equery.setDatabaseList(_databaseNameSet);
 		equery.setGeneList(new TreeSet<>(query.getGeneList()));
 		equery.setGeneAnnotationServices(query.getGeneAnnotationServices());
+		equery.setAlterationData(query.getAlterationData());
 		SourceQueryResults sqr = new SourceQueryResults();
 		sqr.setSourceName(_sourceName);
 		sqr.setSourceRank(0);
