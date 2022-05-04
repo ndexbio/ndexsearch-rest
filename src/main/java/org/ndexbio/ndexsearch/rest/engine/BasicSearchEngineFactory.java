@@ -52,8 +52,8 @@ public class BasicSearchEngineFactory {
 		rankMap.put(SourceResult.INTERACTOME_PPI_SERVICE, 2);
 		rankMap.put(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE, 3);
 		rankMap.put(SourceResult.KEYWORD_SERVICE, 1);
-		rankMap.put("pathwayfigures", 4);
-		rankMap.put("indra", 5);
+		rankMap.put(SourceResult.PATHWAYFIGURES_SERVICE, 4);
+		rankMap.put(SourceResult.INDRA_SERVICE, 5);
 		
 		for (SourceConfiguration sc : _sourceConfigurations.getSources()) {
 			_logger.info("Found {} service with endpoint {}. Attempting to add",
@@ -73,15 +73,15 @@ public class BasicSearchEngineFactory {
 						 new KeywordSourceEngine(_keywordclient,
 								 sc.getUuid().toString(), _unsetImageURL,
 						 rankMap.get(sc.getName())));
-			} else if (sc.getName().equals("pathwayfigures")){
-				sources.put("pathwayfigures",
+			} else if (sc.getName().equals(SourceResult.PATHWAYFIGURES_SERVICE)){
+				sources.put(sc.getName(),
 						new EnrichmentSourceEngine(new EnrichmentRestClientImpl(sc.getEndPoint(),
-								""), "pathwayfigures"));
+								""), sc.getName()));
 			}
-			else if (sc.getName().equals("indra")){
-				sources.put("indra",
+			else if (sc.getName().equals(SourceResult.INDRA_SERVICE)){
+				sources.put(sc.getName(),
 						new EnrichmentSourceEngine(new EnrichmentRestClientImpl(sc.getEndPoint(),
-								""), "indra"));
+								""), sc.getName()));
 			}
 			else {
 				 _logger.error("Unknown source {} skipping", sc.getName());
