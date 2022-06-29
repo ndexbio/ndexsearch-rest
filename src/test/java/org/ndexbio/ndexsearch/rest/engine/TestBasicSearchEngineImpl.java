@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,6 +18,8 @@ import java.util.UUID;
 import static org.mockito.Mockito.*;
 
 import static org.junit.Assert.*;
+
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -38,8 +41,11 @@ import org.ndexbio.ndexsearch.rest.model.SourceResult;
  */
 public class TestBasicSearchEngineImpl {
 
+	private File geneSymbolFile;
+	
 	@Rule
 	public TemporaryFolder _folder = new TemporaryFolder();
+	
 
 	public Map<String,SourceQueryResults> getSourceQueryResultsFromQueryResults(final QueryResults qr){
 		
@@ -50,11 +56,16 @@ public class TestBasicSearchEngineImpl {
 		return resHash;
 	}
 	
+	@Before 
+    public void setupGeneSymbol() throws URISyntaxException {
+		geneSymbolFile = new File ( getClass().getClassLoader().getResource("test_genes.tsv").toURI() );
+	}
+	
 	@Test
 	public void testConstructor() {
 		try {
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", "/task",
-				null, 0, null);
+				null, 0, null,geneSymbolFile);
 			fail("Expected SearchException");
 		} catch(SearchException se){
 			assertEquals("Sources cannot be null", se.getMessage());
@@ -64,7 +75,7 @@ public class TestBasicSearchEngineImpl {
 	@Test
 	public void testGetQueryResultsFilePath() throws SearchException {
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", "/task",
-				null, 0, new HashMap<String,SourceEngine>());
+				null, 0, new HashMap<String,SourceEngine>(),geneSymbolFile);
 
 		assertEquals("/task/someid/" + BasicSearchEngineImpl.QR_JSON_FILE,
 				engine.getQueryResultsFilePath("someid"));
@@ -74,7 +85,7 @@ public class TestBasicSearchEngineImpl {
 	public void testThreadSleepAndUpdateThreadSleepTime() throws SearchException {
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", "/task",
                                                                  null, 0,
-				new HashMap<String,SourceEngine>());
+				new HashMap<String,SourceEngine>(),geneSymbolFile);
 		engine.updateThreadSleepTime(0L);
 		engine.threadSleep();
 	}
@@ -89,7 +100,7 @@ public class TestBasicSearchEngineImpl {
 		sc.setSources(new ArrayList<>());
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", "/task",
                                                                  sc, 600000,
-				new HashMap<String,SourceEngine>());
+				new HashMap<String,SourceEngine>(),geneSymbolFile);
 		engine.shutdown();
 		engine.run();
 		
@@ -98,7 +109,7 @@ public class TestBasicSearchEngineImpl {
 	@Test
 	public void testGetQueryResultsFromDb() throws SearchException {
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", "/task",
-                                                                 null, 0, new HashMap<String,SourceEngine>());
+                                                                 null, 0, new HashMap<String,SourceEngine>(),geneSymbolFile);
 		QueryResults qr = engine.getQueryResultsFromDb("someid");
 		assertNotNull(qr);
 		long startTime = qr.getStartTime();
@@ -115,7 +126,7 @@ public class TestBasicSearchEngineImpl {
 		File tempDir = _folder.newFolder();
 		try {
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-					tempDir.getAbsolutePath(), null, 0, new HashMap<String,SourceEngine>());
+					tempDir.getAbsolutePath(), null, 0, new HashMap<String,SourceEngine>(),geneSymbolFile);
 			File notAFile = new File(engine.getQueryResultsFilePath("someid"));
 			assertTrue(notAFile.mkdirs());
 			assertNull(engine.getQueryResultsFromDbOrFilesystem("someid"));
@@ -152,7 +163,7 @@ public class TestBasicSearchEngineImpl {
 		File tempDir = _folder.newFolder();
 		try {
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-					tempDir.getAbsolutePath(), null, 0, new HashMap<String,SourceEngine>());
+					tempDir.getAbsolutePath(), null, 0, new HashMap<String,SourceEngine>(),geneSymbolFile);
 			
 			
 			// try putting invalid file on task on filesystem
@@ -166,9 +177,10 @@ public class TestBasicSearchEngineImpl {
 	}
 	
 	@Test
-	public void testQueryEmptyOrNullSourceList() throws SearchException {
+	public void testQueryEmptyOrNullSourceList() throws SearchException, URISyntaxException {
+		
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/db", 
-					"/task", null, 0, new HashMap<String,SourceEngine>());
+					"/task", null, 0, new HashMap<String,SourceEngine>(), geneSymbolFile);
 		
 		try {
 			engine.query(null);
@@ -199,17 +211,17 @@ public class TestBasicSearchEngineImpl {
 	@Test
 	public void testQuerySuccess() throws SearchException {
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/db", 
-					"/task", null, 0, new HashMap<String,SourceEngine>());
+					"/task", null, 0, new HashMap<String,SourceEngine>(),geneSymbolFile);
 		Query q = new Query();
 		q.setSourceList(Arrays.asList("db1"));
-		q.setGeneList(Arrays.asList("gene1"));
+		q.setGeneList(Arrays.asList("A2M"));
 		String id = engine.query(q);
 		assertNotNull(id);
 		QueryResults qr = engine.getQueryResultsFromDb(id);
 		assertEquals(QueryResults.SUBMITTED_STATUS, qr.getStatus());
 		assertTrue(qr.getStartTime() > 0);
 		assertEquals("db1", qr.getInputSourceList().get(0));
-		assertEquals("gene1", qr.getQuery().get(0));
+		assertEquals("A2M", qr.getQuery().get(0));
 	}
 	
 	@Test
@@ -220,7 +232,7 @@ public class TestBasicSearchEngineImpl {
 			assertTrue(taskFile.createNewFile());
 			
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-					taskFile.getAbsolutePath(), null, 0, new HashMap<String,SourceEngine>());
+					taskFile.getAbsolutePath(), null, 0, new HashMap<String,SourceEngine>(),geneSymbolFile);
 			Query query = new Query();
 			query.setGeneList(Arrays.asList("gene1","gene2"));
 			query.setSourceList(Arrays.asList("source1"));
@@ -246,7 +258,7 @@ public class TestBasicSearchEngineImpl {
 			SourceConfigurations sc = new SourceConfigurations();
 		sc.setSources(new ArrayList<>());
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-					taskDir.getAbsolutePath(), sc, 0, new HashMap<String,SourceEngine>());
+					taskDir.getAbsolutePath(), sc, 0, new HashMap<String,SourceEngine>(),geneSymbolFile);
 			Query query = new Query();
 			query.setGeneList(Arrays.asList("gene1","gene2"));
 			query.setSourceList(Arrays.asList("source1"));
@@ -286,7 +298,7 @@ public class TestBasicSearchEngineImpl {
 			
 			sourceEngines.put("source1", mockSrcEngine);
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-					taskDir.getAbsolutePath(), sc, 0, sourceEngines);
+					taskDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			Query query = new Query();
 			query.setGeneList(Arrays.asList("gene1","gene2"));
 			query.setSourceList(Arrays.asList("source1"));
@@ -340,7 +352,7 @@ public class TestBasicSearchEngineImpl {
 			sourceEngines.put("source2", mockSrcEngine2);
 			
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-					taskDir.getAbsolutePath(), sc, 0, sourceEngines);
+					taskDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			Query query = new Query();
 			query.setGeneList(Arrays.asList("gene1","gene2"));
 			query.setSourceList(Arrays.asList("source1", "source2"));
@@ -383,7 +395,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		QueryResults qr = new QueryResults();
 		qr.setStatus(QueryResults.COMPLETE_STATUS);
 		qr.setProgress(55);
@@ -397,7 +409,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		QueryResults qr = new QueryResults();
 		qr.setStatus(QueryResults.FAILED_STATUS);
 		qr.setProgress(55);
@@ -411,7 +423,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		QueryResults qr = new QueryResults();
 		qr.setStatus(QueryResults.PROCESSING_STATUS);
 		qr.setProgress(55);
@@ -426,7 +438,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		QueryResults qr = new QueryResults();
 		qr.setStatus(QueryResults.PROCESSING_STATUS);
 		SourceQueryResults sqres = new SourceQueryResults();
@@ -460,7 +472,7 @@ public class TestBasicSearchEngineImpl {
 
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 
 		QueryResults qr = new QueryResults();
 		qr.setStatus(QueryResults.PROCESSING_STATUS);
@@ -531,7 +543,7 @@ public class TestBasicSearchEngineImpl {
 
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 
 		QueryResults qr = new QueryResults();
 		qr.setStatus(QueryResults.PROCESSING_STATUS);
@@ -605,7 +617,7 @@ public class TestBasicSearchEngineImpl {
 
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 
 		QueryResults qr = new QueryResults();
 		qr.setStatus(QueryResults.PROCESSING_STATUS);
@@ -663,7 +675,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		
 		QueryResults qr = new QueryResults();
 		
@@ -682,7 +694,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		
 		QueryResults qr = new QueryResults();
 		qr.setNumberOfHits(10);
@@ -698,7 +710,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		
 		QueryResults qr = new QueryResults();
 		qr.setNumberOfHits(10);
@@ -715,7 +727,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		
 		QueryResults qr = new QueryResults();
 		qr.setNumberOfHits(10);
@@ -744,7 +756,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		
 		QueryResults qr = new QueryResults();
 		qr.setNumberOfHits(10);
@@ -772,7 +784,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		
 		QueryResults qr = new QueryResults();
 		engine.filterQueryResultsByStartAndSize(qr, 0, 0);
@@ -785,7 +797,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		
 		QueryResults qr = new QueryResults();
 		SourceQueryResults sqr = new SourceQueryResults();
@@ -808,7 +820,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		
 		QueryResults qr = new QueryResults();
 		SourceQueryResults sqr = new SourceQueryResults();
@@ -862,7 +874,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		
 		QueryResults qr = new QueryResults();
 		SourceQueryResults sqr = new SourceQueryResults();
@@ -908,7 +920,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		
 		QueryResults qr = new QueryResults();
 		SourceQueryResults sqr = new SourceQueryResults();
@@ -954,7 +966,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		
 		QueryResults qr = new QueryResults();
 		SourceQueryResults sqr = new SourceQueryResults();
@@ -1006,7 +1018,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			assertNull(engine.getQueryResults("nonexistantid", "foosource", 0, 0));
 		} finally {
 			_folder.delete();
@@ -1020,7 +1032,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			Query thequery = new Query();
 			thequery.setSourceList(Arrays.asList("foosource"));
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
@@ -1043,7 +1055,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines, geneSymbolFile);
 			Query thequery = new Query();
 			thequery.setSourceList(Arrays.asList("foosource"));
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
@@ -1066,7 +1078,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines, geneSymbolFile);
 			Query thequery = new Query();
 			thequery.setSourceList(Arrays.asList("foosource"));
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
@@ -1090,7 +1102,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			assertNull(engine.getQueryStatus("nonexistantid"));
 		} finally {
 			_folder.delete();
@@ -1104,7 +1116,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			Query thequery = new Query();
 			thequery.setSourceList(Arrays.asList("foosource"));
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
@@ -1128,7 +1140,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			Query thequery = new Query();
 			thequery.setSourceList(Arrays.asList("foosource"));
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
@@ -1153,7 +1165,7 @@ public class TestBasicSearchEngineImpl {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
 		SourceConfigurations sc = new SourceConfigurations();
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", 
-					"/taskdir", sc, 0, sourceEngines);
+					"/taskdir", sc, 0, sourceEngines,geneSymbolFile);
 		
 		// try passing null
 		engine.combineSearchExceptionsAndThrow("someid", null);
@@ -1183,7 +1195,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			engine.delete("someid");
 		} finally {
 			_folder.delete();
@@ -1198,7 +1210,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			Query thequery = new Query();
 			thequery.setSourceList(Arrays.asList("foosource"));
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
@@ -1216,7 +1228,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			Query thequery = new Query();
 			thequery.setSourceList(Arrays.asList("foosource"));
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
@@ -1248,7 +1260,7 @@ public class TestBasicSearchEngineImpl {
 
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			Query thequery = new Query();
 			thequery.setSourceList(Arrays.asList("foosource"));
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
@@ -1292,7 +1304,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/db", "/task",
-						sc, 0, sourceEngines);
+						sc, 0, sourceEngines,geneSymbolFile);
 			try {
 				engine.getNetworkOverlayAsCX("nonexistantid", null, null);
 			} catch(SearchException se){
@@ -1314,7 +1326,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			assertNull(engine.getNetworkOverlayAsCX("nonexistantid", "srcuuid", "netuuid"));
 		} finally {
 			_folder.delete();
@@ -1329,7 +1341,7 @@ public class TestBasicSearchEngineImpl {
 			Map<String,SourceEngine> sourceEngines = new HashMap<>();
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			
 			Query thequery = new Query();
 			thequery.setSourceList(Arrays.asList("foosource"));
@@ -1376,7 +1388,7 @@ public class TestBasicSearchEngineImpl {
 			sourceEngines.put(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE, mockSrcEngine);
 			SourceConfigurations sc = new SourceConfigurations();
 			BasicSearchEngineImpl engine = new BasicSearchEngineImpl(tempDir.getAbsolutePath(), 
-						tempDir.getAbsolutePath(), sc, 0, sourceEngines);
+						tempDir.getAbsolutePath(), sc, 0, sourceEngines,geneSymbolFile);
 			
 			Query thequery = new Query();
 			thequery.setSourceList(Arrays.asList("foosource"));

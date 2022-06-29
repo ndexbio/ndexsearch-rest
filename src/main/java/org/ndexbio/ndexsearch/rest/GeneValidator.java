@@ -10,6 +10,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.ndexbio.ndexsearch.rest.model.ValidatedQueryGenes;
+
 public class GeneValidator {
 	
 	private TreeSet<String> geneSymbolSet;
@@ -57,8 +59,8 @@ public class GeneValidator {
 	public TreeSet<String> getGeneSymbolSet() {return geneSymbolSet;}
 	public TreeMap<String,String> getAliasMap() {return aliasMap;}
 	
-	public Map<String,Object> validateHumanGenes(Collection<String> genes) {
-		Map<String,Object> result = new HashMap<>();
+	public ValidatedQueryGenes validateHumanGenes(Collection<String> genes) {
+		ValidatedQueryGenes result = new ValidatedQueryGenes();
 		
 		Set<String> officialGenes = new TreeSet<>();
 		Set<String> invalidGenes = new TreeSet<>();
@@ -66,9 +68,9 @@ public class GeneValidator {
 		//Mapping from official symbols to alias
 		Map<String,String> normalizedGenes = new TreeMap<>();
 		
-		result.put("queryGenes", officialGenes);
-		result.put("invalid", invalidGenes);
-		result.put("normalized",normalizedGenes);
+		result.setQueryGenes(officialGenes);
+		result.setInvalid(invalidGenes);
+		result.setNormalizedGenes(normalizedGenes);
 		
 		for ( String term : genes) {
 			//String capTerm = term.toUpperCase();

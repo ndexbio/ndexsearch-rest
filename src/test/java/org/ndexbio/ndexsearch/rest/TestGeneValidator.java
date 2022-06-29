@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+import org.ndexbio.ndexsearch.rest.model.ValidatedQueryGenes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,15 +40,16 @@ public class TestGeneValidator {
         
         List<String> searchTerms = Arrays.asList("A1BG", "CPAMD5", "CPAMD9", "A2MP1", "foo", "bar");
         
-        Map<String,Object> result = validator.validateHumanGenes(searchTerms);
+        
+        ValidatedQueryGenes result = validator.validateHumanGenes(searchTerms);
         
        ObjectMapper mapper = new ObjectMapper();
    
 		String s0 = mapper.writeValueAsString( result);
 		System.out.println(s0);
      
-		assertEquals("{\"normalized\":{\"A2M\":\"CPAMD5\",\"A2ML1\":\"CPAMD9\"},\"queryGenes\":[\"A1BG\",\"A2M\",\"A2ML1\",\"A2MP1\"],\"invalid\":[\"bar\",\"foo\"]}", s0);
-		
+		assertEquals("{\"queryGenes\":[\"A1BG\",\"A2M\",\"A2ML1\",\"A2MP1\"],\"invalid\":[\"bar\",\"foo\"],\"normalizedGenes\":{\"A2M\":\"CPAMD5\",\"A2ML1\":\"CPAMD9\"}}", s0);
+	
 	}
 
 

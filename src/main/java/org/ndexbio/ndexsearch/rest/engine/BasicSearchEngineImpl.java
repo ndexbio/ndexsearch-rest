@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,9 +26,11 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.ndexbio.enrichment.rest.model.DatabaseResults;
 import org.ndexbio.model.exceptions.NdexException;
+import org.ndexbio.ndexsearch.rest.GeneValidator;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
 import org.ndexbio.ndexsearch.rest.model.InternalSourceResults;
 import org.ndexbio.ndexsearch.rest.model.SourceResults;
+import org.ndexbio.ndexsearch.rest.model.ValidatedQueryGenes;
 import org.ndexbio.ndexsearch.rest.model.Query;
 import org.ndexbio.ndexsearch.rest.model.QueryResults;
 import org.ndexbio.ndexsearch.rest.model.QueryStatus;
@@ -86,6 +89,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	private SourceQueryResultByRank _rankSorter;
 	private Map<String, SourceEngine> _sources;
 
+	private GeneValidator geneValidator;
 	/**
 	 * Constructor
 	 * 
@@ -94,10 +98,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 * @param sourceConfigurations Sources to query against
 	 * @param sourcePollingInterval Interval in ms to poll for updates on sources
 	 * @param sources Map of source name to SourceEngine
+	 * @param gene symbol file, it is used to initialize the geneValidator
 	 */
 	public BasicSearchEngineImpl(final String dbDir, final String taskDir,
             SourceConfigurations sourceConfigurations, long sourcePollingInterval,
-			Map<String, SourceEngine> sources) throws SearchException {
+			Map<String, SourceEngine> sources, File geneSymbolFile) throws SearchException {
 		_shutdown = false;
 		_dbDir = dbDir;
 		_taskDir = taskDir;
@@ -111,6 +116,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		_sourceRankSorter = new SourceQueryResultsBySourceRank();
 		_rankSorter = new SourceQueryResultByRank();
 		_servicePollExecutor = Executors.newSingleThreadScheduledExecutor();
+		geneValidator = new GeneValidator(geneSymbolFile);
 		if (sources == null){
 			throw new SearchException("Sources cannot be null");
 		}
@@ -377,8 +383,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		_queryTaskIds.add(id);
 		logQuery(id, thequery);
 		QueryResults qr = new QueryResults(System.currentTimeMillis());
+		ValidatedQueryGenes validGenes = geneValidator.validateHumanGenes(thequery.getGeneList());
+		qr.setValidatedGenes(validGenes);
 		qr.setInputSourceList(thequery.getSourceList());
-		qr.setQuery(thequery.getGeneList());
+		qr.setQuery( new ArrayList<>(validGenes.getQueryGenes()));
 		qr.setStatus(QueryResults.SUBMITTED_STATUS);
 		_queryResults.merge(id, qr, (oldval, newval) -> newval.updateStartTime(oldval));
 		return id;
