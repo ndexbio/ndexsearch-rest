@@ -24,7 +24,7 @@ public class TestGeneValidator {
 		GeneValidator validator = new GeneValidator(new File(
 		getClass().getClassLoader().getResource("test_genes.tsv").toURI()));
 		
-        assertEquals(9, validator.getGeneSymbolSet().size());
+        assertEquals(10, validator.getGeneSymbolSet().size());
         assertEquals(16, validator.getAliasMap().size());
 
         assertTrue(validator.getGeneSymbolSet().contains("A1BG"));

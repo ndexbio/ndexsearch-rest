@@ -287,8 +287,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
 
 		QueryResults qr = getQueryResultsFromDb(id);
 		synchronized(qr){
-			qr.setQuery(query.getGeneList());
-			qr.setInputSourceList(query.getSourceList());
+		//	qr.setQuery(query.getGeneList());
+		//	qr.setInputSourceList(query.getSourceList());
 			qr.setStatus(QueryResults.PROCESSING_STATUS);
 			File taskDir = new File(this._taskDir + File.separator + id);
 			_logger.debug("Creating new task directory {}", taskDir.getAbsolutePath());
@@ -383,10 +383,12 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		_queryTaskIds.add(id);
 		logQuery(id, thequery);
 		QueryResults qr = new QueryResults(System.currentTimeMillis());
-		ValidatedQueryGenes validGenes = geneValidator.validateHumanGenes(thequery.getGeneList());
+		List<String> originalQueryGenes = thequery.getGeneList();
+		ValidatedQueryGenes validGenes = geneValidator.validateHumanGenes(originalQueryGenes);
 		qr.setValidatedGenes(validGenes);
+		thequery.setGeneList(new ArrayList<>(validGenes.getQueryGenes()));
 		qr.setInputSourceList(thequery.getSourceList());
-		qr.setQuery( new ArrayList<>(validGenes.getQueryGenes()));
+		qr.setQuery( thequery.getGeneList());
 		qr.setStatus(QueryResults.SUBMITTED_STATUS);
 		_queryResults.merge(id, qr, (oldval, newval) -> newval.updateStartTime(oldval));
 		return id;
