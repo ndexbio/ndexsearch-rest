@@ -133,6 +133,7 @@ public class InteractomeSourceEngine implements SourceEngine {
 				sqr.setNodes(qRes.getNodeCount());
 				sqr.setPercentOverlap(qRes.getPercentOverlap());
 				sqr.setImageURL(qRes.getImageURL());
+				//sqr.setLegendURL(qRes.get);
 				sqr.setRank(qRes.getRank());
 				sqr.setDetails(qRes.getDetails());
 				sqResults.add(sqr);

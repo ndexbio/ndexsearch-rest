@@ -3,7 +3,6 @@ package org.ndexbio.ndexsearch.rest;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
@@ -34,19 +33,19 @@ public class GeneValidator {
 	              // process the line
 	              cells=line.split("\t");
 	              if ( cells[0] != null) {
-	            	  String gene= cells[0]; //.toUpperCase();
+	            	  String gene= cells[0].toUpperCase();
 	            	  geneSymbolSet .add(gene);
 	              
 	            	  if ( cells.length >1 && cells[1].length()>0) {
 	            		  String[] alias= cells[1].split(",\\s*");
 	            		  for ( String a : alias) {
-	            			  aliasMap.put(a, gene);
+	            			  aliasMap.put(a.toUpperCase(), gene);
 	            		  }
 	            	  }
 	            	  if ( cells.length >2 && cells[2].length()>0) {
 	            		  String[] alias= cells[2].split(",\\s*");
 	            		  for ( String a : alias) {
-	            			  aliasMap.put(a, gene);
+	            			  aliasMap.put(a.toUpperCase(), gene);
 	            		  }
 	            	  }
 	              }
@@ -72,8 +71,8 @@ public class GeneValidator {
 		result.setInvalid(invalidGenes);
 		result.setNormalizedGenes(normalizedGenes);
 		
-		for ( String term : genes) {
-			//String capTerm = term.toUpperCase();
+		for ( String rawTerm : genes) {
+			String term = rawTerm.toUpperCase();
 			if (geneSymbolSet.contains(term)) {
 				officialGenes.add(term);
 			} else if ( aliasMap.containsKey(term)) {

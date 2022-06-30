@@ -170,6 +170,7 @@ public class EnrichmentSourceEngine implements SourceEngine {
 					sqr.setPercentOverlap(qRes.getPercentOverlap());
 					sqr.setRank(qRes.getRank());
 					sqr.setImageURL(qRes.getImageURL());
+					sqr.setLegendURL(qRes.getLegendURL());
 					sqr.setUrl(qRes.getUrl());
 					sqr.getDetails().put("PValue", Double.valueOf(qRes.getpValue()));
 					sqr.getDetails().put("similarity", Double.valueOf(qRes.getSimilarity()));

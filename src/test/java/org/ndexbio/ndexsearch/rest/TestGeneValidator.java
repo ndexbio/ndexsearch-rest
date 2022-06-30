@@ -35,7 +35,7 @@ public class TestGeneValidator {
         assertEquals("A1BG-AS1",validator.getAliasMap().get("A1BGAS") );
         assertEquals("A2MP1",validator.getAliasMap().get("A2MP") );
         assertEquals("A1BG-AS1",validator.getAliasMap().get("FLJ23569") );
-        assertEquals("A2ML1",validator.getAliasMap().get("p170") );
+        assertEquals("A2ML1",validator.getAliasMap().get("P170") );
         assertEquals("A2ML1",validator.getAliasMap().get("CPAMD9") );
         
         List<String> searchTerms = Arrays.asList("A1BG", "CPAMD5", "CPAMD9", "A2MP1", "foo", "bar");
@@ -48,7 +48,7 @@ public class TestGeneValidator {
 		String s0 = mapper.writeValueAsString( result);
 		System.out.println(s0);
      
-		assertEquals("{\"queryGenes\":[\"A1BG\",\"A2M\",\"A2ML1\",\"A2MP1\"],\"invalid\":[\"bar\",\"foo\"],\"normalizedGenes\":{\"A2M\":\"CPAMD5\",\"A2ML1\":\"CPAMD9\"}}", s0);
+		assertEquals("{\"queryGenes\":[\"A1BG\",\"A2M\",\"A2ML1\",\"A2MP1\"],\"invalid\":[\"BAR\",\"FOO\"],\"normalizedGenes\":{\"A2M\":\"CPAMD5\",\"A2ML1\":\"CPAMD9\"}}", s0);
 	
 	}
 
