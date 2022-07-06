@@ -1,5 +1,6 @@
 package org.ndexbio.ndexsearch.rest.engine;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClientImpl;
@@ -27,6 +28,7 @@ public class BasicSearchEngineFactory {
 	private String _unsetImageURL;
     private SourceConfigurations _sourceConfigurations;
     private long _sourcePollingInterval;
+    private String _geneSymbolFile;
     
     /**
      * Temp directory where query results will temporarily be stored.
@@ -39,6 +41,7 @@ public class BasicSearchEngineFactory {
         _taskDir = config.getSearchTaskDirectory();
         _sourceConfigurations = config.getSourceConfigurations();
         _sourcePollingInterval = config.getSourcePollingInterval();
+        _geneSymbolFile = config.getGeneSymbolFile();
     }
     
     
@@ -89,7 +92,7 @@ public class BasicSearchEngineFactory {
         }
         BasicSearchEngineImpl searcher = new BasicSearchEngineImpl(_dbDir,
                 _taskDir, _sourceConfigurations,
-				_sourcePollingInterval, sources);
+				_sourcePollingInterval, sources, new File ( _dbDir + File.separator + _geneSymbolFile ));
         return searcher;
     }
        

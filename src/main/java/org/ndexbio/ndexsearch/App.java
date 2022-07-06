@@ -25,12 +25,10 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.ndexbio.ndexsearch.rest.CorsFilter;
-import org.ndexbio.ndexsearch.rest.RequestLoggingFilter;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.ndexbio.ndexsearch.rest.CorsFilter;
+import org.ndexbio.ndexsearch.rest.RequestLoggingFilter;
 import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
@@ -255,6 +253,9 @@ public class App {
         
         sb.append("\n# Sets Search task directory where results from queries are stored\n");
         sb.append(Configuration.TASK_DIR + " = /tmp/tasks\n");
+
+        sb.append("\n#Name of the human gene symbol file (located under " + Configuration.DATABASE_DIR  + " \n");
+        sb.append(Configuration.GENE_SYMBOL_FILE + " = hgnc_genes.tsv\n");
         
         sb.append("# Sets HOST URL prefix (value is prefixed to Location header when query is invoked. Can be commented out)\n");
         sb.append("# " + Configuration.HOST_URL + " = http://ndexbio.org\n");

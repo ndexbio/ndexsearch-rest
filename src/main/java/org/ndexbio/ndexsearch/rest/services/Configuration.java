@@ -43,6 +43,7 @@ public class Configuration {
     public static final String UNSET_IMAGE_URL = "search.unset.image.url";
     
     public static final String HOST_URL = "search.host.url";
+    public static final String GENE_SYMBOL_FILE = "search.genesymbol.file";
 	
 	public static final String WEB_URL = "search.web.url";
     
@@ -71,6 +72,7 @@ public class Configuration {
     
     private  String _sourceConfiguration;
     private static String _sourcePollingInterval;
+    private static String _geneSymbolFile;
     
     
     /**
@@ -94,7 +96,9 @@ public class Configuration {
         _searchTaskDir = props.getProperty(Configuration.TASK_DIR);
         _unsetImageURL = props.getProperty(Configuration.UNSET_IMAGE_URL,
                                            "http://ndexbio.org/images/new_landing_page_logo.06974471.png");
-        
+
+        _geneSymbolFile = props.getProperty(Configuration.GENE_SYMBOL_FILE, "hgnc_genes.tsv");
+
         _searchHostURL = props.getProperty(Configuration.HOST_URL, "");
         if (_searchHostURL.trim().isEmpty()){
             _searchHostURL = "";
@@ -161,7 +165,10 @@ public class Configuration {
         return _searchTaskDir;
     }
 
-    public File getSourceConfigurationsFile(){
+    public String getGeneSymbolFile() {
+    	return _geneSymbolFile;
+    }
+    protected File getSourceConfigurationsFile(){
         return new File(this.getSearchDatabaseDirectory()+ File.separator + _sourceConfiguration);
     }
     
