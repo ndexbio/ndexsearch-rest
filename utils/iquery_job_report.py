@@ -59,6 +59,52 @@ def send_report_as_email(theargs, report_str):
     smtp_obj.quit()
 
 
+def _get_jobs_run_from_requests(logfiles_dir):
+    """
+    Gets count of jobs where at least one network was viewed
+
+    :param logfiles_dir:
+    :return:
+    """
+    job_rundates_hash = {}
+    task_id_set = set()
+    for entry in os.listdir(logfiles_dir):
+        if not entry.endswith('.log'):
+            continue
+        if not entry.startswith('requests'):
+            continue
+        fp = os.path.join(logfiles_dir, entry)
+        if not os.path.isfile(fp):
+            continue
+        prefixedremoved = re.sub('^requests_', '', entry)
+        suffixremoved = re.sub('\.log', '', prefixedremoved)
+        jobdate = datetime.strptime(suffixremoved, '%Y_%m_%d')
+
+        with open(fp, 'r') as f:
+            for line in f:
+                if '/overlaynetwork]' not in line:
+                    continue
+                taskidstart = line[0:line.index('/overlaynetwork]')]
+                taskid = taskidstart[taskidstart.rindex('/')+1:]
+
+                if taskid in task_id_set:
+                    continue
+                task_id_set.add(taskid)
+
+                timeraw = line[1:line.index(']')]
+                job_timeraw = timeraw[timeraw.index(' ')+1:timeraw.index(',')]
+                job_time = datetime.strptime(job_timeraw, '%H:%M:%S')
+                jobdate = jobdate.replace(hour=job_time.hour,
+                                          minute=job_time.minute,
+                                          second=job_time.second)
+                if jobdate.year not in job_rundates_hash:
+                    job_rundates_hash[jobdate.year] = {}
+                if jobdate.month not in job_rundates_hash[jobdate.year]:
+                    job_rundates_hash[jobdate.year][jobdate.month] = [0, 0]
+
+                job_rundates_hash[jobdate.year][jobdate.month][0] += 1
+    return job_rundates_hash
+
 def _get_jobs_run_from_logs(logfiles_dir):
     """
 
@@ -179,7 +225,7 @@ def _write_monthly_report(job_rundates_hash, out_str,
 
     for year in sorted_years:
         for month in sorted_months:
-            if year >= current_time.year and month >= current_time.month:
+            if year >= current_time.year and month > current_time.month:
                 continue
             out_str.write(str(month) + '-' + str(year) + ',')
             if month not in job_rundates_hash[year]:
@@ -204,7 +250,6 @@ def main(args):
 
     logfiles_dir = os.path.abspath(theargs.logdir)
 
-
     try:
 
         out_str = sys.stdout
@@ -215,6 +260,12 @@ def main(args):
         if os.path.isdir(logfiles_dir):
             out_str.write('Report taken by parsing log files\n')
             job_rundates_hash = _get_jobs_run_from_logs(logfiles_dir)
+            _write_monthly_report(job_rundates_hash, out_str=out_str,
+                                  header_list=['# Jobs',
+                                               '# Failed Jobs (does not count '
+                                               'jobs that never finished)'])
+            out_str.write('Report taken by parsing request log files\n')
+            job_rundates_hash = _get_jobs_run_from_requests(logfiles_dir)
             _write_monthly_report(job_rundates_hash, out_str=out_str,
                                   header_list=['# Jobs',
                                                '# Failed Jobs (does not count '
