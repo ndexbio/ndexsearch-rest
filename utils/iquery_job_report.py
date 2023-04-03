@@ -5,6 +5,8 @@ import os
 import io
 import re
 import json
+from json.decoder import JSONDecodeError
+
 from datetime import datetime
 import traceback
 import argparse
@@ -166,8 +168,13 @@ def _get_jobs_run_from_tasks(tasks_dir):
         if not os.path.isfile(fp):
             continue
         cdaps_job = False
-        with open(fp, 'r') as f:
-            qres = json.load(f)
+        try:
+            with open(fp, 'r') as f:
+                qres = json.load(f)
+        except JSONDecodeError as je:
+            sys.stderr.write('Got decode error on file: ' + str(fp) + ' skipping : ' + str(je))
+            continue
+
         jobdate = datetime.fromtimestamp(qres['startTime'] / 1000.0)
         status = qres['status']
         # walltime = qres['wallTime']
@@ -180,19 +187,24 @@ def _get_jobs_run_from_tasks(tasks_dir):
         ros = ['ABCC1', 'ATOX1', 'CAT', 'CDKN2D', 'EGLN2', 'ERCC2', 'FES', 'FTL', 'G6PD', 'GCLC', 'GCLM', 'GLRX', 'GLRX2', 'GPX3', 'GPX4', 'GSR', 'HHEX', 'HMOX2', 'IPCEF1', 'JUNB', 'LAMTOR5', 'LSP1', 'MBP', 'MGST1', 'MPO', 'MSRA', 'NDUFA6', 'NDUFB4', 'NDUFS2', 'NQO1', 'OXSR1', 'PDLIM1', 'PFKP', 'PRDX1', 'PRDX2', 'PRDX4', 'PRDX6', 'PRNP', 'PTPA', 'SBNO2', 'SCAF4', 'SELENOS', 'SOD1', 'SOD2', 'SRXN1', 'STK25', 'TXN', 'TXNRD1', 'TXNRD2']
         
         coxsackie = ['C2AIL', 'CARF', 'CBX1', 'CISY', 'CPSF6', 'CSK21', 'DDX1', 'DPYL2', 'EIF3A', 'EIF3B', 'EIF3C', 'EIF3D', 'EIF3E', 'EIF3F', 'EIF3G', 'EIF3H', 'EIF3I', 'EIF3K', 'EIF3L', 'EIF3M', 'F120A', 'FA98A', 'FBSP1', 'IF4G1', 'IMA5', 'LAR4B', 'MYCB2', 'NCBP3', 'NUP98', 'PAN2', 'PRC2B', 'PTBP1', 'PURB', 'RAE1L', 'RAVR1', 'REL', 'RING1', 'RTRAF', 'SETD3', 'TM225', 'XRN2', 'YTHD3']
-        
-        if 'inputSourceList' in qres:
-          if len(qres['inputSourceList']) == 1 and 'enrichment' in qres['inputSourceList'][0]:
+
+        if qres['inputSourceList'] is not None and len(qres['inputSourceList']) == 1 and 'enrichment' in qres['inputSourceList'][0]:
             cdaps_job = True
 
         if jobdate.year not in job_rundates_hash:
             job_rundates_hash[jobdate.year] = {}
         if jobdate.month not in job_rundates_hash[jobdate.year]:
             job_rundates_hash[jobdate.year][jobdate.month] = [0, 0, 0]
-            
-        # Modify query gene list and make comparison with example list
-        query_genes = [item.upper() for item in qres['query']]
-        query_genes.sort()
+
+        if qres['query'] is not None:
+            # Modify query gene list and make comparison with example list
+            query_genes = [item.upper() for item in qres['query']]
+            query_genes.sort()
+        else:
+            # there are tasks that never finish and lack query genes so
+            # just set the genes as an empty list
+            query_genes = []
+
         if query_genes != hypoxia and query_genes != death and query_genes != ros and query_genes != coxsackie:
           if 'complete' not in status:
             tuple_index = 2
