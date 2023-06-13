@@ -16,7 +16,7 @@
 		<junit.version>4.12</junit.version>
 		<easymock.version>4.0.2</easymock.version>
 		<mockito.version>3.6.28</mockito.version>
-		<jetty.version>9.4.45.v20220203</jetty.version>
+		<jetty.version>9.4.51.v20230217</jetty.version>
 		<jetty.maven.plugin.version>9.4.45.v20220203</jetty.maven.plugin.version>
 		<swagger.version>2.0.0</swagger.version>
 		<jackson.version>2.9.10</jackson.version>
