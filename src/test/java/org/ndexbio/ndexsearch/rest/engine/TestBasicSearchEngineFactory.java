@@ -61,7 +61,8 @@ public class TestBasicSearchEngineFactory {
 		scGene.setEndPoint("gene");
 		
 		SourceConfiguration scInvalid = new SourceConfiguration();
-		scInvalid.setName("invalidsource");
+		scInvalid.setEndPoint("foo");
+		scInvalid.setName("othersource");
 		
 		sConfigs.setSources(Arrays.asList(scEnrich, scKey, scPpi, scGene, scInvalid));
 		
@@ -72,7 +73,7 @@ public class TestBasicSearchEngineFactory {
 		BasicSearchEngineImpl engine = (BasicSearchEngineImpl)factory.getSearchEngine();
 		
 		Map<String, SourceEngine> sources = engine.getSources();
-		assertEquals(4, sources.size());
+		assertEquals(5, sources.size());
 		assertTrue(sources.containsKey(SourceResult.KEYWORD_SERVICE));
 		assertTrue(sources.containsKey(SourceResult.ENRICHMENT_SERVICE));
 		assertTrue(sources.containsKey(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE));

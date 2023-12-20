@@ -52,11 +52,12 @@ public class BasicSearchEngineFactory {
     public SearchEngine getSearchEngine() throws Exception {
         Map<String,SourceEngine> sources = new HashMap<>();
         Map<String, Integer> rankMap = new HashMap<>();
-		rankMap.put(SourceResult.INTERACTOME_PPI_SERVICE, 2);
-		rankMap.put(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE, 3);
-		rankMap.put(SourceResult.KEYWORD_SERVICE, 1);
-		rankMap.put(SourceResult.PATHWAYFIGURES_SERVICE, 4);
-		rankMap.put(SourceResult.INDRA_SERVICE, 5);
+		int rank = 1;
+		rankMap.put(SourceResult.KEYWORD_SERVICE, rank++);
+		rankMap.put(SourceResult.INTERACTOME_PPI_SERVICE, rank++);
+		rankMap.put(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE, rank++);
+		rankMap.put(SourceResult.PATHWAYFIGURES_SERVICE, rank++);
+		rankMap.put(SourceResult.INDRA_SERVICE, rank++);
 		
 		for (SourceConfiguration sc : _sourceConfigurations.getSources()) {
 			_logger.info("Found {} service with endpoint {}. Attempting to add",
@@ -87,7 +88,14 @@ public class BasicSearchEngineFactory {
 								""), sc.getName()));
 			}
 			else {
-				 _logger.error("Unknown source {} skipping", sc.getName());
+				 _logger.warn("Unknown source {} assuming it is an enrichment", sc.getName());
+				 if (sc.getEndPoint() != null){
+					 sources.put(sc.getName(),
+							new EnrichmentSourceEngine(new EnrichmentRestClientImpl(sc.getEndPoint(),
+									""), sc.getName()));
+				 } else {
+					 _logger.error("Unknown source {} has null for endpoint. Skipping", sc.getEndPoint());
+				 }
              } 
         }
         BasicSearchEngineImpl searcher = new BasicSearchEngineImpl(_dbDir,
