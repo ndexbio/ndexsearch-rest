@@ -117,10 +117,6 @@ public class SearchSource {
     		}    		
     		if (service.equals(SourceResult.ENRICHMENT_SERVICE)) {
     			return Response.ok(omappy.writeValueAsString(searcher.getEnrichmentDatabases()), MediaType.APPLICATION_JSON).build();
-    		} else if (service.equals(SourceResult.INTERACTOME_PPI_SERVICE)) {
-    			return Response.ok(omappy.writeValueAsString(searcher.getInteractomePpiDatabases()), MediaType.APPLICATION_JSON).build();
-    		} else if (service.equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)) {
-    			return Response.ok(omappy.writeValueAsString(searcher.getInteractomeGeneAssociationDatabases()), MediaType.APPLICATION_JSON).build();
     		} else {
     			ErrorResponse er = new ErrorResponse();
     			er.setMessage("Error querying for source information");

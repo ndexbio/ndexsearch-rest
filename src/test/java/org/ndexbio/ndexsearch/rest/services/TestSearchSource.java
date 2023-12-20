@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.ndexbio.enrichment.rest.model.DatabaseResults;
 import org.ndexbio.enrichment.rest.model.ErrorResponse;
-import org.ndexbio.interactomesearch.object.InteractomeRefNetworkEntry;
 import org.ndexbio.ndexsearch.App;
 import org.ndexbio.ndexsearch.rest.engine.SearchEngine;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
@@ -346,90 +345,6 @@ public class TestSearchSource {
             ObjectMapper mapper = new ObjectMapper();
             DatabaseResults res = mapper.readValue(response.getOutput(),
                     DatabaseResults.class);
-            assertNotNull(res);
-            
-        } finally {
-            _folder.delete();
-        }
-    }
-    
-    @Test
-    public void testGetSourceObjectsGetPPI() throws Exception {
-        File tempDir = _folder.newFolder();
-        try {
-            reloadConfiguration(tempDir);
-            
-            String uuid = UUID.randomUUID().toString();
-             // create mock search engine that returns null
-            SearchEngine mockEngine = createMock(SearchEngine.class);
-            SourceResults sr = new SourceResults();
-            List<SourceResult> sRes = new ArrayList<>();
-            SourceResult srOne = new SourceResult();
-            srOne.setName(SourceResult.INTERACTOME_PPI_SERVICE);
-            srOne.setUuid(uuid);
-            sRes.add(srOne);
-            sr.setResults(sRes);
-           
-            expect(mockEngine.getSourceResults()).andReturn(sr);
-            List<InteractomeRefNetworkEntry> dr = new ArrayList<>();
-            expect(mockEngine.getInteractomePpiDatabases()).andReturn(dr);
-            replay(mockEngine);
-            Configuration.getInstance().setSearchEngine(mockEngine);
-
-            Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
-            dispatcher.getRegistry().addSingletonResource(new SearchSource());
-            
-            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.V_ONE_PATH + "/" +
-                                                          SearchSource.SOURCE_PATH + "/" + uuid));
-            MockHttpResponse response = new MockHttpResponse();
-            dispatcher.invoke(request, response);
-            assertEquals(200, response.getStatus());
-            ObjectMapper mapper = new ObjectMapper();
-            
-            List<InteractomeRefNetworkEntry> res = mapper.readValue(response.getOutput(),
-                    new TypeReference<List<InteractomeRefNetworkEntry>>(){});
-            assertNotNull(res);
-            
-        } finally {
-            _folder.delete();
-        }
-    }
-    
-    @Test
-    public void testGetSourceObjectsGetGeneAssociation() throws Exception {
-        File tempDir = _folder.newFolder();
-        try {
-            reloadConfiguration(tempDir);
-            
-            String uuid = UUID.randomUUID().toString();
-             // create mock search engine that returns null
-            SearchEngine mockEngine = createMock(SearchEngine.class);
-            SourceResults sr = new SourceResults();
-            List<SourceResult> sRes = new ArrayList<>();
-            SourceResult srOne = new SourceResult();
-            srOne.setName(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE);
-            srOne.setUuid(uuid);
-            sRes.add(srOne);
-            sr.setResults(sRes);
-           
-            expect(mockEngine.getSourceResults()).andReturn(sr);
-            List<InteractomeRefNetworkEntry> dr = new ArrayList<>();
-            expect(mockEngine.getInteractomeGeneAssociationDatabases()).andReturn(dr);
-            replay(mockEngine);
-            Configuration.getInstance().setSearchEngine(mockEngine);
-
-            Dispatcher dispatcher = MockDispatcherFactory.createDispatcher();
-            dispatcher.getRegistry().addSingletonResource(new SearchSource());
-            
-            MockHttpRequest request = MockHttpRequest.get(URIHelper.removeDuplicateSlashes(Configuration.V_ONE_PATH + "/" +
-                                                          SearchSource.SOURCE_PATH + "/" + uuid));
-            MockHttpResponse response = new MockHttpResponse();
-            dispatcher.invoke(request, response);
-            assertEquals(200, response.getStatus());
-            ObjectMapper mapper = new ObjectMapper();
-            
-            List<InteractomeRefNetworkEntry> res = mapper.readValue(response.getOutput(),
-                    new TypeReference<List<InteractomeRefNetworkEntry>>(){});
             assertNotNull(res);
             
         } finally {

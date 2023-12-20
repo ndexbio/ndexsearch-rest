@@ -26,7 +26,6 @@
 		<commons-io.version>2.7</commons-io.version>
 		<ndex-enrichment-rest.version>0.9.0-SNAPSHOT</ndex-enrichment-rest.version>
 		<ndex-java-client.version>2.5.5</ndex-java-client.version>
-		<ndex-interactome-search.version>0.9.0-SNAPSHOT</ndex-interactome-search.version>
 		<jopt-simple.version>5.0.4</jopt-simple.version>
 		<hamcrest.version>2.1</hamcrest.version>
 		<guava.version>27.0.1-jre</guava.version>
@@ -85,11 +84,6 @@
             <artifactId>ndex-java-client</artifactId>
             <version>${ndex-java-client.version}</version>
         </dependency>
-        <dependency>
-        	<groupId>org.ndexbio</groupId>
-			<artifactId>ndex-interactome-search</artifactId>
-			<version>${ndex-interactome-search.version}</version>
-		</dependency>
         <dependency>
             <groupId>org.ndexbio.enrichment</groupId>
             <artifactId>ndex-enrichment-rest</artifactId>

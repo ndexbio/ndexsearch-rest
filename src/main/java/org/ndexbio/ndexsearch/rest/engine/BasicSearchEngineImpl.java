@@ -44,7 +44,6 @@ import org.ndexbio.ndexsearch.rest.model.comparators.SourceQueryResultsBySourceR
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.ndexbio.interactomesearch.object.InteractomeRefNetworkEntry;
 
 /**
  * Runs search
@@ -834,24 +833,4 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			throw new SearchException(ne.getMessage());
 		}
 	}
-	
-	@Override
-	public List<InteractomeRefNetworkEntry> getInteractomePpiDatabases() throws NdexException {
-		try {
-			return (List<InteractomeRefNetworkEntry>)_sources.get(SourceResult.INTERACTOME_PPI_SERVICE).getDatabases();
-		}
-		catch(SearchException se){
-				throw new NdexException(se.getMessage());
-		}
-	}
-	
-	@Override
-	public List<InteractomeRefNetworkEntry> getInteractomeGeneAssociationDatabases() throws NdexException {
-		try {
-			return (List<InteractomeRefNetworkEntry>)_sources.get(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE).getDatabases();
-		}
-		catch(SearchException se){
-				throw new NdexException(se.getMessage());
-		}
-	} 
 }

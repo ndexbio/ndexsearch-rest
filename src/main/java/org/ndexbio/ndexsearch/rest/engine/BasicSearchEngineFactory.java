@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import org.ndexbio.enrichment.rest.client.EnrichmentRestClientImpl;
-import org.ndexbio.interactomesearch.client.InteractomeRestClient;
 import org.ndexbio.ndexsearch.rest.model.SourceResult;
 import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
@@ -55,7 +54,6 @@ public class BasicSearchEngineFactory {
 		int rank = 1;
 		rankMap.put(SourceResult.KEYWORD_SERVICE, rank++);
 		rankMap.put(SourceResult.INTERACTOME_PPI_SERVICE, rank++);
-		rankMap.put(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE, rank++);
 		rankMap.put(SourceResult.PATHWAYFIGURES_SERVICE, rank++);
 		rankMap.put(SourceResult.INDRA_SERVICE, rank++);
 		
@@ -66,12 +64,6 @@ public class BasicSearchEngineFactory {
 				sources.put(SourceResult.ENRICHMENT_SERVICE,
 						new EnrichmentSourceEngine(new EnrichmentRestClientImpl(sc.getEndPoint(),
 								"")));
-             } else if (sc.getName().equals(SourceResult.INTERACTOME_PPI_SERVICE) || 
-					 sc.getName().equals(SourceResult.INTERACTOME_GENEASSOCIATION_SERVICE)){
-				sources.put(sc.getName(), new InteractomeSourceEngine(sc.getName(),
-						new InteractomeRestClient(sc.getEndPoint(), ""),
-						rankMap.get(sc.getName())));
-					
              } else if (sc.getName().equals(SourceResult.KEYWORD_SERVICE)) {
 				 sources.put(sc.getName(),
 						 new KeywordSourceEngine(_keywordclient,

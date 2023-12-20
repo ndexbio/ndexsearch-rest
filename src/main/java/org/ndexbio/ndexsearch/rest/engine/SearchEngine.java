@@ -6,11 +6,9 @@
 package org.ndexbio.ndexsearch.rest.engine;
 
 import java.io.InputStream;
-import java.util.List;
 
 import org.ndexbio.enrichment.rest.model.DatabaseResults;
 import org.ndexbio.enrichment.rest.model.exceptions.EnrichmentException;
-import org.ndexbio.interactomesearch.object.InteractomeRefNetworkEntry;
 import org.ndexbio.model.exceptions.NdexException;
 import org.ndexbio.ndexsearch.rest.exceptions.SearchException;
 import org.ndexbio.ndexsearch.rest.model.SourceResults;
@@ -80,20 +78,6 @@ public interface SearchEngine extends Runnable {
      * @throws EnrichmentException
      */
 	public DatabaseResults getEnrichmentDatabases() throws SearchException;
-	
-	/**
-	 * Gets interactome-ppi databases
-	 * @return
-	 * @throws NdexException
-	 */
-	public List<InteractomeRefNetworkEntry> getInteractomePpiDatabases() throws NdexException;
-	
-	/**
-	 * Gets interactome-association databases
-	 * @return
-	 * @throws NdexException
-	 */
-	public List<InteractomeRefNetworkEntry> getInteractomeGeneAssociationDatabases() throws NdexException;
     
     /**
      * Tells implementing objects to shutdown
