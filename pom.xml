@@ -18,7 +18,7 @@
 		<mockito.version>3.6.28</mockito.version>
 		<jetty.version>9.4.53.v20231009</jetty.version>
 		<jetty.maven.plugin.version>9.4.53.v20231009</jetty.maven.plugin.version>
-		<swagger.version>2.0.0</swagger.version>
+		<swagger.version>2.0.8</swagger.version>
 		<jackson.version>2.9.10</jackson.version>
 		<jackson.databind.version>2.9.10.8</jackson.databind.version>
 		<logback.version>1.2.3</logback.version>
@@ -61,6 +61,18 @@
             <url>https://repository.jboss.org/nexus/content/groups/public-jboss/</url>
         </repository>
     </repositories>
+	<distributionManagement>
+		<repository>
+			<id>cytoscape_releases</id>
+			<name>Cytoscape Releases</name>
+			<url>https://nrnb-nexus.ucsd.edu/repository/cytoscape_releases/</url>
+		</repository>
+		<snapshotRepository>
+			<id>cytoscape_snapshots</id>
+			<name>Cytoscape Snapshots</name>
+			<url>https://nrnb-nexus.ucsd.edu/repository/cytoscape_snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
     <dependencies>
         <dependency>
             <groupId>javax.servlet</groupId>
