@@ -4,7 +4,7 @@
 
     <groupId>org.ndexbio</groupId>
     <artifactId>ndexsearch-rest</artifactId>
-    <version>0.8.2-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>NDEx Integrated Search REST service</name>
@@ -16,17 +16,17 @@
 		<junit.version>4.12</junit.version>
 		<easymock.version>4.0.2</easymock.version>
 		<mockito.version>3.6.28</mockito.version>
-		<jetty.version>9.4.45.v20220203</jetty.version>
-		<jetty.maven.plugin.version>9.4.45.v20220203</jetty.maven.plugin.version>
+		<jetty.version>9.4.53.v20231009</jetty.version>
+		<jetty.maven.plugin.version>9.4.53.v20231009</jetty.maven.plugin.version>
 		<swagger.version>2.0.0</swagger.version>
 		<jackson.version>2.9.10</jackson.version>
 		<jackson.databind.version>2.9.10.8</jackson.databind.version>
 		<logback.version>1.2.3</logback.version>
 		<commons-math3.version>3.6.1</commons-math3.version>
 		<commons-io.version>2.7</commons-io.version>
-		<ndex-enrichment-rest.version>0.8.1-SNAPSHOT</ndex-enrichment-rest.version>
-		<ndex-java-client.version>2.5.4-SNAPSHOT</ndex-java-client.version>
-		<ndex-interactome-search.version>0.8.1-SNAPSHOT</ndex-interactome-search.version>
+		<ndex-enrichment-rest.version>0.9.0-SNAPSHOT</ndex-enrichment-rest.version>
+		<ndex-java-client.version>2.5.5</ndex-java-client.version>
+		<ndex-interactome-search.version>0.9.0-SNAPSHOT</ndex-interactome-search.version>
 		<jopt-simple.version>5.0.4</jopt-simple.version>
 		<hamcrest.version>2.1</hamcrest.version>
 		<guava.version>27.0.1-jre</guava.version>
