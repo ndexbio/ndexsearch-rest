@@ -78,7 +78,6 @@
             <groupId>javax.servlet</groupId>
                 <artifactId>javax.servlet-api</artifactId>
                 <version>${javax.servlet.version}</version>
-                <scope>provided</scope>
         </dependency>
         <!-- If i didn't include this guava then I would get weird reflection errors -->
         <dependency>
