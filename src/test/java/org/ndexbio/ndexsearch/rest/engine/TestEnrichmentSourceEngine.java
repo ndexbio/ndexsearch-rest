@@ -259,7 +259,7 @@ public class TestEnrichmentSourceEngine {
 			engine.getOverlaidNetworkAsCXStream("id", "netid");
 			fail("Expected SearchException");
 		} catch(SearchException se){
-			assertEquals("Unable to get network: error", se.getMessage());
+			assertEquals("Unable to get network netid from query id : error", se.getMessage());
 		}
 		verify(mockClient).getNetworkOverlayAsCX("id", "", "netid");
 	}
