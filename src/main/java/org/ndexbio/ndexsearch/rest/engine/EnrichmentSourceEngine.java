@@ -192,7 +192,8 @@ public class EnrichmentSourceEngine implements SourceEngine {
 		try {
 			return _enrichClient.getNetworkOverlayAsCX(id, "", networkId);
 		} catch (EnrichmentException ee) {
-			throw new SearchException("Unable to get network: " + ee.getMessage());
+			throw new SearchException("Unable to get network "
+					+ networkId + " from query " + id + " : " + ee.getMessage());
 		}
 	}
 
