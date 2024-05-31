@@ -27,7 +27,6 @@ Dependencies deployed on [NRNB Nexus](https://nrnb-nexus.ucsd.edu/)
 
 * [ndex-enrichment-rest](https://github.com/cytoscape/ndex-enrichment-rest)
 * [ndex-java-client](https://github.com/ndexbio/ndex-java-client)
-* [ndex-interactome-search](https://github.com/cytoscape/ndex-interactome-search)
 
 Building NDEx Search REST Service  
 =================================
@@ -124,17 +123,7 @@ The **source.configurations.json** file will look like this:
     "description" : "This is a description of enrichment source",
     "endPoint" : "http://localhost:8095/enrichment/v1/",
     "uuid" : null
-  }, {
-    "name" : "interactome-ppi",
-    "description" : "This is a description of interactome-ppi service",
-    "endPoint" : "http://localhost:8096/interactome/ppi/v1/",
-    "uuid" : null
-  }, {
-    "name" : "interactome-association",
-    "description" : "This is a description of interactome-association service",
-    "endPoint" : "http://localhost:8096/interactome/geneassociation/v1/",
-    "uuid" : null
-  } ]
+  }]
 }
 ```
 
