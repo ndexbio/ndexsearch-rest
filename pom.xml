@@ -13,9 +13,9 @@
 		<endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<resteasy.version>3.1.4.Final</resteasy.version>
-		<junit.version>4.12</junit.version>
-		<easymock.version>4.0.2</easymock.version>
-		<mockito.version>3.6.28</mockito.version>
+		<junit.version>5.10.1</junit.version>
+		<easymock.version>5.2.0</easymock.version>
+		<mockito.version>5.7.0</mockito.version>
 		<jetty.version>9.4.54.v20240208</jetty.version>
 		<jetty.maven.plugin.version>9.4.54.v20240208</jetty.maven.plugin.version>
 		<swagger.version>2.0.8</swagger.version>
@@ -199,8 +199,14 @@
         </dependency>
         <!--unit test-->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
