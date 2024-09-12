@@ -213,7 +213,15 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	}
 
 	protected void saveQueryResultsToFilesystem(final String id) {
+		if (id == null){
+			_logger.warn("id was null. Skipping save attempt.");
+			return;
+		}
 		QueryResults eqr = getQueryResultsFromDb(id);
+		if (eqr == null){
+			_logger.debug("No QueryResults matching " + id + "found. Skipping save attempt.");
+			return;
+		}
 
 		File destFile = new File(getQueryResultsFilePath(id));
 		ObjectMapper mappy = new ObjectMapper();
@@ -221,6 +229,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			mappy.writeValue(out, eqr);
 		} catch (IOException io) {
 			_logger.error("Caught exception writing " + destFile.getAbsolutePath(), io);
+			return;
 		}
 		_queryResults.remove(id);
 	}
@@ -234,11 +243,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 * @return
 	 */
 	protected QueryResults getQueryResultsFromDb(final String id) {
-		QueryResults qr = _queryResults.get(id);
-		if (qr == null) {
-			qr = new QueryResults(System.currentTimeMillis());
-		}
-		return qr;
+		return _queryResults.get(id);
 	}
 
 	/**
@@ -285,6 +290,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	protected void processQuery(final String id, Query query) {
 
 		QueryResults qr = getQueryResultsFromDb(id);
+		if (qr == null){
+			_logger.error("Query " + id + " not found in database. Very odd. Making"
+					+ "a new query object");
+			qr = new QueryResults(System.currentTimeMillis());
+		}
 		synchronized(qr){
 		//	qr.setQuery(query.getGeneList());
 		//	qr.setInputSourceList(query.getSourceList());

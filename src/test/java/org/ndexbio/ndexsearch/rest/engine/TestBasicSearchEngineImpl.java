@@ -111,13 +111,12 @@ public class TestBasicSearchEngineImpl {
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", "/task",
                                                                  null, 0, new HashMap<String,SourceEngine>(),geneSymbolFile);
 		QueryResults qr = engine.getQueryResultsFromDb("someid");
-		assertNotNull(qr);
-		long startTime = qr.getStartTime();
-		assertTrue(startTime > 0);
+		assertNull(qr);
+		qr = new QueryResults(10L);
 		qr.setMessage("updated");
 		engine.updateQueryResultsInDb("someid", qr);
 		QueryResults newQr = engine.getQueryResultsFromDb("someid");
-		assertEquals(startTime, newQr.getStartTime());
+		assertEquals(10L, newQr.getStartTime());
 		assertEquals("updated", newQr.getMessage());
 	}
 	
@@ -132,7 +131,7 @@ public class TestBasicSearchEngineImpl {
 			assertNull(engine.getQueryResultsFromDbOrFilesystem("someid"));
 			notAFile.delete();
 			
-			QueryResults qr = engine.getQueryResultsFromDb("someid");
+			QueryResults qr = new QueryResults(System.currentTimeMillis());
 			qr.setMessage("updated");
 			engine.updateQueryResultsInDb("someid", qr);
 			qr = engine.getQueryResultsFromDbOrFilesystem("someid");
