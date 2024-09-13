@@ -66,14 +66,14 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	/**
 	 * This should be a map of <query UUID> => Query object
 	 */
-	private ConcurrentHashMap<String, Query> _queryTasks;
+	private volatile ConcurrentHashMap<String, Query> _queryTasks;
 
-	private ConcurrentLinkedQueue<String> _queryTaskIds;
+	private volatile ConcurrentLinkedQueue<String> _queryTaskIds;
 
 	/**
 	 * This should be a map of <query UUID> => QueryResults object
 	 */
-	private ConcurrentHashMap<String, QueryResults> _queryResults;
+	private volatile ConcurrentHashMap<String, QueryResults> _queryResults;
 
 	/**
 	 * This should be a map of <database UUID> => Map<Gene => Set of network UUIDs>
