@@ -66,14 +66,14 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	/**
 	 * This should be a map of <query UUID> => Query object
 	 */
-	private ConcurrentHashMap<String, Query> _queryTasks;
+	private volatile ConcurrentHashMap<String, Query> _queryTasks;
 
-	private ConcurrentLinkedQueue<String> _queryTaskIds;
+	private volatile ConcurrentLinkedQueue<String> _queryTaskIds;
 
 	/**
 	 * This should be a map of <query UUID> => QueryResults object
 	 */
-	private ConcurrentHashMap<String, QueryResults> _queryResults;
+	private volatile ConcurrentHashMap<String, AtomicReference<QueryResults>> _queryResults;
 
 	/**
 	 * This should be a map of <database UUID> => Map<Gene => Set of network UUIDs>
@@ -213,16 +213,18 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	}
 
 	protected void saveQueryResultsToFilesystem(final String id) {
-		QueryResults eqr = getQueryResultsFromDb(id);
+		AtomicReference<QueryResults> eqr = getQueryResultsFromDb(id);
 
 		File destFile = new File(getQueryResultsFilePath(id));
 		ObjectMapper mappy = new ObjectMapper();
 		try (FileOutputStream out = new FileOutputStream(destFile)) {
-			mappy.writeValue(out, eqr);
+			mappy.writeValue(out, eqr.get());
 		} catch (IOException io) {
 			_logger.error("Caught exception writing " + destFile.getAbsolutePath(), io);
 		}
-		_queryResults.remove(id);
+		if (_queryResults.containsKey(id)){
+			_queryResults.remove(id);
+		}
 	}
 
 	/**
@@ -233,10 +235,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 * @param id
 	 * @return
 	 */
-	protected QueryResults getQueryResultsFromDb(final String id) {
-		QueryResults qr = _queryResults.get(id);
+	protected AtomicReference<QueryResults> getQueryResultsFromDb(final String id) {
+		AtomicReference<QueryResults> qr = _queryResults.get(id);
 		if (qr == null) {
-			qr = new QueryResults(System.currentTimeMillis());
+			qr = new AtomicReference<>();
+			qr.set(new QueryResults(System.currentTimeMillis()));
 		}
 		return qr;
 	}
@@ -248,9 +251,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 * @return 
 	 */
 	protected QueryResults getQueryResultsFromDbOrFilesystem(final String id) {
-		QueryResults qr = _queryResults.get(id);
+		AtomicReference<QueryResults> qr = _queryResults.get(id);
 		if (qr != null) {
-			return qr;
+			return qr.get();
 		}
 		ObjectMapper mappy = new ObjectMapper();
 		File qrFile = new File(getQueryResultsFilePath(id));
@@ -273,7 +276,16 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 *                            previously
 	 */
 	protected void updateQueryResultsInDb(final String id, QueryResults updatedQueryResults) {
-		_queryResults.merge(id, updatedQueryResults, (oldval, newval) -> newval.updateStartTime(oldval));
+		AtomicReference<QueryResults> qr = _queryResults.get(id);
+		if (qr == null){
+			qr = new AtomicReference<>(updatedQueryResults);
+			_queryResults.put(id, qr);
+		} else {
+			updatedQueryResults.updateStartTime(qr.get());
+			qr.set(updatedQueryResults);
+			//qr.accumulateAndGet(updatedQueryResults, (oldval, newval) -> newval.updateStartTime(oldval));
+		}
+		//_queryResults.merge(id, updatedQueryResults, (oldval, newval) -> newval.updateStartTime(oldval));
 	}
 
 	/**
@@ -284,62 +296,62 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 */
 	protected void processQuery(final String id, Query query) {
 
-		QueryResults qr = getQueryResultsFromDb(id);
-		synchronized(qr){
+		AtomicReference<QueryResults> aqr = getQueryResultsFromDb(id);
+		QueryResults qr = aqr.get();
 		//	qr.setQuery(query.getGeneList());
 		//	qr.setInputSourceList(query.getSourceList());
-			qr.setStatus(QueryResults.PROCESSING_STATUS);
-			File taskDir = new File(this._taskDir + File.separator + id);
-			_logger.debug("Creating new task directory {}", taskDir.getAbsolutePath());
+		qr.setStatus(QueryResults.PROCESSING_STATUS);
+		File taskDir = new File(this._taskDir + File.separator + id);
+		_logger.debug("Creating new task directory {}", taskDir.getAbsolutePath());
 
-			if (taskDir.mkdirs() == false) {
-				_logger.error("Unable to create task directory: {}", taskDir.getAbsolutePath());
+		if (taskDir.mkdirs() == false) {
+			_logger.error("Unable to create task directory: {}", taskDir.getAbsolutePath());
+			qr.setStatus(QueryResults.FAILED_STATUS);
+			qr.setMessage("Internal error unable to create directory on filesystem");
+			qr.setProgress(100);
+			updateQueryResultsInDb(id, qr);
+			return;
+		}
+		String message;
+		List<SourceQueryResults> sqrList = new LinkedList<>();
+		qr.setSources(sqrList);
+		SourceQueryResults sqr;
+		for (String source : query.getSourceList()) {
+			_logger.debug("Querying service: {}", source);
+
+			SourceConfiguration sourceConf = this._sourceConfigurations.get().getSourceConfigurationByName(source);
+
+			 // If no configuration or source matches report as an error and 
+			// return cause this is a big configuration error
+			if ( sourceConf == null || !_sources.containsKey(source)) {
+				message = "Source " + source + " is not configured in this server"; 
+				_logger.error(message);
 				qr.setStatus(QueryResults.FAILED_STATUS);
-				qr.setMessage("Internal error unable to create directory on filesystem");
+				qr.setMessage(message);
 				qr.setProgress(100);
 				updateQueryResultsInDb(id, qr);
 				return;
 			}
-			String message;
-			List<SourceQueryResults> sqrList = new LinkedList<>();
-			qr.setSources(sqrList);
-			SourceQueryResults sqr;
-			for (String source : query.getSourceList()) {
-				_logger.debug("Querying service: {}", source);
 
-				SourceConfiguration sourceConf = this._sourceConfigurations.get().getSourceConfigurationByName(source);
+			sqr = _sources.get(source).getSourceQueryResults(query);
 
-				 // If no configuration or source matches report as an error and 
-				// return cause this is a big configuration error
-				if ( sourceConf == null || !_sources.containsKey(source)) {
-					message = "Source " + source + " is not configured in this server"; 
-					_logger.error(message);
-					qr.setStatus(QueryResults.FAILED_STATUS);
-					qr.setMessage(message);
-					qr.setProgress(100);
-					updateQueryResultsInDb(id, qr);
-					return;
-				}
-
-				sqr = _sources.get(source).getSourceQueryResults(query);
-
-				// if sqr is null, create a SourceQueryResults (sqr) object
-				// denoting the error
-				if (sqr == null){
-					message = "Result from source " + source + " was null";
-					_logger.error(message);
-					sqr = new SourceQueryResults();
-					sqr.setMessage(message);
-					sqr.setProgress(100);
-					sqr.setStatus(QueryResults.FAILED_STATUS);
-				}
-				_logger.debug("Adding SourceQueryResult for {}", source);
-				sqr.setSourceUUID(sourceConf.getUuid());
-				sqrList.add(sqr);
-				updateQueryResultsInDb(id, qr);
+			// if sqr is null, create a SourceQueryResults (sqr) object
+			// denoting the error
+			if (sqr == null){
+				message = "Result from source " + source + " was null";
+				_logger.error(message);
+				sqr = new SourceQueryResults();
+				sqr.setMessage(message);
+				sqr.setProgress(100);
+				sqr.setStatus(QueryResults.FAILED_STATUS);
 			}
-			saveQueryResultsToFilesystem(id);
+			_logger.debug("Adding SourceQueryResult for {}", source);
+			sqr.setSourceUUID(sourceConf.getUuid());
+			sqrList.add(sqr);
+			updateQueryResultsInDb(id, qr);
 		}
+		saveQueryResultsToFilesystem(id);
+		
 	}
 
 	/**
@@ -389,7 +401,8 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		qr.setInputSourceList(thequery.getSourceList());
 		qr.setQuery( thequery.getGeneList());
 		qr.setStatus(QueryResults.SUBMITTED_STATUS);
-		_queryResults.merge(id, qr, (oldval, newval) -> newval.updateStartTime(oldval));
+		this.updateQueryResultsInDb(id, qr);
+		//_queryResults.merge(id, qr, (oldval, newval) -> newval.updateStartTime(oldval));
 		return id;
 	}
 
