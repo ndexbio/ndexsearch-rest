@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Mockito.*;
 
@@ -110,13 +111,15 @@ public class TestBasicSearchEngineImpl {
 	public void testGetQueryResultsFromDb() throws SearchException {
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", "/task",
                                                                  null, 0, new HashMap<String,SourceEngine>(),geneSymbolFile);
-		QueryResults qr = engine.getQueryResultsFromDb("someid");
+		AtomicReference<QueryResults> aqr = engine.getQueryResultsFromDb("someid");
+		QueryResults qr = aqr.get();
 		assertNotNull(qr);
 		long startTime = qr.getStartTime();
 		assertTrue(startTime > 0);
 		qr.setMessage("updated");
 		engine.updateQueryResultsInDb("someid", qr);
-		QueryResults newQr = engine.getQueryResultsFromDb("someid");
+		AtomicReference<QueryResults> anewQr = engine.getQueryResultsFromDb("someid");
+		QueryResults newQr = anewQr.get();
 		assertEquals(startTime, newQr.getStartTime());
 		assertEquals("updated", newQr.getMessage());
 	}
@@ -132,7 +135,8 @@ public class TestBasicSearchEngineImpl {
 			assertNull(engine.getQueryResultsFromDbOrFilesystem("someid"));
 			notAFile.delete();
 			
-			QueryResults qr = engine.getQueryResultsFromDb("someid");
+			AtomicReference<QueryResults> aqr = engine.getQueryResultsFromDb("someid");
+			QueryResults qr = aqr.get();
 			qr.setMessage("updated");
 			engine.updateQueryResultsInDb("someid", qr);
 			qr = engine.getQueryResultsFromDbOrFilesystem("someid");
@@ -217,7 +221,8 @@ public class TestBasicSearchEngineImpl {
 		q.setGeneList(Arrays.asList("A2M"));
 		String id = engine.query(q);
 		assertNotNull(id);
-		QueryResults qr = engine.getQueryResultsFromDb(id);
+		AtomicReference<QueryResults> aqr = engine.getQueryResultsFromDb(id);
+		QueryResults qr = aqr.get();
 		assertEquals(QueryResults.SUBMITTED_STATUS, qr.getStatus());
 		assertTrue(qr.getStartTime() > 0);
 		assertEquals("db1", qr.getInputSourceList().get(0));
@@ -1083,10 +1088,12 @@ public class TestBasicSearchEngineImpl {
 			thequery.setSourceList(Arrays.asList("foosource"));
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
 			String id = engine.query(thequery);
-			QueryResults qr = engine.getQueryResultsFromDb(id);
+			AtomicReference<QueryResults> aqr = engine.getQueryResultsFromDb(id);
+			QueryResults qr = aqr.get();
 			qr.setStatus(QueryResults.COMPLETE_STATUS);
 			qr.setMessage("myquery");
 			qr.setProgress(100);
+			aqr.set(qr);
 			
 			QueryResults res = engine.getQueryResults(id, null, 0, 0);
 			assertEquals("myquery", res.getMessage());
@@ -1121,11 +1128,12 @@ public class TestBasicSearchEngineImpl {
 			thequery.setSourceList(Arrays.asList("foosource"));
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
 			String id = engine.query(thequery);
-			QueryResults qr = engine.getQueryResultsFromDb(id);
+			AtomicReference<QueryResults> aqr = engine.getQueryResultsFromDb(id);
+			QueryResults qr = aqr.get();
 			qr.setStatus(QueryResults.COMPLETE_STATUS);
 			qr.setMessage("myquery");
 			qr.setProgress(100);
-		
+			aqr.set(qr);
 			QueryStatus res = engine.getQueryStatus(id);
 			assertEquals("myquery", res.getMessage());
 		} finally {
@@ -1145,7 +1153,8 @@ public class TestBasicSearchEngineImpl {
 			thequery.setSourceList(Arrays.asList("foosource"));
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
 			String id = engine.query(thequery);
-			QueryResults qr = engine.getQueryResultsFromDb(id);
+			AtomicReference<QueryResults> aqr = engine.getQueryResultsFromDb(id);
+			QueryResults qr = aqr.get();
 			qr.setStatus(QueryResults.COMPLETE_STATUS);
 			SourceQueryResults sqr1 = new SourceQueryResults();
 			SourceQueryResults sqr2 = new SourceQueryResults();
@@ -1153,6 +1162,7 @@ public class TestBasicSearchEngineImpl {
 			qr.setSources(Arrays.asList(sqr1, sqr2));
 			qr.setMessage("myquery");
 			qr.setProgress(100);
+			aqr.set(qr);
 			QueryStatus res = engine.getQueryStatus(id);
 			assertEquals("myquery", res.getMessage());
 		} finally {
@@ -1267,7 +1277,8 @@ public class TestBasicSearchEngineImpl {
 			
 			
 			String id = engine.query(thequery);
-			QueryResults qr = engine.getQueryResultsFromDb(id);
+			AtomicReference<QueryResults> aqr = engine.getQueryResultsFromDb(id);
+			QueryResults qr = aqr.get();
 			SourceQueryResults sqr1 = new SourceQueryResults();
 			sqr1.setSourceName("invalidsource");
 			
@@ -1348,7 +1359,8 @@ public class TestBasicSearchEngineImpl {
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
 			
 			String id = engine.query(thequery);
-			QueryResults qr = engine.getQueryResultsFromDb(id);
+			AtomicReference<QueryResults> aqr = engine.getQueryResultsFromDb(id);
+			QueryResults qr = aqr.get();
 			
 			SourceQueryResults sqr2 = new SourceQueryResults();
 			UUID uuid2 = UUID.randomUUID();
@@ -1395,7 +1407,8 @@ public class TestBasicSearchEngineImpl {
 			thequery.setGeneList(Arrays.asList("gene1", "gene2"));
 			
 			String id = engine.query(thequery);
-			QueryResults qr = engine.getQueryResultsFromDb(id);
+			AtomicReference<QueryResults> aqr = engine.getQueryResultsFromDb(id);
+			QueryResults qr = aqr.get();
 			
 			SourceQueryResults sqr3 = new SourceQueryResults();
 			sqr3.setSourceUUID(uuid3);
