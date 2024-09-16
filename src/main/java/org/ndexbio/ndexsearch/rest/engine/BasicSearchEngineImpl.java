@@ -191,8 +191,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				threadSleep();
 				continue;
 			}
-			
-			processQuery(id, query);
+			try {
+				processQuery(id, query);
+			} catch(Exception ex){
+				_logger.error("Error running query: " + id);
+			}
 		}
 		
 		_logger.info("Stopping monitoring loop");
@@ -348,8 +351,15 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				saveQueryResultsToFilesystem(id);
 				return;
 			}
-
-			sqr = _sources.get(source).getSourceQueryResults(query);
+			try {
+				sqr = _sources.get(source).getSourceQueryResults(query);
+			} catch(Exception ex){
+				_logger.error("Caught exception trying to get results: " + id + " : " + ex.getMessage());
+				sqr = new SourceQueryResults();
+				sqr.setMessage("Caught exception trying to get results: " + ex.getMessage());
+				sqr.setProgress(100);
+				sqr.setStatus(QueryResults.FAILED_STATUS);
+			}
 
 			// if sqr is null, create a SourceQueryResults (sqr) object
 			// denoting the error
@@ -366,7 +376,6 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			sqrList.add(sqr);
 			updateQueryResultsInDb(id, qr);
 		}
-		saveQueryResultsToFilesystem(id);
 	}
 
 	/**
@@ -562,13 +571,17 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				}
 				qr.setNumberOfHits(hitCount);
 			} else {
-				_logger.error("For task {} QueryResult has no sources", id);
-				qr.setNumberOfHits(0);
-				qr.setStatus(QueryResults.FAILED_STATUS);
-				qr.setMessage("No sources in result");
-				qr.setProgress(100);
-				updateQueryResultsInDb(id, qr);
-				saveQueryResultsToFilesystem(id);
+				if ((startTime - qr.getStartTime()) > 1000){
+					_logger.error("For task {} QueryResult has no sources", id);
+					qr.setNumberOfHits(0);
+					qr.setStatus(QueryResults.FAILED_STATUS);
+					qr.setMessage("No sources in result");
+					qr.setProgress(100);
+					updateQueryResultsInDb(id, qr);
+					saveQueryResultsToFilesystem(id);
+				} else {
+					_logger.info("Found no sources for task {}, but it has been less then a second", id);
+				}
 			}
 			_logger.debug("For task {} checking for update took {} ms",
 					id, System.currentTimeMillis() - startTime);
