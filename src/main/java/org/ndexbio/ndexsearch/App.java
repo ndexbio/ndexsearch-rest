@@ -29,10 +29,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.ndexbio.ndexsearch.rest.CorsFilter;
 import org.ndexbio.ndexsearch.rest.RequestLoggingFilter;
+import org.ndexbio.ndexsearch.rest.engine.BasicSearchEngineFactory;
+import org.ndexbio.ndexsearch.rest.engine.BasicSearchEngineImpl;
+import org.ndexbio.ndexsearch.rest.engine.EnrichmentSourceEngine;
 import org.ndexbio.ndexsearch.rest.model.SourceConfiguration;
 import org.ndexbio.ndexsearch.rest.model.SourceConfigurations;
 import org.ndexbio.ndexsearch.rest.services.Configuration;
+import org.ndexbio.ndexsearch.rest.services.Search;
 import org.ndexbio.ndexsearch.rest.services.SearchHttpServletDispatcher;
+import org.ndexbio.ndexsearch.rest.services.SearchSource;
+import org.ndexbio.ndexsearch.rest.services.Status;
 
 /**
  *
@@ -47,6 +53,12 @@ public class App {
      * Sets logging level valid values DEBUG INFO WARN ALL ERROR
      */
     public static final String RUNSERVER_LOGLEVEL = "runserver.log.level";
+	
+	/**
+	 * Sets root logger logging level values DEBUG INFO WARN ALL ERROR
+	 */
+	public static final String ROOT_LOGLEVEL = "root.log.level";
+	
     /**
      * Sets log directory for embedded Jetty
      */
@@ -126,7 +138,8 @@ public class App {
                 Properties props = getPropertiesFromConf(optionSet.valueOf(CONF).toString());
                 ch.qos.logback.classic.Logger rootLog = 
         		(ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-                rootLog.setLevel(Level.toLevel(props.getProperty(App.RUNSERVER_LOGLEVEL, "INFO")));
+                rootLog.setLevel(Level.toLevel(props.getProperty(App.ROOT_LOGLEVEL, "INFO")));
+				setLogLevelForClassesInThisPackage(Level.toLevel(props.getProperty(App.RUNSERVER_LOGLEVEL, "INFO")));
                 String logDir = props.getProperty(App.RUNSERVER_LOGDIR, ".");
                 RolloverFileOutputStream os = new RolloverFileOutputStream(logDir + File.separator + "ndexsearch_yyyy_mm_dd.log", true);
 			  
@@ -150,6 +163,7 @@ public class App {
 				ch.qos.logback.classic.Logger requestLog = 
 					  (ch.qos.logback.classic.Logger) lc.getLogger(RequestLoggingFilter.REQUEST_LOGGER_NAME);
                 requestLog.setLevel(Level.toLevel("INFO"));
+				
 				requestLog.setAdditive(false);
 				requestLog.addAppender(osa);
 		
@@ -197,7 +211,22 @@ public class App {
             ex.printStackTrace();
         }
     }
-    
+	
+	/**
+	 * Sets logging level for specific classes in this package
+	 * @param logLevel 
+	 */
+	public static void setLogLevelForClassesInThisPackage(Level logLevel){
+		ch.qos.logback.classic.Logger curLog = null; 
+		Class[] classPkgs = {BasicSearchEngineImpl.class, EnrichmentSourceEngine.class, 
+			Search.class, SearchSource.class, Status.class, BasicSearchEngineFactory.class,
+		    SearchHttpServletDispatcher.class, Configuration.class};
+		for (Class c : classPkgs){
+			curLog =(ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(c);
+			curLog.setLevel(logLevel);
+		}
+	}
+	
     public static Properties getPropertiesFromConf(final String path) throws IOException, FileNotFoundException {
         Properties props = new Properties();
         props.load(new FileInputStream(path));
