@@ -17,7 +17,7 @@ import org.ndexbio.ndexsearch.rest.engine.SearchEngine;
  */
 public class SearchHttpServletDispatcher extends HttpServletDispatcher {
     
-    static Logger _logger = LoggerFactory.getLogger(SearchHttpServletDispatcher.class.getSimpleName());
+    static Logger _logger = LoggerFactory.getLogger(SearchHttpServletDispatcher.class);
 
     private static String _version = "";
     private static String _buildNumber = "";
