@@ -53,7 +53,6 @@ import org.slf4j.LoggerFactory;
 public class BasicSearchEngineImpl implements SearchEngine {
 
 	public static final String QR_JSON_FILE = "queryresults.json";
-
 	static Logger _logger = LoggerFactory.getLogger(BasicSearchEngineImpl.class);
 
 	ScheduledExecutorService _servicePollExecutor;
