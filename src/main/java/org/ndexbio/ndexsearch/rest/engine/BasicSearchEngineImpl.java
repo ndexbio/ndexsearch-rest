@@ -66,14 +66,14 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	/**
 	 * This should be a map of <query UUID> => Query object
 	 */
-	private volatile ConcurrentHashMap<String, Query> _queryTasks;
+	private final ConcurrentHashMap<String, Query> _queryTasks;
 
-	private volatile ConcurrentLinkedQueue<String> _queryTaskIds;
+	private final ConcurrentLinkedQueue<String> _queryTaskIds;
 
 	/**
 	 * This should be a map of <query UUID> => QueryResults object
 	 */
-	private volatile ConcurrentHashMap<String, AtomicReference<QueryResults>> _queryResults;
+	private final ConcurrentHashMap<String, AtomicReference<QueryResults>> _queryResults;
 
 	/**
 	 * This should be a map of <database UUID> => Map<Gene => Set of network UUIDs>
@@ -180,12 +180,20 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		
         _logger.info("Starting monitoring loop");
 		while (_shutdown == false) {
-			String id = _queryTaskIds.poll();
+			String id = null;
+			Query query = null;
+			synchronized(_queryTaskIds){
+				id = _queryTaskIds.poll();
+				if (id != null){
+					query = _queryTasks.remove(id);
+				}
+			}
 			if (id == null) {
 				threadSleep();
 				continue;
 			}
-				processQuery(id, _queryTasks.remove(id));
+			
+			processQuery(id, query);
 		}
 		
 		_logger.info("Stopping monitoring loop");
@@ -213,17 +221,19 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	}
 
 	protected void saveQueryResultsToFilesystem(final String id) {
-		AtomicReference<QueryResults> eqr = getQueryResultsFromDb(id);
+		synchronized(_queryResults){
+			AtomicReference<QueryResults> eqr = getQueryResultsFromDb(id);
 
-		File destFile = new File(getQueryResultsFilePath(id));
-		ObjectMapper mappy = new ObjectMapper();
-		try (FileOutputStream out = new FileOutputStream(destFile)) {
-			mappy.writeValue(out, eqr.get());
-		} catch (IOException io) {
-			_logger.error("Caught exception writing " + destFile.getAbsolutePath(), io);
-		}
-		if (_queryResults.containsKey(id)){
-			_queryResults.remove(id);
+			File destFile = new File(getQueryResultsFilePath(id));
+			ObjectMapper mappy = new ObjectMapper();
+			try (FileOutputStream out = new FileOutputStream(destFile)) {
+				mappy.writeValue(out, eqr.get());
+			} catch (IOException io) {
+				_logger.error("Caught exception writing " + destFile.getAbsolutePath(), io);
+			}
+			if (_queryResults.containsKey(id)){
+				_queryResults.remove(id);
+			}
 		}
 	}
 
@@ -236,12 +246,15 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 * @return
 	 */
 	protected AtomicReference<QueryResults> getQueryResultsFromDb(final String id) {
-		AtomicReference<QueryResults> qr = _queryResults.get(id);
-		if (qr == null) {
-			qr = new AtomicReference<>();
-			qr.set(new QueryResults(System.currentTimeMillis()));
+		synchronized(_queryResults){
+			AtomicReference<QueryResults> qr = _queryResults.get(id);
+			if (qr == null) {
+				qr = new AtomicReference<>();
+				qr.set(new QueryResults(System.currentTimeMillis()));
+				_queryResults.put(id, qr);
+			}
+			return qr;
 		}
-		return qr;
 	}
 
 	/**
@@ -251,9 +264,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 * @return 
 	 */
 	protected QueryResults getQueryResultsFromDbOrFilesystem(final String id) {
-		AtomicReference<QueryResults> qr = _queryResults.get(id);
-		if (qr != null) {
-			return qr.get();
+		synchronized(_queryResults){
+			AtomicReference<QueryResults> qr = _queryResults.get(id);
+			if (qr != null) {
+				return qr.get();
+			}
 		}
 		ObjectMapper mappy = new ObjectMapper();
 		File qrFile = new File(getQueryResultsFilePath(id));
@@ -276,16 +291,18 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 *                            previously
 	 */
 	protected void updateQueryResultsInDb(final String id, QueryResults updatedQueryResults) {
-		AtomicReference<QueryResults> qr = _queryResults.get(id);
-		if (qr == null){
-			qr = new AtomicReference<>(updatedQueryResults);
-			_queryResults.put(id, qr);
-		} else {
-			updatedQueryResults.updateStartTime(qr.get());
-			qr.set(updatedQueryResults);
-			//qr.accumulateAndGet(updatedQueryResults, (oldval, newval) -> newval.updateStartTime(oldval));
+		synchronized(_queryResults){
+			AtomicReference<QueryResults> qr = _queryResults.get(id);
+			if (qr == null){
+				qr = new AtomicReference<>(updatedQueryResults);
+				_queryResults.put(id, qr);
+			} else {
+				updatedQueryResults.updateStartTime(qr.get());
+				qr.set(updatedQueryResults);
+				//qr.accumulateAndGet(updatedQueryResults, (oldval, newval) -> newval.updateStartTime(oldval));
+			}
+			//_queryResults.merge(id, updatedQueryResults, (oldval, newval) -> newval.updateStartTime(oldval));
 		}
-		//_queryResults.merge(id, updatedQueryResults, (oldval, newval) -> newval.updateStartTime(oldval));
 	}
 
 	/**
@@ -298,8 +315,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 
 		AtomicReference<QueryResults> aqr = getQueryResultsFromDb(id);
 		QueryResults qr = aqr.get();
-		//	qr.setQuery(query.getGeneList());
-		//	qr.setInputSourceList(query.getSourceList());
+
 		qr.setStatus(QueryResults.PROCESSING_STATUS);
 		File taskDir = new File(this._taskDir + File.separator + id);
 		_logger.debug("Creating new task directory {}", taskDir.getAbsolutePath());
@@ -330,6 +346,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				qr.setMessage(message);
 				qr.setProgress(100);
 				updateQueryResultsInDb(id, qr);
+				saveQueryResultsToFilesystem(id);
 				return;
 			}
 
@@ -351,7 +368,6 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			updateQueryResultsInDb(id, qr);
 		}
 		saveQueryResultsToFilesystem(id);
-		
 	}
 
 	/**
@@ -390,8 +406,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		_logger.info("Received query request {}", thequery.toString());
 		// @TODO get Jing's uuid generator code that can be a poormans cache
 		String id = UUID.randomUUID().toString();
-		_queryTasks.put(id, thequery);
-		_queryTaskIds.add(id);
+		synchronized(_queryTaskIds){
+			_queryTasks.put(id, thequery);
+			_queryTaskIds.add(id);
+		}	
 		logQuery(id, thequery);
 		QueryResults qr = new QueryResults(System.currentTimeMillis());
 		List<String> originalQueryGenes = thequery.getGeneList();
@@ -672,7 +690,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		_logger.debug("Got query results request: {}", id);
 		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
 		if (qr == null) {
-			_logger.debug("No results for id {} found", id);
+			_logger.info("No results for id {} found", id);
 			return null;
 		}
 		if (start < 0) {
@@ -700,7 +718,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		_logger.debug("Got query status request: {}", id);
 		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
 		if (qr == null) {
-			_logger.debug("No results for id {} found", id);
+			_logger.info("No results for id {} found", id);
 			return null;
 		}
 		checkAndUpdateQueryResults(id, qr);
@@ -719,7 +737,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 */
 	@Override
 	public void delete(final String id) throws SearchException {
-		_logger.debug("Deleting task " + id);
+		_logger.info("Deleting task " + id);
 		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
 		if (qr == null) {
 			_logger.error("Can not find task {} to delete", id);
