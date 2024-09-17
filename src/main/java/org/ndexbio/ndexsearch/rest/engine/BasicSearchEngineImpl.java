@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.lang.Math;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
@@ -225,7 +226,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	protected void saveQueryResultsToFilesystem(final String id) {
 		synchronized(_queryResults){
 			AtomicReference<QueryResults> eqr = getQueryResultsFromDb(id);
-
+			if (eqr == null){
+				_logger.error("No QueryResult found in db with id: " + id);
+				return;
+			}
 			File destFile = new File(getQueryResultsFilePath(id));
 			ObjectMapper mappy = new ObjectMapper();
 			try (FileOutputStream out = new FileOutputStream(destFile)) {
@@ -251,9 +255,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		synchronized(_queryResults){
 			AtomicReference<QueryResults> qr = _queryResults.get(id);
 			if (qr == null) {
-				qr = new AtomicReference<>();
-				qr.set(new QueryResults(System.currentTimeMillis()));
-				_queryResults.put(id, qr);
+				return null;
 			}
 			return qr;
 		}
@@ -265,11 +267,11 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 * @param id
 	 * @return 
 	 */
-	protected QueryResults getQueryResultsFromDbOrFilesystem(final String id) {
+	protected AtomicReference<QueryResults> getQueryResultsFromDbOrFilesystem(final String id) {
 		synchronized(_queryResults){
 			AtomicReference<QueryResults> qr = _queryResults.get(id);
 			if (qr != null) {
-				return qr.get();
+				return qr;
 			}
 		}
 		ObjectMapper mappy = new ObjectMapper();
@@ -279,7 +281,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			return null;
 		}
 		try {
-			return mappy.readValue(qrFile, QueryResults.class);
+			AtomicReference<QueryResults> aqr = new AtomicReference<>();
+			aqr.set(mappy.readValue(qrFile, QueryResults.class));
+			return aqr;
 		} catch (IOException io) {
 			_logger.error("Caught exception trying to load " + qrFile.getAbsolutePath(), io);
 		}
@@ -297,8 +301,12 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			AtomicReference<QueryResults> qr = _queryResults.get(id);
 			if (qr == null){
 				qr = new AtomicReference<>(updatedQueryResults);
-				_queryResults.put(id, qr);
-			} else {
+				synchronized(qr){
+					_queryResults.put(id, qr);
+					return;
+				}
+			}
+			synchronized(qr){
 				updatedQueryResults.updateStartTime(qr.get());
 				qr.set(updatedQueryResults);
 				//qr.accumulateAndGet(updatedQueryResults, (oldval, newval) -> newval.updateStartTime(oldval));
@@ -316,24 +324,40 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	protected void processQuery(final String id, Query query) {
 
 		AtomicReference<QueryResults> aqr = getQueryResultsFromDb(id);
-		QueryResults qr = aqr.get();
-
-		qr.setStatus(QueryResults.PROCESSING_STATUS);
-		File taskDir = new File(this._taskDir + File.separator + id);
-		_logger.debug("Creating new task directory {}", taskDir.getAbsolutePath());
-
-		if (taskDir.mkdirs() == false) {
-			_logger.error("Unable to create task directory: {}", taskDir.getAbsolutePath());
-			qr.setStatus(QueryResults.FAILED_STATUS);
-			qr.setMessage("Internal error unable to create directory on filesystem");
-			qr.setProgress(100);
-			updateQueryResultsInDb(id, qr);
+		
+		if (aqr == null){
+			_logger.error("No QueryResults found matching id: " + id);
 			return;
 		}
-		String message;
 		List<SourceQueryResults> sqrList = new LinkedList<>();
-		qr.setSources(sqrList);
+		synchronized(aqr){
+			QueryResults qr = aqr.get();
+			if (qr == null){
+				_logger.error("No QueryResults found matching id: " + id);
+				return;
+			}
+
+
+			qr.setStatus(QueryResults.PROCESSING_STATUS);
+			File taskDir = new File(this._taskDir + File.separator + id);
+			_logger.debug("Creating new task directory {}", taskDir.getAbsolutePath());
+
+			if (taskDir.mkdirs() == false) {
+				_logger.error("Unable to create task directory: {}", taskDir.getAbsolutePath());
+				qr.setStatus(QueryResults.FAILED_STATUS);
+				qr.setMessage("Internal error unable to create directory on filesystem");
+				qr.setProgress(100);
+				updateQueryResultsInDb(id, qr);
+				return;
+			}
+			qr.setSources(sqrList);
+			updateQueryResultsInDb(id, qr);
+			SourceQueryResults sqr;
+		}
+
 		SourceQueryResults sqr;
+		String message;
+
 		for (String source : query.getSourceList()) {
 			_logger.debug("Querying service: {}", source);
 
@@ -344,21 +368,36 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			if ( sourceConf == null || !_sources.containsKey(source)) {
 				message = "Source " + source + " is not configured in this server"; 
 				_logger.error(message);
-				qr.setStatus(QueryResults.FAILED_STATUS);
-				qr.setMessage(message);
-				qr.setProgress(100);
-				updateQueryResultsInDb(id, qr);
-				saveQueryResultsToFilesystem(id);
-				return;
+				synchronized(aqr){
+					QueryResults qr = aqr.get();
+					if (qr == null){
+						_logger.error("No QueryResults found matching id: " + id);
+						return;
+					}
+					qr.setStatus(QueryResults.FAILED_STATUS);
+					qr.setMessage(message);
+					qr.setProgress(100);
+					updateQueryResultsInDb(id, qr);
+					saveQueryResultsToFilesystem(id);
+					return;
+				}
 			}
 			try {
 				sqr = _sources.get(source).getSourceQueryResults(query);
 			} catch(Exception ex){
 				_logger.error("Caught exception trying to get results: " + id + " : " + ex.getMessage());
-				sqr = new SourceQueryResults();
-				sqr.setMessage("Caught exception trying to get results: " + ex.getMessage());
-				sqr.setProgress(100);
-				sqr.setStatus(QueryResults.FAILED_STATUS);
+				synchronized(aqr){
+					QueryResults qr = aqr.get();
+					if (qr == null){
+						_logger.error("No QueryResults found matching id: " + id);
+						return;
+					}
+					sqr = new SourceQueryResults();
+					sqr.setMessage("Caught exception trying to get results: " + ex.getMessage());
+					sqr.setProgress(100);
+					sqr.setStatus(QueryResults.FAILED_STATUS);
+					updateQueryResultsInDb(id, qr);
+				}
 			}
 
 			// if sqr is null, create a SourceQueryResults (sqr) object
@@ -366,15 +405,30 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			if (sqr == null){
 				message = "Result from source " + source + " was null";
 				_logger.error(message);
-				sqr = new SourceQueryResults();
-				sqr.setMessage(message);
-				sqr.setProgress(100);
-				sqr.setStatus(QueryResults.FAILED_STATUS);
+				synchronized(aqr){
+					QueryResults qr = aqr.get();
+					if (qr == null){
+						_logger.error("No QueryResults found matching id: " + id);
+						return;
+					}
+					sqr = new SourceQueryResults();
+					sqr.setMessage(message);
+					sqr.setProgress(100);
+					sqr.setStatus(QueryResults.FAILED_STATUS);
+					updateQueryResultsInDb(id, qr);
+				}
 			}
 			_logger.debug("Adding SourceQueryResult for {}", source);
 			sqr.setSourceUUID(sourceConf.getUuid());
-			sqrList.add(sqr);
-			updateQueryResultsInDb(id, qr);
+			synchronized(aqr){
+				QueryResults qr = aqr.get();
+				if (qr == null){
+					_logger.error("No QueryResults found matching id: " + id);
+					return;
+				}
+				sqrList.add(sqr);
+				updateQueryResultsInDb(id, qr);
+			}
 		}
 	}
 
@@ -414,10 +468,7 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		_logger.info("Received query request {}", thequery.toString());
 		// @TODO get Jing's uuid generator code that can be a poormans cache
 		String id = UUID.randomUUID().toString();
-		synchronized(_queryTaskIds){
-			_queryTasks.put(id, thequery);
-			_queryTaskIds.add(id);
-		}	
+			
 		logQuery(id, thequery);
 		QueryResults qr = new QueryResults(System.currentTimeMillis());
 		List<String> originalQueryGenes = thequery.getGeneList();
@@ -427,8 +478,12 @@ public class BasicSearchEngineImpl implements SearchEngine {
 		qr.setInputSourceList(thequery.getSourceList());
 		qr.setQuery( thequery.getGeneList());
 		qr.setStatus(QueryResults.SUBMITTED_STATUS);
-		this.updateQueryResultsInDb(id, qr);
+		updateQueryResultsInDb(id, qr);
 		//_queryResults.merge(id, qr, (oldval, newval) -> newval.updateStartTime(oldval));
+		synchronized(_queryTaskIds){
+			_queryTasks.put(id, thequery);
+			_queryTaskIds.add(id);
+		}
 		return id;
 	}
 
@@ -487,8 +542,9 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	 * 
 	 * @param qr QueryResults object that is updated in place with any updates
 	 */
-	protected void checkAndUpdateQueryResults(final String id, QueryResults qr) {
-		synchronized(qr){
+	protected void checkAndUpdateQueryResults(final String id, AtomicReference<QueryResults> aqr) {
+		synchronized(aqr){
+			QueryResults qr = aqr.get();
 			// if its complete just return
 			if (qr.getStatus().equals(QueryResults.COMPLETE_STATUS)) {
 				_logger.debug("Returning completed query for task {}", id);
@@ -499,6 +555,10 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				return;
 			}
 			long startTime = System.currentTimeMillis();
+			if (Math.abs(startTime - qr.getStartTime()) < 1000){
+				_logger.debug("task was started less then a second ago. skip update for now.");
+				return;
+			}
 			Set<String> failedSet = new HashSet<>();
 			int hitCount = 0;
 			int numComplete = 0;
@@ -700,23 +760,25 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	public QueryResults getQueryResults(final String id, final String source, int start, int size)
 			throws SearchException {
 		_logger.debug("Got query results request: {}", id);
-		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
-		if (qr == null) {
-			_logger.info("No results for id {} found", id);
-			return null;
-		}
 		if (start < 0) {
 			throw new SearchException("start parameter must be value of 0 or greater");
 		}
 		if (size < 0) {
 			throw new SearchException("size parameter must be value of 0 or greater");
 		}
-		checkAndUpdateQueryResults(id, qr);
-		synchronized(qr){
-			filterQueryResultsBySourceList(qr, source);
-			filterQueryResultsByStartAndSize(qr, start, size);
+		AtomicReference<QueryResults> aqr = this.getQueryResultsFromDbOrFilesystem(id);
+		if (aqr == null) {
+			_logger.info("No results for id {} found", id);
+			return null;
 		}
+		
+		checkAndUpdateQueryResults(id, aqr);
+
+		QueryResults qr = aqr.get();
+		filterQueryResultsBySourceList(qr, source);
+		filterQueryResultsByStartAndSize(qr, start, size);
 		return qr;
+
 	}
 
 	/**
@@ -728,12 +790,14 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	@Override
 	public QueryStatus getQueryStatus(final String id) throws SearchException {
 		_logger.debug("Got query status request: {}", id);
-		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
-		if (qr == null) {
-			_logger.info("No results for id {} found", id);
+		AtomicReference<QueryResults> aqr = this.getQueryResultsFromDbOrFilesystem(id);
+		
+		if (aqr == null){
+			_logger.info("No results for id {} found. " + id);
 			return null;
 		}
-		checkAndUpdateQueryResults(id, qr);
+		checkAndUpdateQueryResults(id, aqr);
+		QueryResults qr = aqr.get();
 		if (qr.getSources() != null) {
 			for (SourceQueryResults sqr : qr.getSources()) {
 				sqr.setResults(null);
@@ -750,52 +814,53 @@ public class BasicSearchEngineImpl implements SearchEngine {
 	@Override
 	public void delete(final String id) throws SearchException {
 		_logger.info("Deleting task " + id);
-		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
-		if (qr == null) {
+		AtomicReference<QueryResults> aqr = this.getQueryResultsFromDbOrFilesystem(id);
+		if (aqr == null) {
 			_logger.error("Can not find task {} to delete", id);
 			return;
 		}
-		
-		List<SearchException> exceptionList = null;
-		if (qr.getSources() != null){
-			for (SourceQueryResults sqr : qr.getSources()) {
-				if (_sources.containsKey(sqr.getSourceName())){
-					try {
-						_sources.get(sqr.getSourceName()).delete(id);
-					} catch(SearchException se){
-						_logger.info("Adding exception for task {} to "
-								+ "combine and throw later : {}",
-								id ,se.getMessage());
-						if (exceptionList == null){
-							exceptionList = new LinkedList<>();
+		synchronized(aqr){
+			QueryResults qr = aqr.get();
+			List<SearchException> exceptionList = null;
+			if (qr.getSources() != null){
+				for (SourceQueryResults sqr : qr.getSources()) {
+					if (_sources.containsKey(sqr.getSourceName())){
+						try {
+							_sources.get(sqr.getSourceName()).delete(id);
+						} catch(SearchException se){
+							_logger.info("Adding exception for task {} to "
+									+ "combine and throw later : {}",
+									id ,se.getMessage());
+							if (exceptionList == null){
+								exceptionList = new LinkedList<>();
+							}
+							exceptionList.add(se);
 						}
-						exceptionList.add(se);
+						continue;
 					}
-					continue;
+					_logger.error("For task {} No source matching name {} was found. "
+								 + "Skipping...", id,
+								 sqr.getSourceName());
 				}
-				_logger.error("For task {} No source matching name {} was found. "
-							 + "Skipping...", id,
-							 sqr.getSourceName());
-			}
-			// if one or more sources failed to delete just 
-			// combine the exceptions and throw a new combined exception
-			combineSearchExceptionsAndThrow(id, exceptionList);
-		} 
-		
-		//Delete local file system copy
-		File thisTaskDir = new File(_taskDir + File.separator + id);
-		if (thisTaskDir.exists() == true) {
-			_logger.debug("Attempting to delete task from filesystem: {} ",
-					thisTaskDir.getAbsolutePath());
-			if (FileUtils.deleteQuietly(thisTaskDir) == false) {
-				_logger.error("There was a problem deleting the directory: {}",
+				// if one or more sources failed to delete just 
+				// combine the exceptions and throw a new combined exception
+				combineSearchExceptionsAndThrow(id, exceptionList);
+			} 
+
+			//Delete local file system copy
+			File thisTaskDir = new File(_taskDir + File.separator + id);
+			if (thisTaskDir.exists() == true) {
+				_logger.debug("Attempting to delete task from filesystem: {} ",
 						thisTaskDir.getAbsolutePath());
+				if (FileUtils.deleteQuietly(thisTaskDir) == false) {
+					_logger.error("There was a problem deleting the directory: {}",
+							thisTaskDir.getAbsolutePath());
+				}
+				return;
 			}
-			return;
+			_logger.debug("{} directory does not exist",
+						thisTaskDir.getAbsolutePath());
 		}
-		
-		_logger.debug("{} directory does not exist",
-						thisTaskDir.getAbsolutePath());
 	}
 	
 	/**
@@ -842,25 +907,24 @@ public class BasicSearchEngineImpl implements SearchEngine {
 			throw new SearchException("networkUUID cannot be null");
 		}
 		
-		QueryResults qr = this.getQueryResultsFromDbOrFilesystem(id);
-		if (qr == null){
+		AtomicReference<QueryResults> aqr = this.getQueryResultsFromDbOrFilesystem(id);
+		if (aqr == null){
 			_logger.info("No task {} found", id);
 			return null;
 		}
-		checkAndUpdateQueryResults(id, qr);
-		synchronized(qr){
-			for (SourceQueryResults sqRes : qr.getSources()) {
-				if ( ! sqRes.getSourceUUID().equals(UUID.fromString(sourceUUID))) {
-					continue;
-				}
-				if (_sources.containsKey(sqRes.getSourceName())){
-					return _sources.get(sqRes.getSourceName()).getOverlaidNetworkAsCXStream(sqRes.getSourceTaskId(),
-							networkUUID);
+		checkAndUpdateQueryResults(id, aqr);
+		QueryResults qr = aqr.get();
+		for (SourceQueryResults sqRes : qr.getSources()) {
+			if ( ! sqRes.getSourceUUID().equals(UUID.fromString(sourceUUID))) {
+				continue;
+			}
+			if (_sources.containsKey(sqRes.getSourceName())){
+				return _sources.get(sqRes.getSourceName()).getOverlaidNetworkAsCXStream(sqRes.getSourceTaskId(),
+						networkUUID);
 
-				} else {
-					_logger.error("For task {} no source matching name {} found",
-							id, sqRes.getSourceName());
-				}
+			} else {
+				_logger.error("For task {} no source matching name {} found",
+						id, sqRes.getSourceName());
 			}
 		}
 		_logger.info("For task {} and source {} network {} not found",

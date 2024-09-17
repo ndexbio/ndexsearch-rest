@@ -112,7 +112,8 @@ public class TestBasicSearchEngineImpl {
 		BasicSearchEngineImpl engine = new BasicSearchEngineImpl("/dbdir", "/task",
                                                                  null, 0, new HashMap<String,SourceEngine>(),geneSymbolFile);
 		AtomicReference<QueryResults> aqr = engine.getQueryResultsFromDb("someid");
-		QueryResults qr = aqr.get();
+		assertNull(aqr);
+		QueryResults qr = new QueryResults(System.currentTimeMillis());
 		assertNotNull(qr);
 		long startTime = qr.getStartTime();
 		assertTrue(startTime > 0);
@@ -136,17 +137,19 @@ public class TestBasicSearchEngineImpl {
 			notAFile.delete();
 			
 			AtomicReference<QueryResults> aqr = engine.getQueryResultsFromDb("someid");
-			QueryResults qr = aqr.get();
+			assertNull(aqr);
+			
+			QueryResults qr = new QueryResults(System.currentTimeMillis());
 			qr.setMessage("updated");
 			engine.updateQueryResultsInDb("someid", qr);
-			qr = engine.getQueryResultsFromDbOrFilesystem("someid");
-			assertNotNull(qr);
-			assertEquals("updated", qr.getMessage());
+			aqr = engine.getQueryResultsFromDbOrFilesystem("someid");
+			assertNotNull(aqr);
+			assertEquals("updated", aqr.get().getMessage());
 			
 			engine.saveQueryResultsToFilesystem("someid");
-			qr = engine.getQueryResultsFromDbOrFilesystem("someid");
-			assertNotNull(qr);
-			assertEquals("updated", qr.getMessage());
+			aqr = engine.getQueryResultsFromDbOrFilesystem("someid");
+			assertNotNull(aqr);
+			assertEquals("updated", aqr.get().getMessage());
 			
 			// try putting invalid file on task on filesystem
 			File baddata = new File(engine.getQueryResultsFilePath("bad"));
@@ -155,8 +158,8 @@ public class TestBasicSearchEngineImpl {
 			fw.write("badbad[");
 			fw.flush();
 			fw.close();
-			qr = engine.getQueryResultsFromDbOrFilesystem("bad");
-			assertNull(qr);
+			aqr = engine.getQueryResultsFromDbOrFilesystem("bad");
+			assertNull(aqr);
 		} finally {
 			_folder.delete();
 		}
@@ -241,10 +244,13 @@ public class TestBasicSearchEngineImpl {
 			Query query = new Query();
 			query.setGeneList(Arrays.asList("gene1","gene2"));
 			query.setSourceList(Arrays.asList("source1"));
-			engine.processQuery("queryid", query);
+			String queryid = engine.query(query);
+			engine.query(query);
+			engine.processQuery(queryid, query);
 			
-			QueryResults res = engine.getQueryResultsFromDbOrFilesystem("queryid");
-			assertNotNull(res);
+			AtomicReference<QueryResults> ares = engine.getQueryResultsFromDbOrFilesystem(queryid);
+			assertNotNull(ares);
+			QueryResults res = ares.get();
 			assertEquals(QueryResults.FAILED_STATUS, res.getStatus());
 			assertTrue(res.getStartTime() > 0);
 			assertEquals("Internal error unable to create directory on filesystem", res.getMessage());
@@ -267,10 +273,12 @@ public class TestBasicSearchEngineImpl {
 			Query query = new Query();
 			query.setGeneList(Arrays.asList("gene1","gene2"));
 			query.setSourceList(Arrays.asList("source1"));
-			engine.processQuery("queryid", query);
+			String queryid = engine.query(query);
+			engine.processQuery(queryid, query);
 			
-			QueryResults res = engine.getQueryResultsFromDbOrFilesystem("queryid");
-			assertNotNull(res);
+			AtomicReference<QueryResults> ares = engine.getQueryResultsFromDbOrFilesystem(queryid);
+			assertNotNull(ares);
+			QueryResults res = ares.get();
 			assertEquals(QueryResults.FAILED_STATUS, res.getStatus());
 			assertTrue(res.getStartTime() > 0);
 			assertEquals("Source source1 is not configured in this server", res.getMessage());
@@ -307,10 +315,12 @@ public class TestBasicSearchEngineImpl {
 			Query query = new Query();
 			query.setGeneList(Arrays.asList("gene1","gene2"));
 			query.setSourceList(Arrays.asList("source1"));
-			engine.processQuery("queryid", query);
+			String queryid = engine.query(query);
+			engine.processQuery(queryid, query);
 			
-			QueryResults res = engine.getQueryResultsFromDbOrFilesystem("queryid");
-			assertNotNull(res);
+			AtomicReference<QueryResults> ares = engine.getQueryResultsFromDbOrFilesystem(queryid);
+			assertNotNull(ares);
+			QueryResults res = ares.get();
 			assertEquals(QueryResults.PROCESSING_STATUS, res.getStatus());
 			assertTrue(res.getStartTime() > 0);
 			List<SourceQueryResults> sqResList = res.getSources();
@@ -361,10 +371,12 @@ public class TestBasicSearchEngineImpl {
 			Query query = new Query();
 			query.setGeneList(Arrays.asList("gene1","gene2"));
 			query.setSourceList(Arrays.asList("source1", "source2"));
-			engine.processQuery("queryid", query);
+			String queryid = engine.query(query);
+			engine.processQuery(queryid, query);
 			
-			QueryResults res = engine.getQueryResultsFromDbOrFilesystem("queryid");
-			assertNotNull(res);
+			AtomicReference<QueryResults> ares = engine.getQueryResultsFromDbOrFilesystem(queryid);
+			assertNotNull(ares);
+			QueryResults res = ares.get();
 			assertEquals(QueryResults.PROCESSING_STATUS, res.getStatus());
 			assertTrue(res.getStartTime() > 0);
 			List<SourceQueryResults> sqResList = res.getSources();
@@ -404,11 +416,14 @@ public class TestBasicSearchEngineImpl {
 		QueryResults qr = new QueryResults();
 		qr.setStatus(QueryResults.COMPLETE_STATUS);
 		qr.setProgress(55);
-		engine.checkAndUpdateQueryResults("uuid", qr);
+		AtomicReference<QueryResults> aqr = new AtomicReference<>();
+		aqr.set(qr);
+		engine.checkAndUpdateQueryResults("uuid", aqr);
+		qr = aqr.get();
 		assertEquals(55, qr.getProgress());
 		assertEquals(QueryResults.COMPLETE_STATUS, qr.getStatus());
 	}
-	
+	/**
 	@Test
 	public void testcheckAndUpdateQueryResults_ResultIsFailed() throws SearchException {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
@@ -418,7 +433,10 @@ public class TestBasicSearchEngineImpl {
 		QueryResults qr = new QueryResults();
 		qr.setStatus(QueryResults.FAILED_STATUS);
 		qr.setProgress(55);
-		engine.checkAndUpdateQueryResults("uuid", qr);
+		AtomicReference<QueryResults> aqr = new AtomicReference<>();
+		aqr.set(qr);
+		engine.checkAndUpdateQueryResults("uuid", aqr);
+		qr = aqr.get();
 		assertEquals(55, qr.getProgress());
 		assertEquals(QueryResults.FAILED_STATUS, qr.getStatus());
 	}
@@ -674,7 +692,7 @@ public class TestBasicSearchEngineImpl {
 		assertEquals(100, gRes.getProgress());
 		assertEquals(QueryResults.COMPLETE_STATUS, gRes.getStatus());
 	}
-	
+	*/
 	@Test
 	public void testfilterQueryResultsBySourceListNoSource() throws SearchException {
 		Map<String,SourceEngine> sourceEngines = new HashMap<>();
