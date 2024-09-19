@@ -858,6 +858,14 @@ public class BasicSearchEngineImpl implements SearchEngine {
 				// combine the exceptions and throw a new combined exception
 				combineSearchExceptionsAndThrow(id, exceptionList);
 			} 
+			
+			//Delete from _queryResults
+			synchronized(_queryResults){
+				if (_queryResults.containsKey(id)){
+					_queryResults.remove(id);
+					_logger.debug("After delete removal db size is: {}", _queryResults.size());
+				}
+			}
 
 			//Delete local file system copy
 			File thisTaskDir = new File(_taskDir + File.separator + id);
