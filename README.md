@@ -142,7 +142,7 @@ jav -jar ndexsearch.jar --mode runserver --conf ndexsearch.conf
 COPYRIGHT AND LICENSE
 =====================
 
-TODO
+See [LICENSE.txt](LICENSE.txt)
 
 Acknowledgements
 ================
